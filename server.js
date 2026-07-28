@@ -1,34 +1,37 @@
-require("dotenv").config();
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const path = require("path");
-
-const fileRoutes = require("./routes/fileRoutes");
+const fileRoutes = require('./routes/fileRoutes');
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Ensure uploads folder exists (Render's filesystem starts empty on each deploy)
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve the frontend (public folder) and the uploaded files
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use('/api/files', fileRoutes);
 
-// API routes
-app.use("/files", fileRoutes);
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-// Connect to MongoDB, then start the server
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("MongoDB connected");
-    const PORT = process.env.PORT || 5000;
+    console.log('MongoDB connected');
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("MongoDB connection error:", err.message);
+    console.error('MongoDB connection error:', err.message);
+    process.exit(1);
   });

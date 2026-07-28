@@ -1,21 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>ZipShare</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZipShare — Share ZIP files instantly</title>
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>📦 ZipShare</h1>
 
-  <form id="uploadForm">
-    <input type="file" id="zipInput" name="zipfile" accept=".zip" required />
-    <button type="submit">Upload ZIP</button>
-  </form>
-  <p id="statusMsg"></p>
+  <div class="bg-decoration">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
 
-  <h2>Uploaded ZIP Files</h2>
-  <div id="fileList"></div>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">📦</span>
+      <span class="brand-name">ZipShare</span>
+    </div>
+    <button id="adminToggle" class="admin-btn">🔐 Admin</button>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Share ZIP files in seconds</h1>
+      <p>Drag, drop, done. Anyone with the link can download — only the admin can delete.</p>
+    </section>
+
+    <section class="upload-card" id="dropZone">
+      <input type="file" id="fileInput" accept=".zip" hidden />
+      <div class="upload-icon">⬆️</div>
+      <p class="upload-text">Drag & drop a .zip file here</p>
+      <p class="upload-subtext">or</p>
+      <button id="browseBtn" class="btn-primary">Browse files</button>
+      <p class="upload-hint">Max 100MB · .zip only</p>
+      <div class="progress-wrap" id="progressWrap" hidden>
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </section>
+
+    <section class="files-section">
+      <div class="files-header">
+        <h2>Uploaded Files</h2>
+        <span id="fileCount" class="file-count">0 files</span>
+      </div>
+      <div id="fileList" class="file-list">
+        <p class="empty-state">No files uploaded yet — be the first!</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Admin unlock modal -->
+  <div id="adminModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h3>Admin Access</h3>
+      <p>Enter the admin password to enable delete controls.</p>
+      <input type="password" id="adminPassword" placeholder="Password" />
+      <div class="modal-actions">
+        <button id="adminCancel" class="btn-secondary">Cancel</button>
+        <button id="adminSubmit" class="btn-primary">Unlock</button>
+      </div>
+      <p id="adminError" class="error-text" hidden>Incorrect password</p>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div id="deleteModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h3>Delete this file?</h3>
+      <p id="deleteFileName" class="delete-filename"></p>
+      <div class="modal-actions">
+        <button id="deleteCancel" class="btn-secondary">Cancel</button>
+        <button id="deleteConfirm" class="btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
 
   <script src="script.js"></script>
 </body>
