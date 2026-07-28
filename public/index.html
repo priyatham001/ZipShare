@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ZipShare</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>📦 ZipShare</h1>
+
+  <form id="uploadForm">
+    <input type="file" id="zipInput" name="zipfile" accept=".zip" required />
+    <button type="submit">Upload ZIP</button>
+  </form>
+  <p id="statusMsg"></p>
+
+  <h2>Uploaded ZIP Files</h2>
+  <div id="fileList"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
