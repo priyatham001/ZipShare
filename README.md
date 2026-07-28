@@ -1,65 +1,78 @@
 # ZipShare
 
-Upload, share, and manage ZIP files. Anyone can upload and download; only the admin (password-protected) can delete.
+Share `.zip` files instantly. Anyone with the link can upload and download —
+only the admin (password-protected) can delete.
 
-## Features
-- Drag-and-drop upload with progress bar
-- File list with size and upload date
-- Download any file
-- Admin-only delete, protected by a password (no user accounts needed)
-- Modern, responsive, dark-themed UI
+## Stack
+- Node.js + Express
+- MongoDB (Atlas or local) via Mongoose — stores file metadata
+- Multer — handles the actual file storage on disk (`/uploads`)
+- Vanilla HTML/CSS/JS frontend, no build step
 
 ## Local setup
 
-1. Install dependencies:
-   ```
-   npm install
-   ```
+```bash
+npm install
+cp .env.example .env
+```
 
-2. Copy `.env.example` to `.env` and fill in your values:
-   ```
-   MONGO_URI=your MongoDB Atlas connection string
-   PORT=5000
-   ADMIN_PASSWORD=pick a private password
-   ```
+Edit `.env`:
+```
+MONGO_URI=your-mongodb-connection-string
+ADMIN_PASSWORD=pick-a-password
+PORT=5000
+```
 
-3. Start the server:
-   ```
-   npm start
-   ```
+Run it:
+```bash
+npm start
+```
 
-4. Open `http://localhost:5000`
+Visit `http://localhost:5000`.
 
-## Deploying to Render
+## How admin-only delete works
+- Every visitor can upload and download freely.
+- Clicking **Admin** opens a password prompt. The password is checked
+  against `ADMIN_PASSWORD` on the server (`POST /api/files/admin/login`)
+  and never stored in the codebase or the database.
+- Once unlocked, delete buttons appear next to each file for that browser
+  tab (stored in `sessionStorage`, cleared when the tab closes or you
+  click **Admin** again to lock it).
+- The actual delete request (`DELETE /api/files/:id`) is re-checked
+  against `ADMIN_PASSWORD` on the server, so the button showing up in the
+  UI is a convenience, not the real security boundary.
 
+## Deploying (e.g. Render)
 1. Push this project to GitHub.
-2. On Render, create a new Web Service from your repo.
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-3. Add environment variables in the Render dashboard:
-   - `MONGO_URI`
-   - `PORT` = `5000`
-   - `ADMIN_PASSWORD` = your chosen password
-4. In MongoDB Atlas, go to Network Access and allow `0.0.0.0/0` (Render's IPs aren't static).
-5. Deploy. Your site will be live at `https://<your-service-name>.onrender.com`.
+2. Create a new Web Service on Render pointing at the repo.
+   - Build command: `npm install`
+   - Start command: `npm start`
+3. In the Render dashboard → **Environment**, add:
+   - `MONGO_URI` — your MongoDB Atlas connection string
+   - `ADMIN_PASSWORD` — your chosen admin password
+4. Save and let it redeploy. Watch **Logs** for:
+   ```
+   MongoDB connected
+   Server running on port 5000
+   ```
+5. Open your live URL and test upload, download, admin unlock, and delete.
 
-### Renaming your site
-In Render, go to your service → Settings → change the service Name. Your URL becomes
-`https://<new-name>.onrender.com` immediately — no separate purchase needed.
+> Note: Render's free-tier disks are ephemeral — uploaded files can be
+> wiped on redeploy/restart. For persistent storage in production, swap
+> the disk storage in `routes/fileRoutes.js` for a service like
+> Cloudinary, S3, or Render's paid persistent disks.
 
-To use a real custom domain (e.g. `priyatham.dev`), buy the domain from any registrar,
-then add it under Settings → Custom Domains in Render and follow the DNS instructions shown there.
-
-## Important notes on Render's free tier
-- The filesystem is **ephemeral** — uploaded files are wiped whenever the service restarts
-  or redeploys. Fine for testing, but for a permanent file store, move uploads to a service
-  like Amazon S3, Cloudinary, or Render's paid persistent disks.
-- Free instances spin down after inactivity, so the first request after idle time can take
-  ~30-50 seconds to respond.
-
-## Security notes
-- Change `ADMIN_PASSWORD` to something private before deploying — don't reuse example values.
-- Rotate your MongoDB Atlas database password if it has ever been shared or pasted anywhere
-  (chat, screenshots, commits). Update it in Atlas, your local `.env`, and Render's environment
-  variables afterward.
-- Never commit `.env` to git — it's already excluded via `.gitignore`.
+## Project structure
+```
+zipshare/
+├── models/File.js         # Mongoose schema for file metadata
+├── routes/fileRoutes.js   # upload / list / download / delete / admin login
+├── public/
+│   ├── index.html
+│   ├── style.css
+│   └── script.js
+├── uploads/                # uploaded .zip files land here
+├── server.js
+├── package.json
+└── .env.example
+```

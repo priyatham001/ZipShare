@@ -7,13 +7,14 @@ const fileSchema = new mongoose.Schema({
   },
   storedName: {
     type: String,
-    required: true
+    required: true,
+    unique: true
   },
   size: {
     type: Number,
     required: true
   },
-  uploadedAt: {
+  uploadDate: {
     type: Date,
     default: Date.now
   }

@@ -1,267 +1,305 @@
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const browseBtn = document.getElementById('browseBtn');
-const progressWrap = document.getElementById('progressWrap');
-const progressBar = document.getElementById('progressBar');
-const fileList = document.getElementById('fileList');
-const fileCount = document.getElementById('fileCount');
-const toast = document.getElementById('toast');
+(() => {
+  const API = '/api/files';
 
-const adminToggle = document.getElementById('adminToggle');
-const adminModal = document.getElementById('adminModal');
-const adminPassword = document.getElementById('adminPassword');
-const adminSubmit = document.getElementById('adminSubmit');
-const adminCancel = document.getElementById('adminCancel');
-const adminError = document.getElementById('adminError');
+  // ---------- Elements ----------
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const browseBtn = document.getElementById('browseBtn');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+  const progressLabel = document.getElementById('progressLabel');
 
-const deleteModal = document.getElementById('deleteModal');
-const deleteFileName = document.getElementById('deleteFileName');
-const deleteConfirm = document.getElementById('deleteConfirm');
-const deleteCancel = document.getElementById('deleteCancel');
+  const fileList = document.getElementById('fileList');
+  const fileCount = document.getElementById('fileCount');
 
-let isAdmin = false;
-let adminPass = '';
-let pendingDeleteId = null;
-let pendingDeleteName = '';
+  const adminToggle = document.getElementById('adminToggle');
+  const adminDot = document.getElementById('adminDot');
+  const adminModal = document.getElementById('adminModal');
+  const adminPassword = document.getElementById('adminPassword');
+  const adminError = document.getElementById('adminError');
+  const adminCancel = document.getElementById('adminCancel');
+  const adminSubmit = document.getElementById('adminSubmit');
 
-// ---------- Helpers ----------
+  const deleteModal = document.getElementById('deleteModal');
+  const deleteFileName = document.getElementById('deleteFileName');
+  const deleteCancel = document.getElementById('deleteCancel');
+  const deleteConfirm = document.getElementById('deleteConfirm');
 
-function showToast(message, type = 'success') {
-  toast.textContent = message;
-  toast.className = `toast ${type}`;
-  toast.hidden = false;
-  setTimeout(() => { toast.hidden = true; }, 3000);
-}
+  const toast = document.getElementById('toast');
 
-function formatBytes(bytes) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+  let pendingDeleteId = null;
+  let adminUnlockedPassword = sessionStorage.getItem('zs_admin') || null;
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-// ---------- Fetch & render files ----------
-
-async function loadFiles() {
-  try {
-    const res = await fetch('/api/files');
-    const files = await res.json();
-    renderFiles(files);
-  } catch (err) {
-    showToast('Could not load files', 'error');
-  }
-}
-
-function renderFiles(files) {
-  fileCount.textContent = `${files.length} file${files.length === 1 ? '' : 's'}`;
-
-  if (files.length === 0) {
-    fileList.innerHTML = '<p class="empty-state">No files uploaded yet — be the first!</p>';
-    return;
+  // ---------- Helpers ----------
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
   }
 
-  fileList.innerHTML = files.map(f => `
-    <div class="file-item" data-id="${f._id}">
-      <div class="file-icon">🗜️</div>
-      <div class="file-info">
-        <div class="file-name">${escapeHtml(f.originalName)}</div>
-        <div class="file-meta">${formatBytes(f.size)} · ${formatDate(f.uploadedAt)}</div>
-      </div>
-      <div class="file-actions">
-        <button class="icon-btn download-btn" title="Download" data-id="${f._id}">⬇️</button>
-        ${isAdmin ? `<button class="icon-btn delete-btn" title="Delete" data-id="${f._id}" data-name="${escapeHtml(f.originalName)}">🗑️</button>` : ''}
-      </div>
-    </div>
-  `).join('');
-
-  document.querySelectorAll('.download-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      window.location.href = `/api/files/download/${btn.dataset.id}`;
-    });
-  });
-
-  document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      pendingDeleteId = btn.dataset.id;
-      pendingDeleteName = btn.dataset.name;
-      deleteFileName.textContent = pendingDeleteName;
-      deleteModal.hidden = false;
-    });
-  });
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// ---------- Upload ----------
-
-function uploadFile(file) {
-  if (!file.name.toLowerCase().endsWith('.zip')) {
-    showToast('Only .zip files are allowed', 'error');
-    return;
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
-  const formData = new FormData();
-  formData.append('zipfile', file);
+  function showToast(message, type = '') {
+    toast.textContent = message;
+    toast.className = 'toast' + (type ? ` toast-${type}` : '');
+    toast.hidden = false;
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.hidden = true; }, 3200);
+  }
 
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/files/upload');
+  function isAdminUnlocked() {
+    return Boolean(adminUnlockedPassword);
+  }
 
-  progressWrap.hidden = false;
-  progressBar.style.width = '0%';
+  function setAdminUnlocked(password) {
+    adminUnlockedPassword = password;
+    sessionStorage.setItem('zs_admin', password);
+    adminDot.classList.add('unlocked');
+    renderFiles(currentFiles);
+  }
 
-  xhr.upload.addEventListener('progress', (e) => {
-    if (e.lengthComputable) {
-      const percent = (e.loaded / e.total) * 100;
-      progressBar.style.width = `${percent}%`;
+  function lockAdmin() {
+    adminUnlockedPassword = null;
+    sessionStorage.removeItem('zs_admin');
+    adminDot.classList.remove('unlocked');
+    renderFiles(currentFiles);
+  }
+
+  // ---------- Fetch + render file list ----------
+  let currentFiles = [];
+
+  async function loadFiles() {
+    try {
+      const res = await fetch(API);
+      if (!res.ok) throw new Error('Failed to load files');
+      currentFiles = await res.json();
+      renderFiles(currentFiles);
+    } catch (e) {
+      showToast('Could not load the manifest', 'error');
     }
-  });
-
-  xhr.onload = () => {
-    progressWrap.hidden = true;
-    if (xhr.status === 201) {
-      showToast('File uploaded successfully!');
-      loadFiles();
-    } else {
-      let msg = 'Upload failed';
-      try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
-      showToast(msg, 'error');
-    }
-  };
-
-  xhr.onerror = () => {
-    progressWrap.hidden = true;
-    showToast('Upload failed — network error', 'error');
-  };
-
-  xhr.send(formData);
-}
-
-browseBtn.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('click', (e) => {
-  if (e.target === browseBtn) return;
-  fileInput.click();
-});
-
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length) uploadFile(fileInput.files[0]);
-  fileInput.value = '';
-});
-
-['dragenter', 'dragover'].forEach(evt => {
-  dropZone.addEventListener(evt, (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-  });
-});
-
-['dragleave', 'drop'].forEach(evt => {
-  dropZone.addEventListener(evt, (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-  });
-});
-
-dropZone.addEventListener('drop', (e) => {
-  const file = e.dataTransfer.files[0];
-  if (file) uploadFile(file);
-});
-
-// ---------- Admin unlock ----------
-
-adminToggle.addEventListener('click', () => {
-  if (isAdmin) {
-    // Lock again
-    isAdmin = false;
-    adminPass = '';
-    adminToggle.textContent = '🔐 Admin';
-    adminToggle.classList.remove('unlocked');
-    loadFiles();
-    showToast('Admin mode disabled');
-    return;
   }
-  adminError.hidden = true;
-  adminPassword.value = '';
-  adminModal.hidden = false;
-  adminPassword.focus();
-});
 
-adminCancel.addEventListener('click', () => { adminModal.hidden = true; });
+  function renderFiles(files) {
+    fileCount.textContent = `${files.length} parcel${files.length === 1 ? '' : 's'}`;
 
-adminSubmit.addEventListener('click', attemptAdminUnlock);
-adminPassword.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') attemptAdminUnlock();
-});
-
-async function attemptAdminUnlock() {
-  const pass = adminPassword.value;
-  if (!pass) return;
-
-  // We verify by attempting a harmless check: try deleting a bogus id.
-  // A wrong password returns 403; a right password (with fake id) returns 404 "File not found".
-  try {
-    const res = await fetch('/api/files/000000000000000000000000', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: pass })
-    });
-
-    if (res.status === 403) {
-      adminError.hidden = false;
+    if (!files.length) {
+      fileList.innerHTML = '<p class="empty-state">The dock is empty &mdash; be the first to ship something.</p>';
       return;
     }
 
-    // 404 or anything other than 403 means the password was accepted
-    isAdmin = true;
-    adminPass = pass;
-    adminToggle.textContent = '✅ Admin';
-    adminToggle.classList.add('unlocked');
-    adminModal.hidden = true;
-    loadFiles();
-    showToast('Admin mode enabled');
-  } catch (err) {
-    showToast('Could not verify password', 'error');
+    fileList.innerHTML = files.map(f => `
+      <div class="file-tag" data-id="${f._id}">
+        <div class="file-tag-icon">🗂️</div>
+        <div class="file-tag-main">
+          <div class="file-tag-name">${escapeHtml(f.originalName)}</div>
+          <div class="file-tag-meta">${formatBytes(f.size)}<span class="dot">&middot;</span>${formatDate(f.uploadDate)}</div>
+        </div>
+        <div class="file-tag-actions">
+          <button class="icon-btn download-btn" title="Download" data-id="${f._id}">⬇</button>
+          <button class="icon-btn danger-btn delete-btn" title="Delete" data-id="${f._id}" data-name="${escapeHtml(f.originalName)}" ${isAdminUnlocked() ? '' : 'hidden'}>🗑</button>
+        </div>
+      </div>
+    `).join('');
   }
-}
 
-// ---------- Delete ----------
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
 
-deleteCancel.addEventListener('click', () => {
-  deleteModal.hidden = true;
-  pendingDeleteId = null;
-});
+  fileList.addEventListener('click', (e) => {
+    const dlBtn = e.target.closest('.download-btn');
+    if (dlBtn) {
+      window.location.href = `${API}/${dlBtn.dataset.id}/download`;
+      return;
+    }
+    const delBtn = e.target.closest('.delete-btn');
+    if (delBtn) {
+      pendingDeleteId = delBtn.dataset.id;
+      deleteFileName.textContent = delBtn.dataset.name;
+      openModal(deleteModal);
+    }
+  });
 
-deleteConfirm.addEventListener('click', async () => {
-  if (!pendingDeleteId) return;
+  // ---------- Upload ----------
+  function uploadFile(file) {
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      showToast('Only .zip files are accepted', 'error');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      showToast('File is over the 100MB limit', 'error');
+      return;
+    }
 
-  try {
-    const res = await fetch(`/api/files/${pendingDeleteId}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPass })
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', API);
+
+    progressWrap.hidden = false;
+    progressBar.style.width = '0%';
+    progressLabel.textContent = 'Loading cargo… 0%';
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (!e.lengthComputable) return;
+      const pct = Math.round((e.loaded / e.total) * 100);
+      progressBar.style.width = `${pct}%`;
+      progressLabel.textContent = `Loading cargo… ${pct}%`;
     });
 
-    if (res.ok) {
-      showToast('File deleted');
-      loadFiles();
-    } else {
-      const data = await res.json();
-      showToast(data.error || 'Delete failed', 'error');
-    }
-  } catch (err) {
-    showToast('Delete failed — network error', 'error');
-  } finally {
-    deleteModal.hidden = true;
-    pendingDeleteId = null;
-  }
-});
+    xhr.onload = () => {
+      progressWrap.hidden = true;
+      if (xhr.status === 201) {
+        showToast('Parcel shipped', 'success');
+        loadFiles();
+      } else {
+        let msg = 'Upload failed';
+        try { msg = JSON.parse(xhr.responseText).error || msg; } catch (_) {}
+        showToast(msg, 'error');
+      }
+    };
 
-// ---------- Init ----------
-loadFiles();
+    xhr.onerror = () => {
+      progressWrap.hidden = true;
+      showToast('Upload failed — check your connection', 'error');
+    };
+
+    xhr.send(formData);
+  }
+
+  browseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === browseBtn) return;
+    fileInput.click();
+  });
+  dropZone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) uploadFile(fileInput.files[0]);
+    fileInput.value = '';
+  });
+
+  ['dragenter', 'dragover'].forEach(evt =>
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    })
+  );
+
+  ['dragleave', 'drop'].forEach(evt =>
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+    })
+  );
+
+  dropZone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  });
+
+  // ---------- Modal helpers ----------
+  function openModal(modal) {
+    modal.hidden = false;
+  }
+  function closeModal(modal) {
+    modal.hidden = true;
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal(overlay);
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal(adminModal);
+      closeModal(deleteModal);
+    }
+  });
+
+  // ---------- Admin unlock ----------
+  adminToggle.addEventListener('click', () => {
+    if (isAdminUnlocked()) {
+      lockAdmin();
+      showToast('Admin locked');
+      return;
+    }
+    adminError.hidden = true;
+    adminPassword.value = '';
+    openModal(adminModal);
+    setTimeout(() => adminPassword.focus(), 50);
+  });
+
+  adminCancel.addEventListener('click', () => closeModal(adminModal));
+
+  async function submitAdminPassword() {
+    const pwd = adminPassword.value;
+    if (!pwd) return;
+    try {
+      const res = await fetch(`${API}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      });
+      if (res.ok) {
+        setAdminUnlocked(pwd);
+        closeModal(adminModal);
+        showToast('Admin unlocked', 'success');
+      } else {
+        adminError.hidden = false;
+      }
+    } catch (e) {
+      adminError.hidden = false;
+    }
+  }
+
+  adminSubmit.addEventListener('click', submitAdminPassword);
+  adminPassword.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitAdminPassword();
+  });
+
+  // ---------- Delete flow ----------
+  deleteCancel.addEventListener('click', () => {
+    pendingDeleteId = null;
+    closeModal(deleteModal);
+  });
+
+  deleteConfirm.addEventListener('click', async () => {
+    if (!pendingDeleteId) return;
+    try {
+      const res = await fetch(`${API}/${pendingDeleteId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminUnlockedPassword })
+      });
+      if (res.ok) {
+        showToast('Parcel removed', 'success');
+        closeModal(deleteModal);
+        loadFiles();
+      } else if (res.status === 401) {
+        showToast('Admin session expired — unlock again', 'error');
+        lockAdmin();
+        closeModal(deleteModal);
+      } else {
+        showToast('Delete failed', 'error');
+      }
+    } catch (e) {
+      showToast('Delete failed — check your connection', 'error');
+    }
+    pendingDeleteId = null;
+  });
+
+  // ---------- Init ----------
+  if (isAdminUnlocked()) adminDot.classList.add('unlocked');
+  loadFiles();
+})();
