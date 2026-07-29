@@ -25,10 +25,22 @@ router.get('/status', (req, res) => {
   });
 });
 
+const LOCKOUT_THRESHOLD = 3;
+const LOCKOUT_MS = 30 * 1000;
+
 // POST /api/auth/login  { password }
 router.post('/login', loginLimiter, async (req, res) => {
   const { password } = req.body;
   const hash = process.env.ADMIN_PASSWORD_HASH;
+
+  const lockUntil = req.session.lockUntil || 0;
+  if (lockUntil > Date.now()) {
+    return res.status(423).json({
+      locked: true,
+      retryAfterMs: lockUntil - Date.now(),
+      error: 'Access temporarily locked. This system is protected. Try again shortly.'
+    });
+  }
 
   if (!password || !hash) {
     return res.status(400).json({ error: 'Password required' });
@@ -36,11 +48,27 @@ router.post('/login', loginLimiter, async (req, res) => {
 
   const ok = await bcrypt.compare(password, hash);
   if (!ok) {
-    return res.status(401).json({ error: 'Incorrect password' });
+    req.session.failedAttempts = (req.session.failedAttempts || 0) + 1;
+
+    if (req.session.failedAttempts >= LOCKOUT_THRESHOLD) {
+      req.session.lockUntil = Date.now() + LOCKOUT_MS;
+      req.session.failedAttempts = 0;
+      return res.status(423).json({
+        locked: true,
+        retryAfterMs: LOCKOUT_MS,
+        error: 'Access Denied. This system is protected. Too many attempts - locked out temporarily.'
+      });
+    }
+
+    return res.status(401).json({
+      error: 'Access Denied. Incorrect password. This system is protected. Please try again.',
+      attemptsRemaining: LOCKOUT_THRESHOLD - req.session.failedAttempts
+    });
   }
 
+  req.session.failedAttempts = 0;
+  req.session.lockUntil = 0;
   req.session.isAdmin = true;
-  req.session.regenerate ? null : null; // session already exists via cookie
   if (!req.session.csrfToken) {
     req.session.csrfToken = crypto.randomBytes(24).toString('hex');
   }

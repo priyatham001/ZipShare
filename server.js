@@ -9,6 +9,7 @@ const path = require('path');
 
 const authRoutes = require('./routes/authRoutes');
 const fileRoutes = require('./routes/fileRoutes');
+const suggestionRoutes = require('./routes/suggestionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -68,6 +69,7 @@ app.use(
 
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/suggestions', suggestionRoutes);
 
 app.use(express.static(path.join(__dirname, 'public')));
 

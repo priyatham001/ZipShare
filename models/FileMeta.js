@@ -10,6 +10,9 @@ const fileMetaSchema = new mongoose.Schema({
   mimeType: { type: String, required: true },
   size: { type: Number, required: true },
   gridFsId: { type: mongoose.Schema.Types.ObjectId, required: true }, // points at fs.files._id
+  relativePath: { type: String, default: '' }, // folder structure, e.g. "AVL-Lab/AVL.c"
+  tags: { type: [String], default: [] },
+  downloadCount: { type: Number, default: 0 },
   uploadedAt: { type: Date, default: Date.now }
 });
 

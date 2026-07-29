@@ -3,23 +3,56 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ultimate File Sharing</title>
+<title>ZipShare - Student Friendly File Sharing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="bg-glow"></div>
+  <!-- Animated background -->
+  <div class="bg-scene" aria-hidden="true">
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="blob blob-c"></div>
+    <div class="particles" id="particles"></div>
+  </div>
+
+  <!-- Theme intro (first visit only) -->
+  <div id="themeIntro" class="theme-intro" hidden>
+    <div class="theme-intro-inner">
+      <div class="theme-intro-logo">◆</div>
+      <h1 id="typedTitle" class="typed-title"></h1>
+      <p class="theme-intro-sub">A Student Friendly File Sharing Platform</p>
+      <p class="theme-intro-prompt">Choose Your Theme</p>
+      <div class="theme-choices">
+        <button class="theme-choice" data-theme="light">☀️ Light</button>
+        <button class="theme-choice" data-theme="dark">🌙 Dark</button>
+      </div>
+    </div>
+  </div>
 
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark">◆</span>
-      <span>Ultimate File Sharing</span>
+      <span>ZipShare</span>
     </div>
-    <div class="admin-controls" id="adminControls" hidden>
-      <span class="admin-pill">Admin mode</span>
-      <button class="btn btn-ghost" id="logoutBtn">Logout</button>
+
+    <div class="searchbar-wrap">
+      <div class="searchbar">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search Java, Python, C, AVL, Notes..." autocomplete="off" />
+        <button id="clearSearch" class="search-clear" hidden aria-label="Clear search">&times;</button>
+      </div>
+      <div id="suggestionChips" class="suggestion-chips"></div>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="themeToggle" class="btn btn-ghost btn-icon" aria-label="Toggle theme">🌙</button>
+      <div class="admin-controls" id="adminControls" hidden>
+        <span class="admin-pill">Admin mode</span>
+        <button class="btn btn-ghost" id="logoutBtn">Logout</button>
+      </div>
     </div>
   </header>
 
@@ -33,33 +66,55 @@
     <section id="uploadSection" class="upload-section" hidden>
       <div class="dropzone" id="dropzone">
         <input type="file" id="fileInput" multiple hidden />
+        <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
         <div class="dropzone-inner">
           <div class="dropzone-icon">⇪</div>
           <p class="dropzone-title">Drag &amp; drop files here</p>
-          <p class="dropzone-sub">or click to browse — any file type, up to 500MB each</p>
+          <p class="dropzone-sub">or click to browse - any file type, up to 500MB each</p>
+          <div class="dropzone-btns">
+            <button type="button" class="btn btn-ghost btn-sm" id="browseFilesBtn">Choose Files</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="browseFolderBtn">Choose Folder</button>
+          </div>
         </div>
       </div>
       <div id="uploadProgressList" class="upload-progress-list"></div>
+
+      <div class="admin-suggestions-panel">
+        <h4>Manage Search Suggestions</h4>
+        <form id="suggestionForm" class="suggestion-form">
+          <input type="text" id="suggestionInput" placeholder="e.g. AVL Tree in C" maxlength="60" required />
+          <button type="submit" class="btn btn-primary btn-sm">Add</button>
+        </form>
+        <div id="suggestionAdminList" class="suggestion-admin-list"></div>
+      </div>
     </section>
+
+    <section class="filters-row" id="filtersRow"></section>
 
     <section class="files-section">
       <div class="files-header">
-        <h2>Available files</h2>
+        <h2 id="filesHeading">Available files</h2>
         <span id="fileCount" class="file-count">0 files</span>
       </div>
       <div id="fileGrid" class="file-grid"></div>
       <div id="emptyState" class="empty-state" hidden>
+        <div class="empty-icon">📂</div>
         <p>No files uploaded yet.</p>
+      </div>
+      <div id="noResultsState" class="empty-state" hidden>
+        <div class="empty-icon">🔎</div>
+        <p>No files match your search.</p>
       </div>
     </section>
 
   </main>
 
   <footer class="site-footer">
-    <span>&copy; 2026 Ultimate File Sharing</span>
+    <span>ZipShare · A Student Friendly File Sharing Platform</span>
+    <span class="footer-dim">Node.js · Express · MongoDB</span>
   </footer>
 
-  <button id="ownerTag" class="owner-tag" aria-label="Admin login">Welcome Priyatham</button>
+  <button id="ownerTag" class="owner-tag" aria-label="Admin login">Welcome Anonymous</button>
 
   <div id="loginModal" class="modal-overlay" hidden>
     <div class="modal">
@@ -69,8 +124,17 @@
       <form id="loginForm">
         <input type="password" id="passwordInput" placeholder="Password" autocomplete="current-password" required />
         <div id="loginError" class="login-error" hidden></div>
-        <button type="submit" class="btn btn-primary btn-block">Login</button>
+        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Login</button>
       </form>
+    </div>
+  </div>
+
+  <div id="lockoutModal" class="modal-overlay" hidden>
+    <div class="modal modal-lockout">
+      <div class="lockout-emoji">😂</div>
+      <h3>Nice try.</h3>
+      <p class="modal-sub">This system is protected. Access is temporarily locked.</p>
+      <p class="lockout-timer" id="lockoutTimer">Try again in 30s</p>
     </div>
   </div>
 
