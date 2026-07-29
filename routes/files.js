@@ -1,244 +1,253 @@
 const express = require('express');
-const router = express.Router();
-const fs = require('fs');
-const fsp = fs.promises;
+const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const archiver = require('archiver');
+const router = express.Router();
+const File = require('../models/File');
+const Suggestion = require('../models/Suggestion');
 const { requireAdmin } = require('../middleware/auth');
-const { sanitizeSegment, resolveSafe } = require('../utils/fsSafety');
-const FileItem = require('../models/FileItem');
 
-// GET /api/files  ?q=&filter=&parent=
+const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+// Files are stored flatly on disk with random safe names.
+// The original folder structure is preserved only as metadata (relativePath)
+// so it can be shown in the UI and rebuilt into a zip on download.
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const safeExt = path.extname(file.originalname).slice(0, 10);
+    cb(null, crypto.randomUUID() + safeExt);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 200 * 1024 * 1024, files: 500 } // 200MB/file, up to 500 files per upload
+});
+
+const CODE_EXTENSIONS = ['java', 'py', 'c', 'cpp', 'js', 'ts'];
+
+function sanitizeRelativePath(p) {
+  if (!p) return '';
+  return p.replace(/\\/g, '/').split('/').filter(seg => seg && seg !== '.' && seg !== '..').join('/');
+}
+
+// POST /api/files/upload - accepts individual files OR a whole folder (webkitdirectory)
+router.post('/upload', upload.array('files', 500), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files received.' });
+    }
+
+    // frontend sends a matching "paths" field per file (webkitRelativePath or plain name)
+    let rawPaths = req.body.paths || [];
+    if (!Array.isArray(rawPaths)) rawPaths = [rawPaths];
+
+    const isFolderUpload = rawPaths.some(p => p && p.includes('/'));
+    const batchId = isFolderUpload ? crypto.randomUUID() : null;
+
+    const docs = req.files.map((file, i) => {
+      const relPath = sanitizeRelativePath(rawPaths[i]) || file.originalname;
+      const topFolder = relPath.includes('/') ? relPath.split('/')[0] : null;
+      const ext = path.extname(file.originalname).replace('.', '').toLowerCase();
+
+      return {
+        originalName: file.originalname,
+        storedName: file.filename,
+        relativePath: relPath,
+        folderName: topFolder,
+        batchId: topFolder ? batchId : null,
+        extension: ext,
+        size: file.size,
+        uploadDate: new Date()
+      };
+    });
+
+    const saved = await File.insertMany(docs);
+    res.status(201).json({ message: 'Upload Successful', files: saved });
+  } catch (err) {
+    console.error('Upload error:', err.message);
+    res.status(500).json({ error: 'Upload failed. Please try again.' });
+  }
+});
+
+// GET /api/files - list + search + filter
 router.get('/', async (req, res) => {
   try {
-    const { q, filter, parent = '' } = req.query;
+    const { q, filter, sort } = req.query;
     const query = {};
 
-    if (parent !== undefined) query.parentPath = parent;
-
     if (q && q.trim()) {
-      query.$text = { $search: q.trim() };
+      const regex = new RegExp(q.trim(), 'i');
+      query.$or = [
+        { originalName: regex },
+        { relativePath: regex },
+        { folderName: regex },
+        { tags: regex },
+        { description: regex }
+      ];
     }
 
     if (filter && filter !== 'all') {
-      if (filter === 'folders') query.type = 'folder';
-      else if (filter === 'pinned') query.pinned = true;
-      else if (filter === 'recent') {
-        // handled separately below
-      } else {
-        query.extension = filter.toLowerCase();
-      }
+      if (filter === 'pinned') query.pinned = true;
+      else if (filter === 'folders') query.folderName = { $ne: null };
+      else query.extension = filter.toLowerCase();
     }
 
-    let items;
-    if (filter === 'recent') {
-      items = await FileItem.find({ type: 'file' }).sort({ uploadedAt: -1 }).limit(20);
-    } else {
-      items = await FileItem.find(query).sort({ pinned: -1, uploadedAt: -1 });
-    }
+    let sortSpec = { pinned: -1, uploadDate: -1 };
+    if (sort === 'popular') sortSpec = { pinned: -1, downloads: -1 };
+    if (sort === 'name') sortSpec = { pinned: -1, originalName: 1 };
 
-    res.json({ success: true, items });
+    const files = await File.find(query).sort(sortSpec).limit(500);
+    res.json(files);
   } catch (err) {
-    console.error('List error:', err.message);
-    res.status(500).json({ success: false, message: 'Could not load files.' });
+    console.error('List files error:', err.message);
+    res.status(500).json({ error: 'Could not load file list.' });
   }
 });
 
-// GET /api/files/stats  - dashboard numbers
-router.get('/stats', requireAdmin, async (req, res) => {
+// GET /api/files/stats - counts for the admin dashboard / stats bar
+router.get('/stats', async (req, res) => {
   try {
-    const totalFiles = await FileItem.countDocuments({ type: 'file' });
-    const totalFolders = await FileItem.countDocuments({ type: 'folder' });
-    const pinned = await FileItem.countDocuments({ pinned: true });
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const todayUploads = await FileItem.countDocuments({ type: 'file', uploadedAt: { $gte: startOfDay } });
-    const downloadsAgg = await FileItem.aggregate([{ $group: { _id: null, total: { $sum: '$downloads' } } }]);
-    const sizeAgg = await FileItem.aggregate([
-      { $match: { type: 'file' } },
-      { $group: { _id: null, total: { $sum: '$size' } } },
+    const [totalFiles, pinned, todayCount, agg] = await Promise.all([
+      File.countDocuments(),
+      File.countDocuments({ pinned: true }),
+      File.countDocuments({ uploadDate: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) } }),
+      File.aggregate([{ $group: { _id: null, totalSize: { $sum: '$size' }, totalDownloads: { $sum: '$downloads' } } }])
     ]);
-    const recent = await FileItem.find({ type: 'file' }).sort({ uploadedAt: -1 }).limit(10);
+    res.json({
+      totalFiles,
+      pinned,
+      todayUploads: todayCount,
+      totalDownloads: agg[0]?.totalDownloads || 0,
+      storageUsed: agg[0]?.totalSize || 0
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not load stats.' });
+  }
+});
+
+// GET /api/files/suggestions - admin-controlled trending list + auto "recently uploaded" code files
+router.get('/suggestions', async (req, res) => {
+  try {
+    const manual = await Suggestion.find().sort({ pinned: -1, order: 1, createdAt: -1 }).limit(15);
+    const recentCode = await File.find({ extension: { $in: CODE_EXTENSIONS } })
+      .sort({ uploadDate: -1 })
+      .limit(6)
+      .select('originalName extension');
 
     res.json({
-      success: true,
-      stats: {
-        totalFiles,
-        totalFolders,
-        pinned,
-        todayUploads,
-        totalDownloads: downloadsAgg[0]?.total || 0,
-        storageUsedBytes: sizeAgg[0]?.total || 0,
-      },
-      recent,
+      trending: manual.map(s => s.text),
+      recent: recentCode.map(f => f.originalName)
     });
   } catch (err) {
-    console.error('Stats error:', err.message);
-    res.status(500).json({ success: false, message: 'Could not load stats.' });
+    res.status(500).json({ error: 'Could not load suggestions.' });
   }
 });
 
-// GET /api/files/download/:relativePath(*) - download a single file
-router.get('/download/*', async (req, res) => {
+// GET /api/files/:id/download - single file
+router.get('/:id/download', async (req, res) => {
   try {
-    const relPath = req.params[0];
-    const item = await FileItem.findOne({ relativePath: relPath });
-    if (!item || item.type !== 'file') {
-      return res.status(404).json({ success: false, message: 'File not found.' });
-    }
-    const fullPath = resolveSafe(relPath);
-    if (!fs.existsSync(fullPath)) {
-      return res.status(404).json({ success: false, message: 'File not found on server.' });
-    }
-    item.downloads += 1;
-    await item.save();
-    res.download(fullPath, item.name);
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'File not found.' });
+    const fullPath = path.join(UPLOAD_DIR, file.storedName);
+    if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'File missing on server.' });
+
+    file.downloads += 1;
+    await file.save();
+
+    res.download(fullPath, file.originalName);
   } catch (err) {
-    console.error('Download error:', err.message);
-    res.status(500).json({ success: false, message: 'Download failed.' });
+    res.status(500).json({ error: 'Download failed.' });
   }
 });
 
-// GET /api/files/download-folder/:relativePath(*) - zip and stream a folder
-router.get('/download-folder/*', async (req, res) => {
+// GET /api/files/folder/:batchId/download - zips an uploaded folder on the fly
+router.get('/folder/:batchId/download', async (req, res) => {
   try {
-    const relPath = req.params[0];
-    const item = await FileItem.findOne({ relativePath: relPath });
-    if (!item || item.type !== 'folder') {
-      return res.status(404).json({ success: false, message: 'Folder not found.' });
-    }
-    const fullPath = resolveSafe(relPath);
-    if (!fs.existsSync(fullPath)) {
-      return res.status(404).json({ success: false, message: 'Folder not found on server.' });
-    }
+    const files = await File.find({ batchId: req.params.batchId });
+    if (!files.length) return res.status(404).json({ error: 'Folder not found.' });
 
-    res.attachment(`${item.name}.zip`);
+    res.attachment(`${files[0].folderName || 'folder'}.zip`);
     const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.on('error', (err) => {
-      console.error('Archive error:', err.message);
-      res.status(500).end();
-    });
     archive.pipe(res);
-    archive.directory(fullPath, false);
-    await archive.finalize();
 
-    item.downloads += 1;
-    await item.save();
-  } catch (err) {
-    console.error('Folder download error:', err.message);
-    res.status(500).json({ success: false, message: 'Folder download failed.' });
-  }
-});
-
-// DELETE /api/files/*  - delete a file or folder (admin only)
-router.delete('/*', requireAdmin, async (req, res) => {
-  try {
-    const relPath = req.params[0];
-    const item = await FileItem.findOne({ relativePath: relPath });
-    if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
-
-    const fullPath = resolveSafe(relPath);
-
-    if (item.type === 'folder') {
-      await fsp.rm(fullPath, { recursive: true, force: true });
-      const prefix = relPath + '/';
-      await FileItem.deleteMany({
-        $or: [{ relativePath: relPath }, { relativePath: { $regex: '^' + escapeRegex(prefix) } }],
-      });
-    } else {
-      await fsp.rm(fullPath, { force: true });
-      await FileItem.deleteOne({ relativePath: relPath });
-    }
-
-    res.json({ success: true, message: 'Deleted Successfully' });
-  } catch (err) {
-    console.error('Delete error:', err.message);
-    res.status(500).json({ success: false, message: 'Delete failed.' });
-  }
-});
-
-// PATCH /api/files/*/rename  (admin only) { newName }
-router.patch('/*/rename', requireAdmin, async (req, res) => {
-  try {
-    const relPath = req.params[0];
-    const { newName } = req.body;
-    if (!newName || !newName.trim()) {
-      return res.status(400).json({ success: false, message: 'New name is required.' });
-    }
-    const item = await FileItem.findOne({ relativePath: relPath });
-    if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
-
-    const safeName = sanitizeSegment(newName.trim());
-    const newRelPath = item.parentPath ? `${item.parentPath}/${safeName}` : safeName;
-
-    const oldFull = resolveSafe(relPath);
-    const newFull = resolveSafe(newRelPath);
-
-    await fsp.rename(oldFull, newFull);
-
-    if (item.type === 'folder') {
-      const oldPrefix = relPath + '/';
-      const children = await FileItem.find({ relativePath: { $regex: '^' + escapeRegex(oldPrefix) } });
-      for (const child of children) {
-        const suffix = child.relativePath.slice(oldPrefix.length);
-        const updatedRel = `${newRelPath}/${suffix}`;
-        const updatedParent = updatedRel.split('/').slice(0, -1).join('/');
-        child.relativePath = updatedRel;
-        child.parentPath = updatedParent;
-        await child.save();
+    for (const f of files) {
+      const fullPath = path.join(UPLOAD_DIR, f.storedName);
+      if (fs.existsSync(fullPath)) {
+        archive.file(fullPath, { name: f.relativePath });
+        f.downloads += 1;
+        await f.save();
       }
     }
-
-    item.name = safeName;
-    item.relativePath = newRelPath;
-    item.updatedAt = new Date();
-    await item.save();
-
-    res.json({ success: true, message: 'Renamed Successfully', item });
+    archive.finalize();
   } catch (err) {
-    console.error('Rename error:', err.message);
-    res.status(500).json({ success: false, message: 'Rename failed.' });
+    res.status(500).json({ error: 'Folder download failed.' });
   }
 });
 
-// PATCH /api/files/*/pin  (admin only) { pinned: true/false }
-router.patch('/*/pin', requireAdmin, async (req, res) => {
+// GET /api/files/:id/preview - inline preview for text/code/image/pdf
+router.get('/:id/preview', async (req, res) => {
   try {
-    const relPath = req.params[0];
-    const { pinned } = req.body;
-    const item = await FileItem.findOneAndUpdate(
-      { relativePath: relPath },
-      { pinned: Boolean(pinned), updatedAt: new Date() },
-      { new: true }
-    );
-    if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
-    res.json({ success: true, message: pinned ? 'Pinned Successfully' : 'Unpinned Successfully', item });
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'File not found.' });
+    const fullPath = path.join(UPLOAD_DIR, file.storedName);
+    if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'File missing on server.' });
+
+    const textLike = [...CODE_EXTENSIONS, 'txt', 'md', 'json', 'html', 'css', 'sql'];
+    if (textLike.includes(file.extension)) {
+      const content = fs.readFileSync(fullPath, 'utf-8').slice(0, 200000);
+      return res.json({ type: 'text', extension: file.extension, content });
+    }
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(file.extension)) {
+      return res.json({ type: file.extension === 'pdf' ? 'pdf' : 'image', url: `/api/files/${file._id}/raw` });
+    }
+    return res.json({ type: 'unsupported' });
   } catch (err) {
-    console.error('Pin error:', err.message);
-    res.status(500).json({ success: false, message: 'Pin update failed.' });
+    res.status(500).json({ error: 'Preview failed.' });
   }
 });
 
-// PATCH /api/files/*/details  (admin only) { description, tags }
-router.patch('/*/details', requireAdmin, async (req, res) => {
+// GET /api/files/:id/raw - raw bytes, used by the preview modal for images/pdf
+router.get('/:id/raw', async (req, res) => {
+  const file = await File.findById(req.params.id);
+  if (!file) return res.status(404).end();
+  res.sendFile(path.join(UPLOAD_DIR, file.storedName));
+});
+
+// ---- Admin-only management ----
+
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
-    const relPath = req.params[0];
-    const { description, tags } = req.body;
-    const update = { updatedAt: new Date() };
-    if (typeof description === 'string') update.description = description;
-    if (Array.isArray(tags)) update.tags = tags.map((t) => String(t).trim()).filter(Boolean);
-
-    const item = await FileItem.findOneAndUpdate({ relativePath: relPath }, update, { new: true });
-    if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
-    res.json({ success: true, message: 'Updated Successfully', item });
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'File not found.' });
+    const fullPath = path.join(UPLOAD_DIR, file.storedName);
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    await file.deleteOne();
+    res.json({ message: 'Deleted Successfully' });
   } catch (err) {
-    console.error('Details update error:', err.message);
-    res.status(500).json({ success: false, message: 'Update failed.' });
+    res.status(500).json({ error: 'Delete failed.' });
   }
 });
 
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+router.patch('/:id', requireAdmin, async (req, res) => {
+  try {
+    const { originalName, description, tags, pinned } = req.body;
+    const update = {};
+    if (originalName !== undefined && originalName.trim()) update.originalName = originalName.trim();
+    if (description !== undefined) update.description = description;
+    if (tags !== undefined) update.tags = Array.isArray(tags) ? tags : String(tags).split(',').map(t => t.trim()).filter(Boolean);
+    if (pinned !== undefined) update.pinned = pinned;
+
+    const file = await File.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!file) return res.status(404).json({ error: 'File not found.' });
+    res.json(file);
+  } catch (err) {
+    res.status(500).json({ error: 'Update failed.' });
+  }
+});
 
 module.exports = router;
