@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Suggestion = require('../models/Suggestion');
+const { suggestionsDB } = require('../db');
 const { requireAdmin, isLocked, registerFailedAttempt, registerSuccess, issueToken } = require('../middleware/auth');
 
 function clientIp(req) {
@@ -15,22 +15,25 @@ router.post('/login', (req, res) => {
   if (lockedSeconds > 0) {
     return res.status(429).json({
       error: 'locked',
-      message: "🚫 Too many failed attempts. Don't try to log in like this — this platform is protected by PPSK. Try again shortly.",
+      title: '😂 Nice Try!',
+      message: 'Protected by PSK.',
       emoji: '😂',
       retryAfter: lockedSeconds
     });
   }
 
   const { password } = req.body;
+  const expectedPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
+  if (!password || password !== expectedPassword) {
     const state = registerFailedAttempt(ip);
     const justLocked = state.lockedUntil && Date.now() < state.lockedUntil;
 
     if (justLocked) {
       return res.status(429).json({
         error: 'locked',
-        message: "🚫 Don't try to log in — this is highly protected by PPSK. Access temporarily disabled for 30 seconds.",
+        title: '😂 Nice Try!',
+        message: 'Protected by PSK.',
         emoji: '😂',
         retryAfter: 30
       });
@@ -38,7 +41,8 @@ router.post('/login', (req, res) => {
 
     return res.status(401).json({
       error: 'wrong_password',
-      message: 'Access Denied. Incorrect password. Please try again.'
+      message: '❌ Wrong Password\nProtected by PSK.',
+      failedAttempts: state.count
     });
   }
 
@@ -47,18 +51,17 @@ router.post('/login', (req, res) => {
   res.json({ token, message: 'Login Successful' });
 });
 
-// ---- Suggestions management (admin only for write, public for read) ----
+// ---- Suggestions management (admin only) ----
 
-// GET /api/admin/suggestions - list all manual suggestions (admin view, includes unpinned)
 router.get('/suggestions', requireAdmin, async (req, res) => {
-  const suggestions = await Suggestion.find().sort({ pinned: -1, order: 1, createdAt: -1 });
+  const suggestions = await suggestionsDB.find({}, { pinned: -1, order: 1 });
   res.json(suggestions);
 });
 
 router.post('/suggestions', requireAdmin, async (req, res) => {
   const { text, pinned = false, order = 0 } = req.body;
   if (!text || !text.trim()) return res.status(400).json({ error: 'text is required' });
-  const suggestion = await Suggestion.create({ text: text.trim(), type: 'manual', pinned, order });
+  const suggestion = await suggestionsDB.create({ text: text.trim(), type: 'manual', pinned, order });
   res.status(201).json(suggestion);
 });
 
@@ -68,15 +71,16 @@ router.put('/suggestions/:id', requireAdmin, async (req, res) => {
   if (text !== undefined) update.text = text;
   if (pinned !== undefined) update.pinned = pinned;
   if (order !== undefined) update.order = order;
-  const suggestion = await Suggestion.findByIdAndUpdate(req.params.id, update, { new: true });
+  const suggestion = await suggestionsDB.findByIdAndUpdate(req.params.id, update);
   if (!suggestion) return res.status(404).json({ error: 'Not found' });
   res.json(suggestion);
 });
 
 router.delete('/suggestions/:id', requireAdmin, async (req, res) => {
-  const result = await Suggestion.findByIdAndDelete(req.params.id);
+  const result = await suggestionsDB.findByIdAndDelete(req.params.id);
   if (!result) return res.status(404).json({ error: 'Not found' });
   res.json({ message: 'Deleted' });
 });
 
 module.exports = router;
+

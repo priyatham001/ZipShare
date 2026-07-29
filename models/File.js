@@ -10,6 +10,8 @@ const fileSchema = new mongoose.Schema({
   size: { type: Number, default: 0 },
   description: { type: String, default: '' },
   tags: { type: [String], default: [] },
+  category: { type: String, default: 'other' },
+  content: { type: String, default: null },
   pinned: { type: Boolean, default: false },
   downloads: { type: Number, default: 0 },
   uploadDate: { type: Date, default: Date.now }

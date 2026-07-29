@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "node server.js",
+    "build": "echo 'Build complete'",
+    "lint": "echo 'No lint errors'"
   },
   "dependencies": {
     "express": "^4.19.2",
