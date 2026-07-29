@@ -15,18 +15,42 @@
   --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
-body[data-theme="light"] {
-  --bg: #f5f3ff;
+body[data-theme="light"], html[data-theme="light"], [data-theme="light"] {
+  --bg: #f4f2fd;
   --bg-alt: #ffffff;
-  --text: #1e1a38;
-  --text-dim: #645f88;
+  --text: #1b1736;
+  --text-dim: #5a547e;
   --accent: #7c3aed;
   --accent-2: #0284c7;
-  --card: rgba(255, 255, 255, 0.75);
-  --card-hover: rgba(255, 255, 255, 0.95);
-  --card-border: rgba(124, 58, 237, 0.18);
-  --shadow: 0 16px 35px rgba(124, 58, 237, 0.12);
+  --card: #ffffff;
+  --card-hover: #f8f6ff;
+  --card-border: rgba(124, 58, 237, 0.2);
+  --shadow: 0 12px 30px rgba(124, 58, 237, 0.1);
 }
+
+[data-theme="light"] .blob { opacity: 0.18; }
+[data-theme="light"] .navbar { background: rgba(255, 255, 255, 0.88); border-bottom: 1px solid var(--card-border); }
+[data-theme="light"] .modal { background: #ffffff; color: #1b1736; }
+[data-theme="light"] .modal-overlay { background: rgba(27, 23, 54, 0.45); }
+[data-theme="light"] .file-card { background: #ffffff; border: 1px solid var(--card-border); }
+[data-theme="light"] .dashboard-card { background: #ffffff; border: 1px solid var(--card-border); }
+[data-theme="light"] .request-card { background: #ffffff; border: 1px solid var(--card-border); }
+[data-theme="light"] .request-item { background: #ffffff; border: 1px solid var(--card-border); }
+[data-theme="light"] .stat-card { background: #ffffff; border: 1px solid var(--card-border); }
+[data-theme="light"] .subject-animation-stage { background: #ffffff; border: 1px solid var(--card-border); }
+[data-theme="light"] .suggestions-panel { background: #ffffff; color: #1b1736; border: 1px solid var(--card-border); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea { background: #fdfcff; color: #1b1736; border: 1px solid var(--card-border); }
+[data-theme="light"] option { background: #ffffff; color: #1b1736; }
+[data-theme="light"] .card-btn { background: #f3efff; color: #1b1736; border: 1px solid var(--card-border); }
+[data-theme="light"] .card-btn:hover { background: var(--accent); color: #ffffff; }
+[data-theme="light"] .dash-btn.ghost { background: #f3efff; color: #1b1736; border: 1px solid var(--card-border); }
+[data-theme="light"] .btn-ghost { background: #f3efff; color: #1b1736; border: 1px solid var(--card-border); }
+[data-theme="light"] .toast { background: #ffffff; color: #1b1736; border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
+[data-theme="light"] .viewer-body { background: #23272e; color: #abb2bf; border: 1px solid var(--card-border); }
+[data-theme="light"] .code-textarea { background: #ffffff; color: #1b1736; border: 1px solid var(--card-border); }
+[data-theme="light"] .intro-content { background: #ffffff; color: #1b1736; }
+[data-theme="light"] .welcome-cat-btn { background: #f3efff; color: #1b1736; }
+[data-theme="light"] .theme-btn { background: #f3efff; color: #1b1736; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }

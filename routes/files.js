@@ -167,6 +167,53 @@ router.get('/suggestions', async (req, res) => {
   }
 });
 
+// GET /api/files/folder/:identifier/download - Zips uploaded folder
+router.get('/folder/:identifier/download', async (req, res) => {
+  try {
+    let files = await filesDB.find({ batchId: req.params.identifier });
+    if (!files || !files.length) {
+      files = await filesDB.find({ folderName: req.params.identifier });
+    }
+    if (!files || !files.length) return res.status(404).json({ error: 'Folder not found.' });
+
+    const folderName = files[0].folderName || 'folder';
+    res.attachment(`${folderName}.zip`);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    for (const f of files) {
+      const fullPath = path.join(UPLOAD_DIR, f.storedName);
+      if (fs.existsSync(fullPath)) {
+        archive.file(fullPath, { name: f.relativePath || f.originalName });
+        await filesDB.findByIdAndUpdate(f._id || f.id, { downloads: (f.downloads || 0) + 1 });
+      }
+    }
+    archive.finalize();
+  } catch (err) {
+    res.status(500).json({ error: 'Folder download failed.' });
+  }
+});
+
+// DELETE /api/files/folder/:identifier - Admin only
+router.delete('/folder/:identifier', requireAdmin, async (req, res) => {
+  try {
+    let files = await filesDB.find({ batchId: req.params.identifier });
+    if (!files || !files.length) {
+      files = await filesDB.find({ folderName: req.params.identifier });
+    }
+    if (!files || !files.length) return res.status(404).json({ error: 'Folder not found.' });
+
+    for (const f of files) {
+      const fullPath = path.join(UPLOAD_DIR, f.storedName);
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+      await filesDB.findByIdAndDelete(f._id || f.id);
+    }
+    res.json({ message: 'Folder deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Delete folder failed.' });
+  }
+});
+
 // GET /api/files/:id/download
 router.get('/:id/download', async (req, res) => {
   try {
@@ -181,30 +228,6 @@ router.get('/:id/download', async (req, res) => {
     res.download(fullPath, file.originalName);
   } catch (err) {
     res.status(500).json({ error: 'Download failed.' });
-  }
-});
-
-// GET /api/files/folder/:batchId/download - Zips uploaded folder
-router.get('/folder/:batchId/download', async (req, res) => {
-  try {
-    const files = await filesDB.find({ batchId: req.params.batchId });
-    if (!files.length) return res.status(404).json({ error: 'Folder not found.' });
-
-    const folderName = files[0].folderName || 'folder';
-    res.attachment(`${folderName}.zip`);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.pipe(res);
-
-    for (const f of files) {
-      const fullPath = path.join(UPLOAD_DIR, f.storedName);
-      if (fs.existsSync(fullPath)) {
-        archive.file(fullPath, { name: f.relativePath });
-        await filesDB.findByIdAndUpdate(f._id || f.id, { downloads: (f.downloads || 0) + 1 });
-      }
-    }
-    archive.finalize();
-  } catch (err) {
-    res.status(500).json({ error: 'Folder download failed.' });
   }
 });
 

@@ -63,14 +63,26 @@ function openModal(id) { $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
 
 function authHeaders() {
-  return adminToken ? { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  return adminToken ? { 'Authorization': `Bearer ${adminToken}` } : {};
+}
+
+function jsonAuthHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    ...authHeaders()
+  };
 }
 
 // ---------------- Theme & Welcome Intro ----------------
 function applyTheme(theme) {
   activeTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
   document.body.setAttribute('data-theme', theme);
-  $('themeToggle').textContent = theme === 'dark' ? '🌙' : '☀️';
+  const toggleBtn = $('themeToggle');
+  if (toggleBtn) {
+    toggleBtn.textContent = theme === 'dark' ? '🌙' : '☀️';
+    toggleBtn.title = theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme';
+  }
   localStorage.setItem('zipshare_theme', theme);
 
   document.querySelectorAll('.theme-btn').forEach(b => {
@@ -455,27 +467,93 @@ function renderFiles(files) {
   }
   empty.style.display = 'none';
 
+  const isAdmin = Boolean(adminToken);
+
+  // Group items by batchId if present
+  const folderBatches = new Map();
+  const standaloneFiles = [];
+
   files.forEach(file => {
-    const isFolder = Boolean(file.folderName || file.batchId);
-    const ext = isFolder ? 'folder' : (file.extension || 'default').toLowerCase();
+    if (file.batchId) {
+      if (!folderBatches.has(file.batchId)) {
+        folderBatches.set(file.batchId, []);
+      }
+      folderBatches.get(file.batchId).push(file);
+    } else {
+      standaloneFiles.push(file);
+    }
+  });
+
+  // Render folder batch cards
+  folderBatches.forEach((batchFiles, batchId) => {
+    const topFolder = batchFiles[0].folderName || 'Uploaded Folder';
+    const totalSize = batchFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+    const isPinned = batchFiles.some(f => f.pinned);
+    const uploadDate = batchFiles[0].uploadDate;
+
+    const card = document.createElement('div');
+    card.className = `file-card ${isPinned ? 'pinned-card' : ''}`;
+
+    let actionBtns = `
+      <button class="card-btn" onclick="downloadFolder('${batchId}')">⬇ Download Zip</button>
+      <button class="card-btn" onclick="toggleFolderDetails('${batchId}')">📁 View Files (${batchFiles.length})</button>
+    `;
+
+    if (isAdmin) {
+      actionBtns += `
+        ${isPinned ? `<button class="card-btn" onclick="togglePinFolder('${batchId}', false)">📌 Unpin</button>` : `<button class="card-btn" onclick="togglePinFolder('${batchId}', true)">📌 Pin</button>`}
+        <button class="card-btn danger" onclick="deleteFolderBatch('${batchId}')">🗑️ Delete Folder</button>
+      `;
+    }
+
+    const filesListHtml = batchFiles.map(f => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--card-border); font-size:0.82rem;">
+        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:65%;" title="${escapeHtml(f.relativePath || f.originalName)}">📄 ${escapeHtml(f.relativePath || f.originalName)}</span>
+        <div>
+          <button class="card-btn" style="padding:2px 6px; font-size:0.75rem;" onclick="previewFile('${f._id || f.id}')">👁 View</button>
+          <button class="card-btn" style="padding:2px 6px; font-size:0.75rem;" onclick="downloadFile('${f._id || f.id}')">⬇</button>
+        </div>
+      </div>
+    `).join('');
+
+    card.innerHTML = `
+      ${isPinned ? '<span class="pin-badge">📌</span>' : ''}
+      <div>
+        <div class="card-top">
+          <div class="file-icon-box">📁</div>
+          <div class="file-info">
+            <h4 class="file-name">${escapeHtml(topFolder)}</h4>
+            <div class="file-meta">
+              <span>${batchFiles.length} file(s) · ${fmtSize(totalSize)}</span> · <span>${fmtDate(uploadDate)}</span>
+            </div>
+          </div>
+        </div>
+        <p class="file-desc">Folder containing ${batchFiles.length} file(s)</p>
+        <div class="file-tags"><span class="tag-pill">#folder</span><span class="tag-pill">#zip</span></div>
+        <div id="folder_files_${batchId}" style="display:none; margin-top:12px; background:var(--card); padding:10px; border-radius:10px; max-height:200px; overflow-y:auto;">
+          ${filesListHtml}
+        </div>
+      </div>
+      <div class="card-actions" style="margin-top:12px;">
+        ${actionBtns}
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+
+  // Render standalone files
+  standaloneFiles.forEach(file => {
+    const ext = (file.extension || 'default').toLowerCase();
     const meta = ICONS[ext] || ICONS.default;
 
     const card = document.createElement('div');
     card.className = `file-card ${file.pinned ? 'pinned-card' : ''}`;
 
-    const isAdmin = Boolean(adminToken);
-
-    let actionBtns = '';
-    if (isFolder) {
-      actionBtns = `
-        <button class="card-btn" onclick="downloadFolder('${file.batchId}')">⬇ Download Zip</button>
-      `;
-    } else {
-      actionBtns = `
-        <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View Code</button>
-        <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
-      `;
-    }
+    let actionBtns = `
+      <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View Code</button>
+      <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
+    `;
 
     if (isAdmin) {
       actionBtns += `
@@ -509,6 +587,43 @@ function renderFiles(files) {
 
     grid.appendChild(card);
   });
+}
+
+function toggleFolderDetails(batchId) {
+  const el = $(`folder_files_${batchId}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function deleteFolderBatch(batchId) {
+  if (!confirm('Are you sure you want to delete this entire folder and all its files?')) return;
+  try {
+    const res = await fetch(`/api/files/folder/${batchId}`, {
+      method: 'DELETE',
+      headers: jsonAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Delete failed');
+    toast('Folder deleted successfully.');
+    loadFiles();
+  } catch (err) {
+    toast('Failed to delete folder.', 'error');
+  }
+}
+
+async function togglePinFolder(batchId, pinned) {
+  try {
+    const files = lastFiles.filter(f => f.batchId === batchId);
+    for (const f of files) {
+      await fetch(`/api/files/${f._id || f.id}`, {
+        method: 'PATCH',
+        headers: jsonAuthHeaders(),
+        body: JSON.stringify({ pinned })
+      });
+    }
+    toast(pinned ? 'Folder pinned to top! 📌' : 'Folder unpinned.');
+    loadFiles();
+  } catch (err) {
+    toast('Failed to update folder pin status.', 'error');
+  }
 }
 
 // ---------------- Stats ----------------
@@ -601,7 +716,7 @@ $('saveContentBtn').addEventListener('click', async () => {
   try {
     const res = await fetch(`/api/files/${previewingFile._id || previewingFile.id}/content`, {
       method: 'PUT',
-      headers: authHeaders(),
+      headers: jsonAuthHeaders(),
       body: JSON.stringify({ content })
     });
     if (!res.ok) throw new Error('Save failed');
@@ -617,7 +732,7 @@ async function togglePinFile(id, pinned) {
   try {
     const res = await fetch(`/api/files/${id}`, {
       method: 'PATCH',
-      headers: authHeaders(),
+      headers: jsonAuthHeaders(),
       body: JSON.stringify({ pinned })
     });
     if (!res.ok) throw new Error('Update failed');
@@ -829,6 +944,59 @@ function setupDashboardBindings() {
 }
 
 // ---------------- Upload Handlers ----------------
+function uploadWithProgress(formData) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/files/upload');
+
+    if (adminToken) {
+      xhr.setRequestHeader('Authorization', `Bearer ${adminToken}`);
+    }
+
+    let toastEl = document.querySelector('.toast.upload-toast');
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'toast warning upload-toast';
+      const container = $('toastContainer') || document.body;
+      container.appendChild(toastEl);
+    }
+    toastEl.textContent = 'Uploading... 0%';
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        toastEl.textContent = `Uploading... ${percent}%`;
+      }
+    };
+
+    xhr.onload = () => {
+      toastEl.remove();
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data);
+        } catch (e) {
+          reject(new Error('Invalid response from server'));
+        }
+      } else {
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          reject(new Error(errData.error || 'Upload failed'));
+        } catch {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => {
+      toastEl.remove();
+      reject(new Error('Network error during upload'));
+    };
+
+    xhr.send(formData);
+  });
+}
+
 function setupUploads() {
   const fileInput = $('fileInput');
   const folderInput = $('folderInput');
@@ -841,7 +1009,7 @@ function setupUploads() {
   });
 }
 
-async function handleUpload(fileList, pathsList) {
+async function handleUpload(fileList, pathsList = []) {
   if (!fileList || fileList.length === 0) return;
 
   if (!adminToken) {
@@ -852,27 +1020,18 @@ async function handleUpload(fileList, pathsList) {
 
   const formData = new FormData();
   for (let i = 0; i < fileList.length; i++) {
-    formData.append('files', fileList[i]);
-    formData.append('paths', pathsList[i] || fileList[i].name);
+    const file = fileList[i];
+    const relPath = (pathsList && pathsList[i]) ? pathsList[i] : (file.webkitRelativePath || file.name);
+    formData.append('files', file);
+    formData.append('paths', relPath);
   }
 
   try {
-    toast('Uploading files...', 'warning');
-    const res = await fetch('/api/files/upload', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: formData
-    });
-
-    if (!res.ok) {
-      if (res.status === 401) throw new Error('Admin session expired. Please log in again.');
-      throw new Error('Upload error');
-    }
-    const data = await res.json();
-    toast(`Successfully uploaded ${data.files.length} items! 🚀`);
+    const data = await uploadWithProgress(formData);
+    toast(`Successfully uploaded ${data.files ? data.files.length : fileList.length} item(s)! 🚀`);
     loadFiles();
   } catch (err) {
-    toast(err.message || 'Upload failed. Please check size limits.', 'error');
+    toast(err.message || 'Upload failed. Please check file sizes.', 'error');
   }
 }
 
@@ -960,7 +1119,7 @@ async function updateRequestStatus(id, status) {
   try {
     const res = await fetch(`/api/requests/${id}`, {
       method: 'PATCH',
-      headers: authHeaders(),
+      headers: jsonAuthHeaders(),
       body: JSON.stringify({ status })
     });
     if (!res.ok) throw new Error('Update failed');
@@ -1016,7 +1175,7 @@ $('editSaveBtn').addEventListener('click', async () => {
   try {
     const res = await fetch(`/api/files/${editingFileId}`, {
       method: 'PATCH',
-      headers: authHeaders(),
+      headers: jsonAuthHeaders(),
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('Update failed');
