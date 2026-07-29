@@ -1,541 +1,284 @@
-(function () {
-  const state = {
-    isAdmin: false,
-    csrfToken: null,
-    pendingDeleteId: null,
-    files: [],
-    suggestions: [],
-    searchQuery: '',
-    failedAttemptsClient: 0
-  };
+// State Management
+let currentTheme = localStorage.getItem('zipshare_theme') || 'dark';
+let adminToken = localStorage.getItem('zipshare_admin_token') || null;
+let failedAttempts = 0;
+let isLockedOut = false;
+let activeFilter = 'All';
 
-  const el = {
-    themeIntro: document.getElementById('themeIntro'),
-    typedTitle: document.getElementById('typedTitle'),
-    themeToggle: document.getElementById('themeToggle'),
-    searchInput: document.getElementById('searchInput'),
-    clearSearch: document.getElementById('clearSearch'),
-    suggestionChips: document.getElementById('suggestionChips'),
-    adminControls: document.getElementById('adminControls'),
-    logoutBtn: document.getElementById('logoutBtn'),
-    uploadSection: document.getElementById('uploadSection'),
-    dropzone: document.getElementById('dropzone'),
-    fileInput: document.getElementById('fileInput'),
-    folderInput: document.getElementById('folderInput'),
-    browseFilesBtn: document.getElementById('browseFilesBtn'),
-    browseFolderBtn: document.getElementById('browseFolderBtn'),
-    uploadProgressList: document.getElementById('uploadProgressList'),
-    suggestionForm: document.getElementById('suggestionForm'),
-    suggestionInput: document.getElementById('suggestionInput'),
-    suggestionAdminList: document.getElementById('suggestionAdminList'),
-    fileGrid: document.getElementById('fileGrid'),
-    fileCount: document.getElementById('fileCount'),
-    filesHeading: document.getElementById('filesHeading'),
-    emptyState: document.getElementById('emptyState'),
-    noResultsState: document.getElementById('noResultsState'),
-    ownerTag: document.getElementById('ownerTag'),
-    loginModal: document.getElementById('loginModal'),
-    closeModal: document.getElementById('closeModal'),
-    loginForm: document.getElementById('loginForm'),
-    passwordInput: document.getElementById('passwordInput'),
-    loginError: document.getElementById('loginError'),
-    loginSubmitBtn: document.getElementById('loginSubmitBtn'),
-    lockoutModal: document.getElementById('lockoutModal'),
-    lockoutTimer: document.getElementById('lockoutTimer'),
-    confirmModal: document.getElementById('confirmModal'),
-    confirmText: document.getElementById('confirmText'),
-    confirmCancel: document.getElementById('confirmCancel'),
-    confirmDelete: document.getElementById('confirmDelete'),
-    toast: document.getElementById('toast')
-  };
+document.documentElement.setAttribute('data-theme', currentTheme);
 
-  function showToast(message, type) {
-    el.toast.textContent = message;
-    el.toast.className = 'toast' + (type ? ' ' + type : '');
-    el.toast.hidden = false;
-    setTimeout(() => { el.toast.hidden = true; }, 3200);
-  }
+// Initialize Page
+document.addEventListener('DOMContentLoaded', () => {
+  initParticles();
+  runTypingEffect();
+  setupEventListeners();
+  loadSuggestions();
+  loadFiles();
+});
 
-  function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
-  }
-
-  function formatDate(iso) {
-    const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-
-  const EXT_ICONS = {
-    java: '☕', py: '🐍', c: '🔧', cpp: '🔧', h: '🔧',
-    html: '🌐', css: '🎨', js: '📜', json: '🗂️',
-    pdf: '📕', doc: '📄', docx: '📄', xls: '📊', xlsx: '📊',
-    ppt: '📽️', pptx: '📽️', zip: '🗜️', rar: '🗜️', '7z': '🗜️',
-    exe: '📦', apk: '📦', iso: '📦'
-  };
-
-  function iconFor(mime, name) {
-    const ext = (name.split('.').pop() || '').toLowerCase();
-    if (mime && mime.startsWith('image/')) return '🖼️';
-    if (mime && mime.startsWith('video/')) return '🎬';
-    if (mime && mime.startsWith('audio/')) return '🎵';
-    return EXT_ICONS[ext] || '📁';
-  }
-
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  // ---------- Theme ----------
-  function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    el.themeToggle.textContent = theme === 'dark' ? '🌙' : '☀️';
-  }
-
-  function typeTitle(text, cb) {
-    let i = 0;
-    el.typedTitle.textContent = '';
-    const timer = setInterval(() => {
-      el.typedTitle.textContent += text[i];
+// Typing Animation on Welcome Screen
+function runTypingEffect() {
+  const text = "Welcome to ZipShare";
+  const titleEl = document.getElementById('typingTitle');
+  let i = 0;
+  titleEl.innerHTML = "";
+  
+  function type() {
+    if (i < text.length) {
+      titleEl.innerHTML += text.charAt(i);
       i++;
-      if (i >= text.length) {
-        clearInterval(timer);
-        if (cb) cb();
-      }
-    }, 45);
+      setTimeout(type, 80);
+    }
+  }
+  type();
+}
+
+// Initial Theme Selection Handler
+function selectInitialTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('zipshare_theme', theme);
+  
+  document.getElementById('landingScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+}
+
+// Theme Toggle Button
+document.getElementById('themeToggleBtn').addEventListener('click', () => {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  localStorage.setItem('zipshare_theme', currentTheme);
+});
+
+// Event Listeners Configuration
+function setupEventListeners() {
+  // Folder & File Upload Handlers
+  document.getElementById('fileInput').addEventListener('change', (e) => handleUpload(e.target.files));
+  document.getElementById('folderInput').addEventListener('change', (e) => handleFolderUpload(e.target.files));
+
+  // Search Input Debounced
+  let searchTimeout;
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => loadFiles(e.target.value, activeFilter), 300);
+  });
+
+  // Filter Buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      activeFilter = e.target.getAttribute('data-filter');
+      loadFiles(document.getElementById('searchInput').value, activeFilter);
+    });
+  });
+
+  // Modals Setup
+  document.getElementById('adminLoginBtn').addEventListener('click', openAdminModal);
+  document.getElementById('devBadge').addEventListener('click', () => {
+    document.getElementById('nomadModal').classList.remove('hidden');
+  });
+}
+
+// Folder Upload Handler with Hierarchy Preservation
+async function handleFolderUpload(files) {
+  if (!files || files.length === 0) return;
+  const formData = new FormData();
+  
+  for (let file of files) {
+    formData.append('files', file);
+    // Preserves internal folder relative path
+    formData.append('relativePaths', file.webkitRelativePath || file.name);
   }
 
-  function initTheme() {
-    const saved = localStorage.getItem('zipshare-theme');
-    if (saved) {
-      applyTheme(saved);
+  showToast('Uploading folder structure...', 'info');
+  try {
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Folder uploaded successfully!', 'success');
+      loadFiles();
+    } else {
+      showToast(data.message || 'Folder upload failed', 'error');
+    }
+  } catch (err) {
+    showToast('Error uploading folder', 'error');
+  }
+}
+
+// Fetch and Render Files Grid
+async function loadFiles(searchQuery = '', filter = 'All') {
+  try {
+    const res = await fetch(`/api/files?query=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(filter)}`);
+    const data = await res.json();
+    const grid = document.getElementById('fileGrid');
+    const empty = document.getElementById('emptyState');
+    grid.innerHTML = '';
+
+    if (!data.files || data.files.length === 0) {
+      empty.classList.remove('hidden');
+      document.getElementById('fileCountBadge').innerText = '0 files';
       return;
     }
-    el.themeIntro.hidden = false;
-    applyTheme('dark');
-    typeTitle('Welcome to ZipShare');
-  }
 
-  el.themeIntro.querySelectorAll('.theme-choice').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const theme = btn.dataset.theme;
-      localStorage.setItem('zipshare-theme', theme);
-      applyTheme(theme);
-      el.themeIntro.classList.add('closing');
-      setTimeout(() => { el.themeIntro.hidden = true; }, 500);
-    });
-  });
+    empty.classList.add('hidden');
+    document.getElementById('fileCountBadge').innerText = `${data.files.length} files`;
 
-  el.themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.dataset.theme || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    localStorage.setItem('zipshare-theme', next);
-  });
-
-  // ---------- Floating particles ----------
-  function spawnParticles() {
-    const container = document.getElementById('particles');
-    const count = window.innerWidth < 700 ? 14 : 28;
-    for (let i = 0; i < count; i++) {
-      const p = document.createElement('div');
-      p.className = 'particle';
-      p.style.left = Math.random() * 100 + '%';
-      p.style.animationDuration = 12 + Math.random() * 14 + 's';
-      p.style.animationDelay = Math.random() * 12 + 's';
-      container.appendChild(p);
-    }
-  }
-
-  document.addEventListener('mousemove', (e) => {
-    const x = (e.clientX / window.innerWidth - 0.5) * 20;
-    const y = (e.clientY / window.innerHeight - 0.5) * 20;
-    document.querySelectorAll('.blob').forEach((b, i) => {
-      const factor = (i + 1) * 0.6;
-      b.style.marginLeft = (x * factor) + 'px';
-      b.style.marginTop = (y * factor) + 'px';
-    });
-  });
-
-  // ---------- Auth ----------
-  async function refreshAuthStatus() {
-    try {
-      const res = await fetch('/api/auth/status', { credentials: 'same-origin' });
-      const data = await res.json();
-      state.isAdmin = Boolean(data.isAdmin);
-      state.csrfToken = data.csrfToken;
-      applyAuthUI();
-    } catch (err) {
-      console.error('Auth status check failed', err);
-    }
-  }
-
-  function applyAuthUI() {
-    el.adminControls.hidden = !state.isAdmin;
-    el.uploadSection.hidden = !state.isAdmin;
-    el.ownerTag.textContent = state.isAdmin ? 'Welcome Admin' : 'Welcome Anonymous';
-    renderFiles();
-    renderSuggestionAdminList();
-  }
-
-  el.ownerTag.addEventListener('click', () => {
-    if (state.isAdmin) return;
-    el.loginModal.hidden = false;
-    el.passwordInput.value = '';
-    el.loginError.hidden = true;
-    el.passwordInput.focus();
-  });
-
-  el.closeModal.addEventListener('click', () => { el.loginModal.hidden = true; });
-  el.loginModal.addEventListener('click', (e) => {
-    if (e.target === el.loginModal) el.loginModal.hidden = true;
-  });
-
-  function showLockout(retryAfterMs) {
-    el.loginModal.hidden = true;
-    el.lockoutModal.hidden = false;
-    let remaining = Math.ceil((retryAfterMs || 30000) / 1000);
-    el.lockoutTimer.textContent = `Try again in ${remaining}s`;
-    const timer = setInterval(() => {
-      remaining -= 1;
-      if (remaining <= 0) {
-        clearInterval(timer);
-        el.lockoutModal.hidden = true;
-      } else {
-        el.lockoutTimer.textContent = `Try again in ${remaining}s`;
-      }
-    }, 1000);
-  }
-
-  el.loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    el.loginError.hidden = true;
-    el.loginSubmitBtn.disabled = true;
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ password: el.passwordInput.value })
-      });
-      const data = await res.json();
-
-      if (res.status === 423 || data.locked) {
-        showLockout(data.retryAfterMs);
-        return;
-      }
-
-      if (!res.ok) {
-        el.loginError.textContent = data.error || 'Access Denied. Incorrect password.';
-        el.loginError.hidden = false;
-        el.passwordInput.value = '';
-        el.passwordInput.focus();
-        return;
-      }
-
-      state.isAdmin = true;
-      state.csrfToken = data.csrfToken;
-      el.loginModal.hidden = true;
-      applyAuthUI();
-      showToast('Welcome back, admin', 'success');
-    } catch (err) {
-      el.loginError.textContent = 'Network error - please try again';
-      el.loginError.hidden = false;
-    } finally {
-      el.loginSubmitBtn.disabled = false;
-    }
-  });
-
-  el.logoutBtn.addEventListener('click', async () => {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-    state.isAdmin = false;
-    state.csrfToken = null;
-    applyAuthUI();
-    showToast('Logged out');
-  });
-
-  // ---------- Suggestions ----------
-  async function loadSuggestions() {
-    try {
-      const res = await fetch('/api/suggestions', { credentials: 'same-origin' });
-      state.suggestions = await res.json();
-      renderSuggestionChips();
-      renderSuggestionAdminList();
-    } catch (err) {
-      console.error('Failed to load suggestions', err);
-    }
-  }
-
-  function renderSuggestionChips() {
-    el.suggestionChips.innerHTML = '';
-    state.suggestions.forEach((s) => {
-      const chip = document.createElement('button');
-      chip.className = 'chip' + (s.pinned ? ' pinned' : '');
-      chip.textContent = s.text;
-      chip.addEventListener('click', () => {
-        el.searchInput.value = s.text;
-        state.searchQuery = s.text.toLowerCase();
-        el.clearSearch.hidden = false;
-        renderFiles();
-      });
-      el.suggestionChips.appendChild(chip);
-    });
-  }
-
-  function renderSuggestionAdminList() {
-    if (!state.isAdmin) { el.suggestionAdminList.innerHTML = ''; return; }
-    el.suggestionAdminList.innerHTML = '';
-    state.suggestions.forEach((s) => {
-      const item = document.createElement('div');
-      item.className = 'suggestion-admin-item';
-      item.innerHTML = `
-        <span>${escapeHtml(s.text)}</span>
-        <button class="pin-btn ${s.pinned ? 'active' : ''}" title="Pin">📌</button>
-        <button title="Delete">&times;</button>
-      `;
-      item.querySelector('.pin-btn').addEventListener('click', async () => {
-        await fetch(`/api/suggestions/${s.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': state.csrfToken },
-          credentials: 'same-origin',
-          body: JSON.stringify({ pinned: !s.pinned })
-        });
-        loadSuggestions();
-      });
-      item.querySelector('button[title="Delete"]').addEventListener('click', async () => {
-        await fetch(`/api/suggestions/${s.id}`, {
-          method: 'DELETE',
-          headers: { 'X-CSRF-Token': state.csrfToken },
-          credentials: 'same-origin'
-        });
-        loadSuggestions();
-      });
-      el.suggestionAdminList.appendChild(item);
-    });
-  }
-
-  el.suggestionForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const text = el.suggestionInput.value.trim();
-    if (!text) return;
-    try {
-      const res = await fetch('/api/suggestions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': state.csrfToken },
-        credentials: 'same-origin',
-        body: JSON.stringify({ text })
-      });
-      if (!res.ok) throw new Error('Could not add suggestion');
-      el.suggestionInput.value = '';
-      loadSuggestions();
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  });
-
-  // ---------- Search ----------
-  let searchDebounce;
-  el.searchInput.addEventListener('input', () => {
-    clearTimeout(searchDebounce);
-    el.clearSearch.hidden = !el.searchInput.value;
-    searchDebounce = setTimeout(() => {
-      state.searchQuery = el.searchInput.value.trim().toLowerCase();
-      renderFiles();
-    }, 150);
-  });
-  el.clearSearch.addEventListener('click', () => {
-    el.searchInput.value = '';
-    el.clearSearch.hidden = true;
-    state.searchQuery = '';
-    renderFiles();
-  });
-
-  function matchesSearch(f) {
-    if (!state.searchQuery) return true;
-    const haystack = [f.originalName, f.relativePath, ...(f.tags || [])].join(' ').toLowerCase();
-    return haystack.includes(state.searchQuery);
-  }
-
-  // ---------- File list ----------
-  async function loadFiles() {
-    try {
-      const res = await fetch('/api/files', { credentials: 'same-origin' });
-      state.files = await res.json();
-      renderFiles();
-    } catch (err) {
-      console.error('Failed to load files', err);
-      showToast('Could not load file list', 'error');
-    }
-  }
-
-  function renderFiles() {
-    const filtered = state.files.filter(matchesSearch);
-    el.fileGrid.innerHTML = '';
-    el.fileCount.textContent = `${filtered.length} file${filtered.length === 1 ? '' : 's'}`;
-    el.filesHeading.textContent = state.searchQuery ? `Results for "${el.searchInput.value}"` : 'Available files';
-
-    el.emptyState.hidden = state.files.length > 0;
-    el.noResultsState.hidden = !(state.files.length > 0 && filtered.length === 0);
-
-    filtered.forEach((f, idx) => {
+    data.files.forEach(file => {
       const card = document.createElement('div');
-      card.className = 'file-card';
-      card.style.animationDelay = Math.min(idx * 0.03, 0.4) + 's';
+      card.className = 'file-card glass';
+      
+      const iconClass = getFileIconClass(file.originalName, file.isFolder);
+      const formattedSize = (file.size / 1024 < 1024) ? `${(file.size / 1024).toFixed(1)} KB` : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
       card.innerHTML = `
-        <div class="file-icon">${iconFor(f.mimeType || '', f.originalName)}</div>
-        ${f.relativePath ? `<div class="file-path">📁 ${escapeHtml(f.relativePath)}</div>` : ''}
-        <div class="file-name">${escapeHtml(f.originalName)}</div>
-        ${f.tags && f.tags.length ? `<div class="file-tags">${f.tags.map((t) => `<span class="file-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-        <div class="file-meta">
-          <span>${formatBytes(f.size)}</span>
-          <span>${formatDate(f.uploadedAt)}</span>
-        </div>
-        <div class="file-actions">
-          <a class="btn btn-primary btn-sm" href="/api/files/${f.id}/download">Download</a>
-          ${state.isAdmin ? `<button class="btn btn-danger btn-sm" data-id="${f.id}" data-name="${escapeHtml(f.originalName)}">Delete</button>` : ''}
+        <i class="${iconClass} file-icon"></i>
+        <div class="file-title" title="${file.originalName}">${file.originalName}</div>
+        <div class="file-meta">${formattedSize} • ${new Date(file.uploadDate).toLocaleDateString()}</div>
+        <div class="card-actions">
+          <button onclick="downloadFile('${file._id}')"><i class="fa-solid fa-download"></i></button>
+          <button onclick="previewFile('${file._id}', '${file.originalName}')"><i class="fa-solid fa-eye"></i></button>
+          ${adminToken ? `<button onclick="deleteFile('${file._id}')" style="color: #ef4444;"><i class="fa-solid fa-trash"></i></button>` : ''}
         </div>
       `;
-      el.fileGrid.appendChild(card);
+      grid.appendChild(card);
     });
-
-    if (state.isAdmin) {
-      el.fileGrid.querySelectorAll('button.btn-danger').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          state.pendingDeleteId = btn.dataset.id;
-          el.confirmText.textContent = `Delete "${btn.dataset.name}"? This cannot be undone.`;
-          el.confirmModal.hidden = false;
-        });
-      });
-    }
+  } catch (err) {
+    showToast('Failed to load files', 'error');
   }
+}
 
-  el.confirmCancel.addEventListener('click', () => {
-    el.confirmModal.hidden = true;
-    state.pendingDeleteId = null;
-  });
+// Admin Authentication & Lockout Security Logic
+async function handleAdminLogin(e) {
+  e.preventDefault();
+  if (isLockedOut) return;
 
-  el.confirmDelete.addEventListener('click', async () => {
-    if (!state.pendingDeleteId) return;
-    try {
-      const res = await fetch(`/api/files/${state.pendingDeleteId}`, {
-        method: 'DELETE',
-        credentials: 'same-origin',
-        headers: { 'X-CSRF-Token': state.csrfToken }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Delete failed');
-      showToast('File deleted', 'success');
-      el.confirmModal.hidden = true;
-      state.pendingDeleteId = null;
+  const password = document.getElementById('adminPassword').value;
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      adminToken = password;
+      localStorage.setItem('zipshare_admin_token', password);
+      failedAttempts = 0;
+      updateAdminStatus(true);
+      closeAdminModal();
+      showToast('Login Successful! Welcome Admin.', 'success');
       loadFiles();
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  });
-
-  // ---------- Upload (drag & drop, files, folders) ----------
-  el.browseFilesBtn.addEventListener('click', (e) => { e.stopPropagation(); el.fileInput.click(); });
-  el.browseFolderBtn.addEventListener('click', (e) => { e.stopPropagation(); el.folderInput.click(); });
-  el.dropzone.addEventListener('click', (e) => {
-    if (e.target === el.dropzone || e.target.closest('.dropzone-inner')) {
-      if (!e.target.closest('.dropzone-btns')) el.fileInput.click();
-    }
-  });
-
-  ['dragenter', 'dragover'].forEach((evt) => {
-    el.dropzone.addEventListener(evt, (e) => {
-      e.preventDefault();
-      el.dropzone.classList.add('dragover');
-    });
-  });
-  ['dragleave', 'drop'].forEach((evt) => {
-    el.dropzone.addEventListener(evt, (e) => {
-      e.preventDefault();
-      el.dropzone.classList.remove('dragover');
-    });
-  });
-  el.dropzone.addEventListener('drop', (e) => {
-    const files = e.dataTransfer.files;
-    if (files && files.length) uploadFiles(Array.from(files).map((f) => ({ file: f, path: '' })));
-  });
-
-  el.fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length) {
-      uploadFiles(Array.from(e.target.files).map((f) => ({ file: f, path: '' })));
-    }
-    e.target.value = '';
-  });
-
-  el.folderInput.addEventListener('change', (e) => {
-    if (e.target.files.length) {
-      uploadFiles(Array.from(e.target.files).map((f) => ({ file: f, path: f.webkitRelativePath || '' })));
-    }
-    e.target.value = '';
-  });
-
-  function uploadFiles(items) {
-    const formData = new FormData();
-    items.forEach(({ file, path }) => {
-      formData.append('files', file);
-      formData.append('paths', path);
-    });
-
-    const progressItem = document.createElement('div');
-    progressItem.className = 'progress-item';
-    const label = items.length === 1 ? items[0].file.name : `${items.length} files`;
-    progressItem.innerHTML = `
-      <div class="pname"><span>${escapeHtml(label)}</span><span class="pct">0%</span></div>
-      <div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>
-    `;
-    el.uploadProgressList.appendChild(progressItem);
-    const fill = progressItem.querySelector('.progress-fill');
-    const pct = progressItem.querySelector('.pct');
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/files/upload');
-    xhr.withCredentials = true;
-    xhr.setRequestHeader('X-CSRF-Token', state.csrfToken);
-
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        fill.style.width = percent + '%';
-        pct.textContent = percent + '%';
-      }
-    });
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        progressItem.classList.add('success');
-        pct.textContent = 'Done';
-        showToast('Upload complete', 'success');
-        loadFiles();
+    } else {
+      failedAttempts++;
+      if (failedAttempts >= 3) {
+        triggerLockout();
       } else {
-        let msg = 'Upload failed';
-        try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
-        progressItem.classList.add('error');
-        pct.textContent = 'Error';
-        showToast(msg, 'error');
+        showToast('Access Denied. Incorrect password. Please try again.', 'error');
       }
-      setTimeout(() => progressItem.remove(), 4000);
-    };
-
-    xhr.onerror = () => {
-      progressItem.classList.add('error');
-      pct.textContent = 'Error';
-      showToast('Network error during upload', 'error');
-    };
-
-    xhr.send(formData);
+    }
+  } catch (err) {
+    showToast('Login processing error', 'error');
   }
+}
 
-  // ---------- Init ----------
-  initTheme();
-  spawnParticles();
-  refreshAuthStatus().then(loadFiles);
-  loadSuggestions();
-})();
+function triggerLockout() {
+  isLockedOut = true;
+  let remaining = 30;
+  const alertEl = document.getElementById('lockoutAlert');
+  const timerEl = document.getElementById('lockoutTimer');
+  const submitBtn = document.getElementById('loginSubmitBtn');
+
+  alertEl.classList.remove('hidden');
+  submitBtn.disabled = true;
+
+  const interval = setInterval(() => {
+    remaining--;
+    timerEl.innerText = remaining;
+    if (remaining <= 0) {
+      clearInterval(interval);
+      isLockedOut = false;
+      failedAttempts = 0;
+      alertEl.classList.add('hidden');
+      submitBtn.disabled = false;
+    }
+  }, 1000);
+}
+
+function updateAdminStatus(isAdmin) {
+  const statusText = document.getElementById('userStatusText');
+  const adminControls = document.getElementById('adminSugControls');
+  
+  if (isAdmin) {
+    statusText.innerText = 'Welcome Admin';
+    if (adminControls) adminControls.classList.remove('hidden');
+  } else {
+    statusText.innerText = 'Welcome Anonymous';
+    if (adminControls) adminControls.classList.add('hidden');
+  }
+}
+
+// Extension & Folder Dynamic Icon Selector
+function getFileIconClass(filename, isFolder) {
+  if (isFolder) return 'fa-solid fa-folder-closed';
+  const ext = filename.split('.').pop().toLowerCase();
+  
+  switch(ext) {
+    case 'java': return 'fa-brands fa-java';
+    case 'py': return 'fa-brands fa-python';
+    case 'c': case 'cpp': return 'fa-solid fa-code';
+    case 'js': case 'json': return 'fa-brands fa-js';
+    case 'pdf': return 'fa-solid fa-file-pdf';
+    case 'zip': case 'rar': return 'fa-solid fa-file-zipper';
+    default: return 'fa-solid fa-file-code';
+  }
+}
+
+// Modal Toggle Helpers
+function openAdminModal() { document.getElementById('adminModal').classList.remove('hidden'); }
+function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
+function closePreviewModal() { document.getElementById('previewModal').classList.add('hidden'); }
+function closeNomadModal() { document.getElementById('nomadModal').classList.add('hidden'); }
+
+// Toast Notifications Helper
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast glass toast-${type}`;
+  toast.innerText = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
+// Background Particle Canvas Logic
+function initParticles() {
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  let particles = Array.from({ length: 35 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 2 + 1,
+    dx: (Math.random() - 0.5) * 0.5,
+    dy: (Math.random() - 0.5) * 0.5
+  }));
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      p.x += p.dx;
+      p.y += p.dy;
+      if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+}

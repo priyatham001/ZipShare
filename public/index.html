@@ -1,156 +1,182 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ZipShare - Student Friendly File Sharing</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZipShare - Student Friendly File Sharing Platform</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Prism JS for Code Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
 <body>
 
-  <!-- Animated background -->
-  <div class="bg-scene" aria-hidden="true">
-    <div class="blob blob-a"></div>
-    <div class="blob blob-b"></div>
-    <div class="blob blob-c"></div>
-    <div class="particles" id="particles"></div>
-  </div>
+  <!-- Animated Particle Canvas Background -->
+  <canvas id="particleCanvas"></canvas>
+  <div class="glow-blob blob-1"></div>
+  <div class="glow-blob blob-2"></div>
 
-  <!-- Theme intro (first visit only) -->
-  <div id="themeIntro" class="theme-intro" hidden>
-    <div class="theme-intro-inner">
-      <div class="theme-intro-logo">◆</div>
-      <h1 id="typedTitle" class="typed-title"></h1>
-      <p class="theme-intro-sub">A Student Friendly File Sharing Platform</p>
-      <p class="theme-intro-prompt">Choose Your Theme</p>
-      <div class="theme-choices">
-        <button class="theme-choice" data-theme="light">☀️ Light</button>
-        <button class="theme-choice" data-theme="dark">🌙 Dark</button>
-      </div>
-    </div>
-  </div>
-
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark">◆</span>
-      <span>ZipShare</span>
-    </div>
-
-    <div class="searchbar-wrap">
-      <div class="searchbar">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Search Java, Python, C, AVL, Notes..." autocomplete="off" />
-        <button id="clearSearch" class="search-clear" hidden aria-label="Clear search">&times;</button>
-      </div>
-      <div id="suggestionChips" class="suggestion-chips"></div>
-    </div>
-
-    <div class="topbar-actions">
-      <button id="themeToggle" class="btn btn-ghost btn-icon" aria-label="Toggle theme">🌙</button>
-      <div class="admin-controls" id="adminControls" hidden>
-        <span class="admin-pill">Admin mode</span>
-        <button class="btn btn-ghost" id="logoutBtn">Logout</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="container">
-
-    <section class="hero">
-      <h1>Share files. Instantly.</h1>
-      <p>Anyone can download. Only the administrator can upload or remove files.</p>
-    </section>
-
-    <section id="uploadSection" class="upload-section" hidden>
-      <div class="dropzone" id="dropzone">
-        <input type="file" id="fileInput" multiple hidden />
-        <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
-        <div class="dropzone-inner">
-          <div class="dropzone-icon">⇪</div>
-          <p class="dropzone-title">Drag &amp; drop files here</p>
-          <p class="dropzone-sub">or click to browse - any file type, up to 500MB each</p>
-          <div class="dropzone-btns">
-            <button type="button" class="btn btn-ghost btn-sm" id="browseFilesBtn">Choose Files</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="browseFolderBtn">Choose Folder</button>
-          </div>
+  <!-- Landing Screen / Welcome Page -->
+  <div id="landingScreen" class="landing-overlay">
+    <div class="landing-card glass">
+      <div class="logo-icon-large"><i class="fa-solid fa-folder-closed"></i></div>
+      <h1 id="typingTitle"></h1>
+      <p class="subtitle">A Student Friendly File Sharing Platform</p>
+      
+      <div class="theme-selection">
+        <h3>Choose Your Theme</h3>
+        <div class="theme-buttons">
+          <button onclick="selectInitialTheme('light')" class="btn-theme-select"><i class="fa-solid fa-sun"></i> ☀ Light</button>
+          <button onclick="selectInitialTheme('dark')" class="btn-theme-select"><i class="fa-solid fa-moon"></i> 🌙 Dark</button>
         </div>
       </div>
-      <div id="uploadProgressList" class="upload-progress-list"></div>
+    </div>
+  </div>
 
-      <div class="admin-suggestions-panel">
-        <h4>Manage Search Suggestions</h4>
-        <form id="suggestionForm" class="suggestion-form">
-          <input type="text" id="suggestionInput" placeholder="e.g. AVL Tree in C" maxlength="60" required />
-          <button type="submit" class="btn btn-primary btn-sm">Add</button>
-        </form>
-        <div id="suggestionAdminList" class="suggestion-admin-list"></div>
+  <!-- Main Application Container -->
+  <div id="mainApp" class="app-container hidden">
+
+    <!-- Header Navigation -->
+    <header class="navbar glass">
+      <div class="nav-left">
+        <div class="logo"><i class="fa-solid fa-paper-plane"></i> <span>ZipShare</span></div>
+      </div>
+
+      <div class="nav-center">
+        <div class="search-wrapper glass">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Search Java, Python, C, AVL, Notes..." autocomplete="off">
+          <div id="searchDropdown" class="search-dropdown glass hidden"></div>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <button id="themeToggleBtn" class="icon-btn" title="Toggle Theme"><i class="fa-solid fa-sun"></i></button>
+        <button id="adminLoginBtn" class="btn-primary-glass"><i class="fa-solid fa-lock"></i> Admin</button>
+      </div>
+    </header>
+
+    <!-- Trending & Admin Suggestions Bar -->
+    <section class="suggestions-section">
+      <span class="sug-label"><i class="fa-solid fa-fire"></i> Trending:</span>
+      <div id="suggestionsList" class="suggestions-pills"></div>
+      <div id="adminSugControls" class="admin-only hidden">
+        <input type="text" id="newSugInput" placeholder="New suggestion (e.g. AVL Tree in C)">
+        <button onclick="addAdminSuggestion()" class="btn-small"><i class="fa-solid fa-plus"></i> Add</button>
       </div>
     </section>
 
-    <section class="filters-row" id="filtersRow"></section>
+    <!-- Filter Pills Section -->
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="All">All</button>
+      <button class="filter-btn" data-filter="Folders"><i class="fa-solid fa-folder"></i> Folders</button>
+      <button class="filter-btn" data-filter="Java"><i class="fa-brands fa-java"></i> Java</button>
+      <button class="filter-btn" data-filter="Python"><i class="fa-brands fa-python"></i> Python</button>
+      <button class="filter-btn" data-filter="C">C / C++</button>
+      <button class="filter-btn" data-filter="PDF"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+      <button class="filter-btn" data-filter="Pinned"><i class="fa-solid fa-thumbtack"></i> Pinned</button>
+    </div>
 
-    <section class="files-section">
-      <div class="files-header">
-        <h2 id="filesHeading">Available files</h2>
-        <span id="fileCount" class="file-count">0 files</span>
+    <!-- Direct Folder & File Upload Area -->
+    <section class="upload-section glass">
+      <div class="drop-zone" id="dropZone">
+        <i class="fa-solid fa-cloud-arrow-up upload-anim-icon"></i>
+        <h3>Drag & Drop files or folders here</h3>
+        <p>Supports code files, notes, PDFs & raw directory folders (up to 500MB)</p>
+        <div class="upload-buttons">
+          <label class="btn-upload"><i class="fa-solid fa-file"></i> Choose Files
+            <input type="file" id="fileInput" multiple hidden>
+          </label>
+          <label class="btn-upload btn-folder"><i class="fa-solid fa-folder-open"></i> Choose Folder
+            <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+          </label>
+        </div>
       </div>
+    </section>
+
+    <!-- Files Grid Display -->
+    <main class="content-area">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-hard-drive"></i> Available Files</h2>
+        <span id="fileCountBadge" class="count-badge">0 files</span>
+      </div>
+
       <div id="fileGrid" class="file-grid"></div>
-      <div id="emptyState" class="empty-state" hidden>
-        <div class="empty-icon">📂</div>
-        <p>No files uploaded yet.</p>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state hidden">
+        <i class="fa-solid fa-folder-open empty-icon"></i>
+        <h3>No files uploaded yet.</h3>
+        <p>Upload programming notes or folder structures to get started.</p>
       </div>
-      <div id="noResultsState" class="empty-state" hidden>
-        <div class="empty-icon">🔎</div>
-        <p>No files match your search.</p>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>ZipShare • A Student Friendly File Sharing Platform</p>
+      <p class="tech-stack">Node.js • Express • MongoDB • Made with ❤️ for Students</p>
+    </footer>
+
+    <!-- Bottom Right Admin User Identity Badge -->
+    <div id="userBadge" class="user-status-badge glass">
+      <i class="fa-solid fa-user-shield"></i> <span id="userStatusText">Welcome Anonymous</span>
+    </div>
+
+    <!-- Nomad Team Developer Floating Credit Badge -->
+    <div class="dev-floating-badge" id="devBadge" title="Building smart solutions for students.">
+      🚀 Project Developed by NOMAD TEAM
+    </div>
+
+  </div>
+
+  <!-- Admin Login Popup Modal -->
+  <div id="adminModal" class="modal-overlay hidden">
+    <div class="modal-content glass">
+      <button class="modal-close" onclick="closeAdminModal()">&times;</button>
+      <h2><i class="fa-solid fa-shield-halved"></i> Admin Authentication</h2>
+      <p>Enter the security key to unlock management options.</p>
+      <div id="lockoutAlert" class="lockout-alert hidden">
+        <span class="emoji">🤣</span> Don't try to login, this is highly protected by PPSK! Locked for <span id="lockoutTimer">30</span>s.
       </div>
-    </section>
-
-  </main>
-
-  <footer class="site-footer">
-    <span>ZipShare · A Student Friendly File Sharing Platform</span>
-    <span class="footer-dim">Node.js · Express · MongoDB</span>
-  </footer>
-
-  <button id="ownerTag" class="owner-tag" aria-label="Admin login">Welcome Anonymous</button>
-
-  <div id="loginModal" class="modal-overlay" hidden>
-    <div class="modal">
-      <button class="modal-close" id="closeModal">&times;</button>
-      <h3>Admin Login</h3>
-      <p class="modal-sub">Enter the admin password to continue.</p>
-      <form id="loginForm">
-        <input type="password" id="passwordInput" placeholder="Password" autocomplete="current-password" required />
-        <div id="loginError" class="login-error" hidden></div>
-        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">Login</button>
+      <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+        <input type="password" id="adminPassword" placeholder="Enter Admin Password" required>
+        <button type="submit" class="btn-primary" id="loginSubmitBtn">Login</button>
       </form>
     </div>
   </div>
 
-  <div id="lockoutModal" class="modal-overlay" hidden>
-    <div class="modal modal-lockout">
-      <div class="lockout-emoji">😂</div>
-      <h3>Nice try.</h3>
-      <p class="modal-sub">This system is protected. Access is temporarily locked.</p>
-      <p class="lockout-timer" id="lockoutTimer">Try again in 30s</p>
-    </div>
-  </div>
-
-  <div id="confirmModal" class="modal-overlay" hidden>
-    <div class="modal">
-      <h3>Delete file?</h3>
-      <p class="modal-sub" id="confirmText">This cannot be undone.</p>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="confirmCancel">Cancel</button>
-        <button class="btn btn-danger" id="confirmDelete">Delete</button>
+  <!-- Code / File Preview Modal -->
+  <div id="previewModal" class="modal-overlay hidden">
+    <div class="modal-content glass preview-modal-content">
+      <div class="preview-header">
+        <h3 id="previewTitle">File Preview</h3>
+        <button class="modal-close" onclick="closePreviewModal()">&times;</button>
       </div>
+      <div id="previewBody" class="preview-body"></div>
     </div>
   </div>
 
-  <div id="toast" class="toast" hidden></div>
+  <!-- Nomad Team Credits Modal -->
+  <div id="nomadModal" class="modal-overlay hidden">
+    <div class="modal-content glass text-center">
+      <button class="modal-close" onclick="closeNomadModal()">&times;</button>
+      <div class="badge-icon-large">🚀</div>
+      <h2>NOMAD TEAM</h2>
+      <hr class="divider">
+      <ul class="nomad-skills-list">
+        <li><i class="fa-solid fa-code"></i> Full Stack Development</li>
+        <li><i class="fa-solid fa-palette"></i> UI/UX Design</li>
+        <li><i class="fa-solid fa-server"></i> Backend Engineering</li>
+        <li><i class="fa-solid fa-database"></i> Database Design</li>
+        <li><i class="fa-solid fa-cloud-arrow-up"></i> Deployment & Maintenance</li>
+      </ul>
+    </div>
+  </div>
 
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
