@@ -3,97 +3,84 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ZipShare — Share ZIP files instantly</title>
+<title>Ultimate File Sharing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="grain"></div>
+  <div class="bg-glow"></div>
 
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark">Z</span>
-      <span class="brand-name">ZipShare</span>
+      <span class="brand-mark">◆</span>
+      <span>Ultimate File Sharing</span>
     </div>
-    <button id="adminToggle" class="admin-btn" type="button">
-      <span class="admin-btn-dot" id="adminDot"></span>
-      Admin
-    </button>
+    <div class="admin-controls" id="adminControls" hidden>
+      <span class="admin-pill">Admin mode</span>
+      <button class="btn btn-ghost" id="logoutBtn">Logout</button>
+    </div>
   </header>
 
   <main class="container">
 
     <section class="hero">
-      <p class="hero-eyebrow">Manifest v2.0 &mdash; open cargo</p>
-      <h1 class="hero-title">Ship a zip.<br>Anyone can pick it up.</h1>
-      <p class="hero-sub">Drop a file, get a link, done. Every parcel is public to download &mdash; only the admin holds the stamp that clears one for removal.</p>
+      <h1>Share files. Instantly.</h1>
+      <p>Anyone can download. Only the administrator can upload or remove files.</p>
     </section>
 
-    <section class="upload-card" id="dropZone" tabindex="0">
-      <div class="upload-inner">
-        <input type="file" id="fileInput" accept=".zip" hidden />
-        <div class="upload-icon" aria-hidden="true">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M4 16v2.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+    <section id="uploadSection" class="upload-section" hidden>
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" multiple hidden />
+        <div class="dropzone-inner">
+          <div class="dropzone-icon">⇪</div>
+          <p class="dropzone-title">Drag &amp; drop files here</p>
+          <p class="dropzone-sub">or click to browse — any file type, up to 500MB each</p>
         </div>
-        <p class="upload-text">Drag a .zip here to load the dock</p>
-        <p class="upload-subtext">or</p>
-        <button id="browseBtn" class="btn-primary" type="button">Browse files</button>
-        <p class="upload-hint">100MB limit &middot; .zip only</p>
       </div>
-      <div class="progress-wrap" id="progressWrap" hidden>
-        <div class="progress-track">
-          <div class="progress-bar" id="progressBar"></div>
-        </div>
-        <p class="progress-label" id="progressLabel">Loading cargo&hellip; 0%</p>
-      </div>
+      <div id="uploadProgressList" class="upload-progress-list"></div>
     </section>
 
     <section class="files-section">
       <div class="files-header">
-        <h2>Manifest</h2>
-        <span id="fileCount" class="file-count">0 parcels</span>
+        <h2>Available files</h2>
+        <span id="fileCount" class="file-count">0 files</span>
       </div>
-      <div id="fileList" class="file-list">
-        <p class="empty-state">The dock is empty &mdash; be the first to ship something.</p>
+      <div id="fileGrid" class="file-grid"></div>
+      <div id="emptyState" class="empty-state" hidden>
+        <p>No files uploaded yet.</p>
       </div>
     </section>
 
   </main>
 
   <footer class="site-footer">
-    <span>ZipShare &middot; built to move files, not to keep them.</span>
+    <span>&copy; 2026 Ultimate File Sharing</span>
   </footer>
 
-  <!-- Admin unlock modal -->
-  <div id="adminModal" class="modal-overlay" hidden>
-    <div class="modal" role="dialog" aria-labelledby="adminModalTitle">
-      <p class="modal-eyebrow">Clearance required</p>
-      <h3 id="adminModalTitle">Admin access</h3>
-      <p class="modal-copy">Enter the admin password to enable delete controls on every parcel.</p>
-      <input type="password" id="adminPassword" placeholder="Password" autocomplete="current-password" />
-      <p id="adminError" class="error-text" hidden>That password doesn't clear customs. Try again.</p>
-      <div class="modal-actions">
-        <button id="adminCancel" class="btn-secondary" type="button">Cancel</button>
-        <button id="adminSubmit" class="btn-primary" type="button">Unlock</button>
-      </div>
+  <button id="ownerTag" class="owner-tag" aria-label="Admin login">Welcome Priyatham</button>
+
+  <div id="loginModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <button class="modal-close" id="closeModal">&times;</button>
+      <h3>Admin Login</h3>
+      <p class="modal-sub">Enter the admin password to continue.</p>
+      <form id="loginForm">
+        <input type="password" id="passwordInput" placeholder="Password" autocomplete="current-password" required />
+        <div id="loginError" class="login-error" hidden></div>
+        <button type="submit" class="btn btn-primary btn-block">Login</button>
+      </form>
     </div>
   </div>
 
-  <!-- Delete confirm modal -->
-  <div id="deleteModal" class="modal-overlay" hidden>
-    <div class="modal" role="dialog" aria-labelledby="deleteModalTitle">
-      <p class="modal-eyebrow modal-eyebrow-danger">This can't be undone</p>
-      <h3 id="deleteModalTitle">Pull this parcel?</h3>
-      <p id="deleteFileName" class="delete-filename"></p>
+  <div id="confirmModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h3>Delete file?</h3>
+      <p class="modal-sub" id="confirmText">This cannot be undone.</p>
       <div class="modal-actions">
-        <button id="deleteCancel" class="btn-secondary" type="button">Cancel</button>
-        <button id="deleteConfirm" class="btn-danger" type="button">Delete</button>
+        <button class="btn btn-ghost" id="confirmCancel">Cancel</button>
+        <button class="btn btn-danger" id="confirmDelete">Delete</button>
       </div>
     </div>
   </div>

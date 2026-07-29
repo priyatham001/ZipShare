@@ -1,78 +1,86 @@
-# ZipShare
+# Ultimate File Sharing
 
-Share `.zip` files instantly. Anyone with the link can upload and download —
-only the admin (password-protected) can delete.
+Admin-controlled file sharing site. Everyone can download. Only the admin
+(unlocked via the small "Welcome Priyatham" text in the bottom-right corner)
+can upload or delete files.
 
-## Stack
-- Node.js + Express
-- MongoDB (Atlas or local) via Mongoose — stores file metadata
-- Multer — handles the actual file storage on disk (`/uploads`)
-- Vanilla HTML/CSS/JS frontend, no build step
+## Why the old "File missing from storage" error happened
 
-## Local setup
+Render's free/standard web services use an **ephemeral filesystem** — any
+file you save to a local `/uploads` folder is wiped every time the app
+redeploys, restarts, or scales. That's exactly what was causing the error.
+
+This version fixes it permanently by **never writing files to local disk**.
+Uploaded files are streamed straight into **MongoDB GridFS** (the same
+MongoDB database you're already using for metadata), so they persist across
+restarts and redeploys with no extra paid disk or third-party storage
+account required.
+
+## Features
+
+- Public: browse and download files, no login needed.
+- Admin only (single password, bcrypt-hashed, checked server-side): upload
+  (drag-and-drop or click-to-browse, multi-file, progress bars), delete
+  (with confirmation).
+- Session-based auth (`express-session` + MongoDB session store) — the
+  frontend never sees or stores the real password.
+- CSRF token required on every upload/delete request.
+- Security: helmet, CORS allow-list, rate limiting on login and uploads,
+  file size caps, sanitized filenames.
+- Dark glassmorphism UI, fully responsive.
+
+## Setup
 
 ```bash
 npm install
 cp .env.example .env
 ```
 
-Edit `.env`:
-```
-MONGO_URI=your-mongodb-connection-string
-ADMIN_PASSWORD=pick-a-password
-PORT=5000
-```
+Fill in `.env`:
 
-Run it:
+1. `MONGO_URI` — a MongoDB Atlas connection string (free tier is fine).
+2. `SESSION_SECRET` — any long random string, e.g. `openssl rand -hex 32`.
+3. `ADMIN_PASSWORD_HASH` — generate it:
+   ```bash
+   node scripts/hash-password.js YourRealPassword
+   ```
+   Copy the printed hash into `.env`. The plain password is never stored
+   anywhere.
+4. `ALLOWED_ORIGINS` — leave blank unless you're calling the API from a
+   different domain than the one serving the site.
+
+Run locally:
+
 ```bash
 npm start
 ```
 
-Visit `http://localhost:5000`.
+Visit `http://localhost:5000`. Click **Welcome Priyatham** bottom-right to
+log in as admin.
 
-## How admin-only delete works
-- Every visitor can upload and download freely.
-- Clicking **Admin** opens a password prompt. The password is checked
-  against `ADMIN_PASSWORD` on the server (`POST /api/files/admin/login`)
-  and never stored in the codebase or the database.
-- Once unlocked, delete buttons appear next to each file for that browser
-  tab (stored in `sessionStorage`, cleared when the tab closes or you
-  click **Admin** again to lock it).
-- The actual delete request (`DELETE /api/files/:id`) is re-checked
-  against `ADMIN_PASSWORD` on the server, so the button showing up in the
-  UI is a convenience, not the real security boundary.
+## Deploying to Render
 
-## Deploying (e.g. Render)
-1. Push this project to GitHub.
-2. Create a new Web Service on Render pointing at the repo.
-   - Build command: `npm install`
-   - Start command: `npm start`
-3. In the Render dashboard → **Environment**, add:
-   - `MONGO_URI` — your MongoDB Atlas connection string
-   - `ADMIN_PASSWORD` — your chosen admin password
-4. Save and let it redeploy. Watch **Logs** for:
-   ```
-   MongoDB connected
-   Server running on port 5000
-   ```
-5. Open your live URL and test upload, download, admin unlock, and delete.
-
-> Note: Render's free-tier disks are ephemeral — uploaded files can be
-> wiped on redeploy/restart. For persistent storage in production, swap
-> the disk storage in `routes/fileRoutes.js` for a service like
-> Cloudinary, S3, or Render's paid persistent disks.
+1. Push this project to your GitHub repo.
+2. In Render, set the environment variables above (Environment tab) —
+   don't commit `.env`.
+3. Build command: `npm install`. Start command: `npm start`.
+4. No persistent disk is required — GridFS storage lives inside your
+   MongoDB Atlas cluster, not on Render's filesystem.
 
 ## Project structure
+
 ```
-zipshare/
-├── models/File.js         # Mongoose schema for file metadata
-├── routes/fileRoutes.js   # upload / list / download / delete / admin login
-├── public/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-├── uploads/                # uploaded .zip files land here
-├── server.js
-├── package.json
-└── .env.example
+server.js               Express app entry point
+routes/authRoutes.js     Login / logout / session status
+routes/fileRoutes.js     List / upload / download / delete (GridFS)
+models/FileMeta.js       Mongoose schema for file metadata
+middleware/auth.js       requireAdmin + CSRF guards
+scripts/hash-password.js One-off helper to bcrypt-hash your admin password
+public/                  Frontend (index.html, style.css, script.js)
 ```
+
+## Notes on the "Welcome Priyatham" text
+
+It's a real `<button>` element, just styled small and low-contrast in the
+corner — not `display:none` or `visibility:hidden`. That keeps it genuinely
+clickable and accessible while staying visually out of the way.

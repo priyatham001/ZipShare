@@ -1,117 +1,136 @@
 const express = require('express');
 const multer = require('multer');
+const mongoose = require('mongoose');
+const { GridFSBucket, ObjectId } = require('mongodb');
 const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const File = require('../models/File');
+const rateLimit = require('express-rate-limit');
+
+const FileMeta = require('../models/FileMeta');
+const { requireAdmin, requireCsrf } = require('../middleware/auth');
 
 const router = express.Router();
 
-const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-// ---- Multer config: .zip only, 100MB max ----
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const unique = crypto.randomBytes(8).toString('hex');
-    cb(null, `${Date.now()}-${unique}${path.extname(file.originalname)}`);
-  }
-});
-
-function zipFilter(req, file, cb) {
-  const isZip =
-    file.mimetype === 'application/zip' ||
-    file.mimetype === 'application/x-zip-compressed' ||
-    path.extname(file.originalname).toLowerCase() === '.zip';
-  if (!isZip) return cb(new Error('Only .zip files are allowed'));
-  cb(null, true);
-}
-
+// Files are kept in memory just long enough to stream into GridFS -
+// they are never written to the local disk, which is what makes them
+// survive restarts/redeploys on platforms like Render.
 const upload = multer({
-  storage,
-  fileFilter: zipFilter,
-  limits: { fileSize: 100 * 1024 * 1024 } // 100MB
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 500 * 1024 * 1024, files: 10 } // 500MB per file, 10 files per request
 });
 
-// ---- Admin auth helper ----
-// Delete requests must include the admin password in the request body.
-// This mirrors the client's "unlock" flow without keeping server-side sessions.
-function checkAdminPassword(req, res, next) {
-  const supplied = req.body.password || req.headers['x-admin-password'];
-  if (!supplied || supplied !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Incorrect admin password' });
-  }
-  next();
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+function getBucket() {
+  return new GridFSBucket(mongoose.connection.db, { bucketName: 'uploads' });
 }
 
-// POST /api/files/admin/login  — verify password to unlock the UI
-router.post('/admin/login', (req, res) => {
-  const { password } = req.body;
-  if (password && password === process.env.ADMIN_PASSWORD) {
-    return res.json({ success: true });
-  }
-  res.status(401).json({ success: false, error: 'Incorrect password' });
-});
+function sanitizeFilename(name) {
+  return path.basename(name).replace(/[^a-zA-Z0-9._-]/g, '_');
+}
 
-// POST /api/files — upload a zip
-router.post('/', (req, res) => {
-  upload.single('file')(req, res, async (err) => {
-    if (err) return res.status(400).json({ error: err.message });
-    if (!req.file) return res.status(400).json({ error: 'No file received' });
-
-    try {
-      const doc = await File.create({
-        originalName: req.file.originalname,
-        storedName: req.file.filename,
-        size: req.file.size
-      });
-      res.status(201).json(doc);
-    } catch (e) {
-      fs.unlink(path.join(UPLOAD_DIR, req.file.filename), () => {});
-      res.status(500).json({ error: 'Could not save file record' });
-    }
-  });
-});
-
-// GET /api/files — list all files
+// GET /api/files - public, newest first
 router.get('/', async (req, res) => {
   try {
-    const files = await File.find().sort({ uploadDate: -1 });
-    res.json(files);
-  } catch (e) {
-    res.status(500).json({ error: 'Could not fetch files' });
+    const files = await FileMeta.find().sort({ uploadedAt: -1 }).lean();
+    res.json(
+      files.map((f) => ({
+        id: f._id,
+        originalName: f.originalName,
+        size: f.size,
+        mimeType: f.mimeType,
+        uploadedAt: f.uploadedAt
+      }))
+    );
+  } catch (err) {
+    console.error('List files error:', err);
+    res.status(500).json({ error: 'Could not load file list' });
   }
 });
 
-// GET /api/files/:id/download — download a file
+// GET /api/files/:id/download - public
 router.get('/:id/download', async (req, res) => {
   try {
-    const file = await File.findById(req.params.id);
-    if (!file) return res.status(404).json({ error: 'File not found' });
+    const meta = await FileMeta.findById(req.params.id);
+    if (!meta) return res.status(404).json({ error: 'File missing from storage' });
 
-    const filePath = path.join(UPLOAD_DIR, file.storedName);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'File missing from storage' });
-    }
-    res.download(filePath, file.originalName);
-  } catch (e) {
+    const bucket = getBucket();
+    res.set('Content-Type', meta.mimeType || 'application/octet-stream');
+    res.set('Content-Disposition', `attachment; filename="${encodeURIComponent(meta.originalName)}"`);
+
+    const downloadStream = bucket.openDownloadStream(new ObjectId(meta.gridFsId));
+    downloadStream.on('error', () => {
+      res.status(404).json({ error: 'File missing from storage' });
+    });
+    downloadStream.pipe(res);
+  } catch (err) {
+    console.error('Download error:', err);
     res.status(500).json({ error: 'Download failed' });
   }
 });
 
-// DELETE /api/files/:id — admin only
-router.delete('/:id', checkAdminPassword, async (req, res) => {
+// POST /api/files/upload - admin only
+router.post('/upload', requireAdmin, requireCsrf, uploadLimiter, upload.array('files', 10), async (req, res) => {
   try {
-    const file = await File.findById(req.params.id);
-    if (!file) return res.status(404).json({ error: 'File not found' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files provided' });
+    }
 
-    const filePath = path.join(UPLOAD_DIR, file.storedName);
-    fs.unlink(filePath, () => {});
-    await file.deleteOne();
+    const bucket = getBucket();
+    const saved = [];
 
+    for (const file of req.files) {
+      const storedName = `${Date.now()}-${sanitizeFilename(file.originalname)}`;
+
+      const gridFsId = await new Promise((resolve, reject) => {
+        const uploadStream = bucket.openUploadStream(storedName, {
+          contentType: file.mimetype
+        });
+        uploadStream.end(file.buffer);
+        uploadStream.on('finish', () => resolve(uploadStream.id));
+        uploadStream.on('error', reject);
+      });
+
+      const meta = await FileMeta.create({
+        originalName: file.originalname,
+        storedName,
+        mimeType: file.mimetype,
+        size: file.size,
+        gridFsId
+      });
+
+      saved.push(meta);
+    }
+
+    res.json({ success: true, files: saved });
+  } catch (err) {
+    console.error('Upload error:', err);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+// DELETE /api/files/:id - admin only
+router.delete('/:id', requireAdmin, requireCsrf, async (req, res) => {
+  try {
+    const meta = await FileMeta.findById(req.params.id);
+    if (!meta) return res.status(404).json({ error: 'File not found' });
+
+    const bucket = getBucket();
+    try {
+      await bucket.delete(new ObjectId(meta.gridFsId));
+    } catch (e) {
+      // If the GridFS blob is already gone, still clean up the metadata below.
+      console.warn('GridFS delete warning:', e.message);
+    }
+
+    await FileMeta.deleteOne({ _id: meta._id });
     res.json({ success: true });
-  } catch (e) {
+  } catch (err) {
+    console.error('Delete error:', err);
     res.status(500).json({ error: 'Delete failed' });
   }
 });
