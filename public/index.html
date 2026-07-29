@@ -3,187 +3,262 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ZipShare - Student Friendly File Sharing Platform</title>
+<title>ZipShare — A Student-Friendly File Sharing Platform</title>
+<meta name="description" content="ZipShare - A Student-Friendly File Sharing Platform. Easily view or download programs, notes, assignments, and lab resources shared by your friends." />
 <link rel="stylesheet" href="style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<!-- Animated background layer, sits behind everything -->
-<div class="bg-layer">
-  <div class="blob blob-a"></div>
-  <div class="blob blob-b"></div>
-  <div class="blob blob-c"></div>
-  <div class="glow-cursor" id="glowCursor"></div>
-</div>
-
-<!-- Theme intro screen -->
-<div class="intro-screen" id="introScreen">
-  <div class="intro-logo">💠</div>
-  <h1 class="intro-title" id="introTitle"></h1>
-  <p class="intro-tagline">A Student Friendly File Sharing Platform</p>
-  <div class="theme-choice">
-    <p class="theme-label">Choose Your Theme</p>
-    <div class="theme-buttons">
-      <button class="theme-btn" data-theme="light">☀ Light</button>
-      <button class="theme-btn" data-theme="dark">🌙 Dark</button>
+<!-- ================= WELCOME SCREEN ================= -->
+<section id="welcomeScreen" class="welcome-screen">
+  <div class="welcome-bg">
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="blob blob-c"></div>
+  </div>
+  <div class="welcome-content">
+    <h1 id="typingTitle" class="typing-title"></h1>
+    <p class="welcome-sub">A Student-Friendly File Sharing Platform</p>
+    <div class="theme-choice">
+      <p class="choose-label">Choose Your Theme</p>
+      <div class="theme-buttons">
+        <button class="theme-btn" data-theme="light">☀ Light</button>
+        <button class="theme-btn" data-theme="dark">🌙 Dark</button>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- Welcome splash after theme chosen -->
-<div class="welcome-splash" id="welcomeSplash">
-  <h2>Welcome to <span class="brand">ZipShare</span></h2>
-  <p>A Student Friendly Platform</p>
-</div>
+<!-- ================= APP ================= -->
+<div id="app" class="app hidden">
 
-<!-- Main app -->
-<div class="app" id="app">
+  <!-- Animated background -->
+  <div class="bg-layer">
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="blob blob-c"></div>
+    <div class="glow-cursor" id="glowCursor"></div>
+  </div>
 
-  <nav class="navbar">
+  <!-- Navbar -->
+  <header class="navbar glass">
     <div class="nav-left">
-      <span class="logo">💠 ZipShare</span>
+      <span class="logo">📦 ZipShare</span>
     </div>
     <div class="nav-center">
       <div class="search-wrap">
         <input type="text" id="searchInput" placeholder="Search Java, Python, C, AVL, Notes..." autocomplete="off" />
-        <div class="suggestions-panel" id="suggestionsPanel"></div>
+        <div id="searchSuggestions" class="search-suggestions"></div>
       </div>
     </div>
     <div class="nav-right">
-      <button class="icon-btn" id="themeToggle" title="Toggle theme">🌙</button>
-      <button class="text-btn" id="aboutBtn">About</button>
-      <button class="text-btn primary" id="adminLoginBtn">Admin Login</button>
+      <button id="themeToggle" class="icon-btn" title="Toggle theme">🌙</button>
+      <button id="aboutBtn" class="text-btn">About</button>
+      <button id="adminLoginBtn" class="text-btn">Admin Login</button>
+      <button id="adminDashBtn" class="text-btn hidden">Dashboard</button>
+      <button id="logoutBtn" class="text-btn hidden">Logout</button>
     </div>
-  </nav>
-
-  <header class="hero">
-    <h1>Share code, notes &amp; folders — instantly.</h1>
-    <p>Upload whole project folders, no zipping required. Search by name, language, or tag.</p>
-    <label class="upload-btn" id="uploadBtn">
-      ⬆ Upload
-      <input type="file" id="fileInput" multiple hidden />
-    </label>
-    <label class="upload-btn ghost" id="uploadFolderBtn">
-      📁 Upload Folder
-      <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
-    </label>
   </header>
 
-  <section class="stats-bar" id="statsBar"></section>
-
-  <section class="filters" id="filters">
-    <button class="chip active" data-filter="all">All</button>
-    <button class="chip" data-filter="folders">Folders</button>
-    <button class="chip" data-filter="java">Java</button>
-    <button class="chip" data-filter="py">Python</button>
-    <button class="chip" data-filter="c">C</button>
-    <button class="chip" data-filter="cpp">C++</button>
-    <button class="chip" data-filter="pdf">PDF</button>
-    <button class="chip" data-filter="zip">ZIP</button>
-    <button class="chip" data-filter="pinned">Pinned</button>
+  <!-- Hero -->
+  <section class="hero">
+    <h1>ZipShare</h1>
+    <p class="hero-tagline">A Student-Friendly File Sharing Platform</p>
+    <p class="hero-sub">Easily view or download programs, notes, assignments, and lab resources shared by your friends.</p>
+    <p class="hero-note">Only administrators can upload, edit, pin, rename, or delete files and folders.</p>
+    <button id="uploadBtn" class="primary-btn admin-only hidden">⬆ Upload Files / Folder</button>
   </section>
 
-  <section class="file-grid" id="fileGrid">
-    <!-- file cards injected here -->
+  <!-- Filters -->
+  <section class="filters-bar">
+    <div class="chip active" data-filter="all">All</div>
+    <div class="chip" data-filter="folders">Folders</div>
+    <div class="chip" data-filter="java">Java</div>
+    <div class="chip" data-filter="py">Python</div>
+    <div class="chip" data-filter="c">C</div>
+    <div class="chip" data-filter="cpp">C++</div>
+    <div class="chip" data-filter="pdf">PDF</div>
+    <div class="chip" data-filter="zip">ZIP</div>
+    <div class="chip" data-filter="pinned">Pinned</div>
+    <div class="chip" data-filter="recent">Recent</div>
   </section>
 
-  <div class="empty-state" id="emptyState" style="display:none;">
-    <div class="empty-illustration">🗂️</div>
-    <p>No files uploaded yet.</p>
-  </div>
+  <!-- Main content -->
+  <main class="main-content">
+    <div class="section-heading">
+      <h2 id="sectionTitle">All Files</h2>
+      <span id="itemCount" class="item-count"></span>
+    </div>
 
-  <footer class="site-footer">
-    <p class="footer-brand">ZipShare</p>
-    <p>A Student Friendly File Sharing Platform · Version 3.0</p>
-    <p class="footer-stack">Node.js • Express • MongoDB</p>
-    <p class="footer-love">Made with ❤️ for Students</p>
+    <div id="loadingState" class="loading-state hidden">
+      <div class="loader-ring"></div>
+      <p>Loading files…</p>
+    </div>
+
+    <div id="emptyState" class="empty-state hidden">
+      <div class="empty-illustration">🗂️</div>
+      <p>No files uploaded yet.</p>
+      <button class="primary-btn admin-only hidden" id="emptyUploadBtn">⬆ Upload the first file</button>
+    </div>
+
+    <div id="fileGrid" class="file-grid"></div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer glass">
+    <div class="footer-brand">ZipShare</div>
+    <div class="footer-tagline">A Student-Friendly File Sharing Platform</div>
+    <div class="footer-meta">Version 3.1 · Node.js • Express • MongoDB</div>
+    <div class="footer-love">Made with ❤️ for Students</div>
   </footer>
+
+  <!-- Developer Badge -->
+  <div id="devBadge" class="dev-badge glass">
+    <span>🚀 Project Developed by NOMAD TEAM</span>
+    <div class="dev-badge-tooltip">Building smart solutions for students.</div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container"></div>
 </div>
 
-<!-- Toast container -->
-<div class="toast-container" id="toastContainer"></div>
+<!-- ================= MODALS ================= -->
 
-<!-- Admin login modal -->
-<div class="modal-overlay" id="loginModalOverlay">
+<!-- Admin Login Modal -->
+<div id="loginModal" class="modal-overlay hidden">
   <div class="modal glass">
-    <button class="modal-close" data-close="loginModalOverlay">✕</button>
-    <h3>Admin Login</h3>
-    <p class="modal-sub">Enter the admin password to manage files.</p>
-    <input type="password" id="adminPasswordInput" placeholder="Password" />
-    <div id="loginMessage" class="login-message"></div>
-    <button class="upload-btn full" id="loginSubmitBtn">Login</button>
+    <button class="modal-close" data-close="loginModal">✕</button>
+    <h2>Admin Login</h2>
+    <p class="modal-sub">Enter the administrator password to manage ZipShare.</p>
+    <input type="password" id="passwordInput" class="modal-input" placeholder="Password" />
+    <button id="loginSubmitBtn" class="primary-btn full-width">Login</button>
+    <p id="loginError" class="login-error hidden"></p>
   </div>
 </div>
 
-<!-- Delete confirm modal -->
-<div class="modal-overlay" id="deleteModalOverlay">
-  <div class="modal glass small">
-    <h3>Delete file?</h3>
-    <p class="modal-sub">This cannot be undone.</p>
-    <div class="modal-actions">
-      <button class="btn-ghost" id="deleteCancelBtn">Cancel</button>
-      <button class="btn-danger" id="deleteConfirmBtn">Delete</button>
+<!-- About Modal -->
+<div id="aboutModal" class="modal-overlay hidden">
+  <div class="modal glass wide">
+    <button class="modal-close" data-close="aboutModal">✕</button>
+    <h2>About ZipShare</h2>
+    <div class="about-grid">
+      <div>
+        <h3>Mission</h3>
+        <p>Give students one simple place to find and share programs, notes, assignments, and lab resources — no more hunting through chat threads for a file someone sent last semester.</p>
+      </div>
+      <div>
+        <h3>Features</h3>
+        <ul>
+          <li>Folder uploads with preserved structure</li>
+          <li>Instant search with smart tag matching</li>
+          <li>In-browser preview for code, PDFs & images</li>
+          <li>Pinned & most-downloaded highlights</li>
+          <li>Admin-only file management</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Technology Stack</h3>
+        <p>Node.js · Express.js · MongoDB · Multer · Vanilla JS</p>
+      </div>
+      <div>
+        <h3>Version</h3>
+        <p>3.1.0</p>
+      </div>
+      <div>
+        <h3>Developer Credits</h3>
+        <p>🚀 Developed by NOMAD TEAM — Full Stack Development, UI/UX Design, Backend Engineering, Database Design, Deployment & Maintenance.</p>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Rename / edit modal -->
-<div class="modal-overlay" id="editModalOverlay">
+<!-- NOMAD TEAM Modal -->
+<div id="devModal" class="modal-overlay hidden">
   <div class="modal glass">
-    <button class="modal-close" data-close="editModalOverlay">✕</button>
-    <h3>Edit File</h3>
-    <label>Name</label>
-    <input type="text" id="editNameInput" />
-    <label>Description</label>
-    <input type="text" id="editDescInput" />
-    <label>Tags (comma separated)</label>
-    <input type="text" id="editTagsInput" placeholder="java, avl, semester3" />
-    <button class="upload-btn full" id="editSaveBtn">Save Changes</button>
-  </div>
-</div>
-
-<!-- Preview modal -->
-<div class="modal-overlay" id="previewModalOverlay">
-  <div class="modal glass large">
-    <button class="modal-close" data-close="previewModalOverlay">✕</button>
-    <h3 id="previewTitle">Preview</h3>
-    <div class="preview-body" id="previewBody"></div>
-  </div>
-</div>
-
-<!-- About modal -->
-<div class="modal-overlay" id="aboutModalOverlay">
-  <div class="modal glass">
-    <button class="modal-close" data-close="aboutModalOverlay">✕</button>
-    <h3>About ZipShare</h3>
-    <p><strong>Mission:</strong> make it effortless for students to share code, notes and project folders.</p>
-    <p><strong>Features:</strong> folder uploads, instant search, tags, previews, admin-curated suggestions.</p>
-    <p><strong>Stack:</strong> Node.js, Express, MongoDB, vanilla JS.</p>
-    <p><strong>Version:</strong> 3.0</p>
-  </div>
-</div>
-
-<!-- Developer credit badge -->
-<div class="dev-badge" id="devBadge">
-  🚀 Project Developed by NOMAD TEAM
-  <div class="dev-badge-tooltip">Building smart solutions for students.</div>
-</div>
-<div class="modal-overlay" id="devModalOverlay">
-  <div class="modal glass">
-    <button class="modal-close" data-close="devModalOverlay">✕</button>
-    <h3>NOMAD TEAM</h3>
+    <button class="modal-close" data-close="devModal">✕</button>
+    <h2>NOMAD TEAM</h2>
     <ul class="dev-list">
       <li>Full Stack Development</li>
       <li>UI/UX Design</li>
       <li>Backend Engineering</li>
       <li>Database Design</li>
-      <li>Deployment &amp; Maintenance</li>
+      <li>Deployment & Maintenance</li>
     </ul>
   </div>
 </div>
 
-<!-- Session badge, bottom right -->
-<div class="session-badge" id="sessionBadge">Welcome Anonymous</div>
+<!-- Upload Modal -->
+<div id="uploadModal" class="modal-overlay hidden">
+  <div class="modal glass">
+    <button class="modal-close" data-close="uploadModal">✕</button>
+    <h2>Upload to ZipShare</h2>
+    <div class="upload-tabs">
+      <button class="upload-tab active" data-mode="files">Files</button>
+      <button class="upload-tab" data-mode="folder">Folder</button>
+    </div>
+    <div id="dropZone" class="drop-zone">
+      <p>Drag & drop, or click to select</p>
+      <input type="file" id="fileInput" multiple hidden />
+      <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
+    </div>
+    <div id="uploadFileList" class="upload-file-list"></div>
+    <div id="uploadProgress" class="upload-progress hidden">
+      <div class="upload-progress-bar" id="uploadProgressBar"></div>
+    </div>
+    <button id="uploadSubmitBtn" class="primary-btn full-width" disabled>Upload</button>
+  </div>
+</div>
+
+<!-- File Detail / Preview Modal -->
+<div id="previewModal" class="modal-overlay hidden">
+  <div class="modal glass wide">
+    <button class="modal-close" data-close="previewModal">✕</button>
+    <h2 id="previewTitle">Preview</h2>
+    <div id="previewBody" class="preview-body"></div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="renameModal" class="modal-overlay hidden">
+  <div class="modal glass">
+    <button class="modal-close" data-close="renameModal">✕</button>
+    <h2>Rename</h2>
+    <input type="text" id="renameInput" class="modal-input" placeholder="New name" />
+    <button id="renameSubmitBtn" class="primary-btn full-width">Rename</button>
+  </div>
+</div>
+
+<!-- Edit Details Modal -->
+<div id="editModal" class="modal-overlay hidden">
+  <div class="modal glass">
+    <button class="modal-close" data-close="editModal">✕</button>
+    <h2>Edit Details</h2>
+    <label class="field-label">Description</label>
+    <textarea id="editDescription" class="modal-input" rows="3" placeholder="Short description"></textarea>
+    <label class="field-label">Tags (comma separated)</label>
+    <input type="text" id="editTags" class="modal-input" placeholder="Java, AVL, Trees, Lab" />
+    <button id="editSubmitBtn" class="primary-btn full-width">Save Changes</button>
+  </div>
+</div>
+
+<!-- Admin Dashboard -->
+<div id="dashboardModal" class="modal-overlay hidden">
+  <div class="modal glass wide">
+    <button class="modal-close" data-close="dashboardModal">✕</button>
+    <h2>Admin Dashboard</h2>
+    <div id="statsGrid" class="stats-grid"></div>
+    <div class="dashboard-section">
+      <h3>Search Suggestions</h3>
+      <div class="suggestion-manager">
+        <input type="text" id="newSuggestionInput" class="modal-input" placeholder="Add a trending search term" />
+        <button id="addSuggestionBtn" class="primary-btn">Add</button>
+      </div>
+      <div id="suggestionList" class="suggestion-list"></div>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>
