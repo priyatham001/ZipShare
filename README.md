@@ -1,86 +1,57 @@
-# Ultimate File Sharing
+# ZipShare V3
 
-Admin-controlled file sharing site. Everyone can download. Only the admin
-(unlocked via the small "Welcome Priyatham" text in the bottom-right corner)
-can upload or delete files.
+A student-friendly file & folder sharing platform. Node.js + Express + MongoDB backend, vanilla HTML/CSS/JS frontend.
 
-## Why the old "File missing from storage" error happened
+## What's new in this build
 
-Render's free/standard web services use an **ephemeral filesystem** — any
-file you save to a local `/uploads` folder is wiped every time the app
-redeploys, restarts, or scales. That's exactly what was causing the error.
-
-This version fixes it permanently by **never writing files to local disk**.
-Uploaded files are streamed straight into **MongoDB GridFS** (the same
-MongoDB database you're already using for metadata), so they persist across
-restarts and redeploys with no extra paid disk or third-party storage
-account required.
-
-## Features
-
-- Public: browse and download files, no login needed.
-- Admin only (single password, bcrypt-hashed, checked server-side): upload
-  (drag-and-drop or click-to-browse, multi-file, progress bars), delete
-  (with confirmation).
-- Session-based auth (`express-session` + MongoDB session store) — the
-  frontend never sees or stores the real password.
-- CSRF token required on every upload/delete request.
-- Security: helmet, CORS allow-list, rate limiting on login and uploads,
-  file size caps, sanitized filenames.
-- Dark glassmorphism UI, fully responsive.
+- **Folder uploads** — no more zipping. Click "Upload Folder" and pick a folder directly (`webkitdirectory`); the folder structure is preserved as metadata and files are grouped back into one card, downloadable as a zip.
+- **Anonymous / Admin badge** — bottom-right corner shows "Welcome Anonymous" until an admin logs in, then "Welcome Admin". Your name is never shown.
+- **Protected admin login** — wrong password shows "Access Denied. Incorrect password." After 3 failed attempts, login locks for 30 seconds with a warning that the platform is PPSK-protected, shown with a 😂 toast.
+- **Admin-only management** — delete, rename, pin, edit description/tags are all gated behind `requireAdmin` on the backend (not just hidden in the UI), so it can't be bypassed by calling the API directly.
+- **Live search + admin-curated suggestions** — trending searches are fully editable by the admin (`/api/admin/suggestions`); "Recently Uploaded" auto-populates from the newest Java/Python/C/C++ files.
+- **Theme intro** — first visit asks Light or Dark, saves to localStorage, then shows an animated "Welcome to ZipShare" splash before the app.
+- **Animated glass UI** — floating gradient blobs, mouse glow, card hover/tilt, toasts, stats bar, filter chips, in-browser preview (text/code/image/PDF).
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env
-```
-
-Fill in `.env`:
-
-1. `MONGO_URI` — a MongoDB Atlas connection string (free tier is fine).
-2. `SESSION_SECRET` — any long random string, e.g. `openssl rand -hex 32`.
-3. `ADMIN_PASSWORD_HASH` — generate it:
-   ```bash
-   node scripts/hash-password.js YourRealPassword
-   ```
-   Copy the printed hash into `.env`. The plain password is never stored
-   anywhere.
-4. `ALLOWED_ORIGINS` — leave blank unless you're calling the API from a
-   different domain than the one serving the site.
-
-Run locally:
-
-```bash
+# edit .env: set MONGODB_URI, ADMIN_PASSWORD, JWT_SECRET
 npm start
 ```
 
-Visit `http://localhost:5000`. Click **Welcome Priyatham** bottom-right to
-log in as admin.
+Visit `http://localhost:5000`.
 
 ## Deploying to Render
 
-1. Push this project to your GitHub repo.
-2. In Render, set the environment variables above (Environment tab) —
-   don't commit `.env`.
-3. Build command: `npm install`. Start command: `npm start`.
-4. No persistent disk is required — GridFS storage lives inside your
-   MongoDB Atlas cluster, not on Render's filesystem.
+1. Push this folder to a GitHub repo.
+2. New Web Service on Render → connect the repo.
+3. Build command: `npm install`  ·  Start command: `npm start`.
+4. Add environment variables in the Render dashboard: `MONGODB_URI`, `ADMIN_PASSWORD`, `JWT_SECRET`.
+5. Deploy. Uploaded files live in `/uploads` on the server's disk — note that Render's free tier disk is **ephemeral**, so files are lost on redeploy/restart unless you attach a persistent disk or move to S3-style storage later.
 
 ## Project structure
 
 ```
-server.js               Express app entry point
-routes/authRoutes.js     Login / logout / session status
-routes/fileRoutes.js     List / upload / download / delete (GridFS)
-models/FileMeta.js       Mongoose schema for file metadata
-middleware/auth.js       requireAdmin + CSRF guards
-scripts/hash-password.js One-off helper to bcrypt-hash your admin password
-public/                  Frontend (index.html, style.css, script.js)
+zipshare/
+├── server.js
+├── package.json
+├── .env.example
+├── middleware/auth.js       # admin token + lockout logic
+├── models/File.js
+├── models/Suggestion.js
+├── routes/files.js          # upload, list, search, download, preview, admin edits
+├── routes/admin.js          # login + suggestion CRUD
+└── public/
+    ├── index.html
+    ├── style.css
+    └── script.js
 ```
 
-## Notes on the "Welcome Priyatham" text
+## Notes / assumptions
 
-It's a real `<button>` element, just styled small and low-contrast in the
-corner — not `display:none` or `visibility:hidden`. That keeps it genuinely
-clickable and accessible while staying visually out of the way.
+- Files are stored flatly on disk with random names; the original folder path is kept in MongoDB (`relativePath`) purely as metadata, and a folder is re-zipped on demand when downloaded. This avoids any path-traversal risk from user-supplied folder names.
+- Admin sessions use a signed JWT stored in `localStorage`, valid for 4 hours, sent as `Authorization: Bearer <token>`.
+- All admin-only routes double-check the token server-side — the UI hiding buttons is just for polish, not the actual security boundary.
+- This was rebuilt from your spec document rather than your live repo (I didn't have your actual server.js/public files, only screenshots and the prompt), so filenames/structure may differ from what was previously deployed. Swap in your real `MONGODB_URI` and it should run as-is.
