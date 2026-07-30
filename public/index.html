@@ -3,411 +3,545 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ZIPSHARE – Student-Friendly File Sharing Platform</title>
+<title>ZipShare - Student Programming Hub</title>
 <link rel="stylesheet" href="style.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 </head>
-<body data-theme="dark">
+<body>
 
-<!-- Animated Background Canvas & Floating Particles -->
+<!-- Animated background layer -->
 <div class="bg-layer">
+  <canvas id="particleCanvas"></canvas>
+  <div class="floating-symbols-layer" id="floatingSymbols">
+    <span class="code-sym" style="top:12%;left:8%;animation-delay:0s">&lt;/&gt;</span>
+    <span class="code-sym" style="top:25%;right:12%;animation-delay:1.2s">{}</span>
+    <span class="code-sym" style="top:70%;left:15%;animation-delay:2.5s">[]</span>
+    <span class="code-sym" style="top:80%;right:18%;animation-delay:0.8s">()</span>
+    <span class="code-sym" style="top:40%;left:82%;animation-delay:3.1s">☕</span>
+    <span class="code-sym" style="top:60%;left:5%;animation-delay:1.9s">🐍</span>
+    <span class="code-sym" style="top:15%;right:35%;animation-delay:2.2s">⚡</span>
+    <span class="code-sym" style="top:85%;left:45%;animation-delay:4s">🚀</span>
+    <span class="code-sym" style="top:35%;right:75%;animation-delay:1.5s">🗄️</span>
+  </div>
   <div class="blob blob-a"></div>
   <div class="blob blob-b"></div>
   <div class="blob blob-c"></div>
   <div class="glow-cursor" id="glowCursor"></div>
-  <canvas id="particleCanvas" class="particle-canvas"></canvas>
 </div>
 
-<!-- Welcome Intro Screen (Initial Setup) -->
-<div class="intro-screen" id="introScreen">
-  <div class="intro-content">
-    <div class="intro-logo">💠</div>
-    <h1 class="intro-title" id="introTitle">ZIPSHARE</h1>
-    <p class="intro-tagline">Student-Friendly File Sharing Platform</p>
-    
-    <div class="theme-choice">
-      <p class="theme-label">CHOOSE YOUR THEME</p>
-      <div class="theme-buttons">
-        <button class="theme-btn active" data-theme="dark">🌙 Dark Theme</button>
-        <button class="theme-btn" data-theme="light">☀️ Light Theme</button>
+<!-- FULLSCREEN ONBOARDING WELCOME EXPERIENCE & ANIMATED MASCOT -->
+<div class="startup-overlay" id="startupModalOverlay">
+  <div class="startup-modal glass">
+    <!-- Animated Cute Cartoon Mascot with Big Expressive Eyes -->
+    <div class="mascot-container" id="mascotContainer" title="Click me to wink! 😉">
+      <div class="mascot-face" id="mascotFace">
+        <div class="mascot-antenna">
+          <div class="antenna-ball" id="antennaBall"></div>
+        </div>
+        <div class="mascot-eye-socket">
+          <div class="eye left-eye">
+            <div class="eye-pupil" id="leftPupil"></div>
+            <div class="eye-sparkle"></div>
+          </div>
+          <div class="eye right-eye">
+            <div class="eye-pupil" id="rightPupil"></div>
+            <div class="eye-sparkle"></div>
+          </div>
+        </div>
+        <div class="mascot-mouth">
+          <svg viewBox="0 0 50 16" width="38" height="14">
+            <path id="mascotSmile" d="M 5,3 Q 25,15 45,3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+          </svg>
+        </div>
+      </div>
+      <div class="mascot-label" id="mascotMoodLabel">ZipShare Robo Companion</div>
+    </div>
+
+    <div class="startup-branding">
+      <h1 class="startup-logo">ZIPSHARE</h1>
+      <p class="startup-subtitle">Welcome to <span class="highlight-text">Student Programming Hub</span></p>
+    </div>
+
+    <!-- Onboarding Step Indicator -->
+    <div class="onboarding-stepper">
+      <div class="step-dot active" data-step="1">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="2">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="3">3</div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="4">4</div>
+    </div>
+
+    <!-- Step 1: Welcome Greeting -->
+    <div class="onboard-step-content active" id="onboardStep1">
+      <span class="step-badge">STEP 1 • WELCOME</span>
+      <h2 class="welcome-heading">Hello Student 👋</h2>
+      <p class="welcome-typing" id="welcomeTypingText"></p>
+      <button class="upload-btn full next-step-btn" id="btnNextStep1">Continue to Theme ➔</button>
+    </div>
+
+    <!-- Step 2: Theme Selection -->
+    <div class="onboard-step-content" id="onboardStep2" style="display:none;">
+      <span class="step-badge">STEP 2 • APPEARANCE</span>
+      <h3>Choose Theme Preference</h3>
+      <div class="theme-select-cards">
+        <button class="theme-card" data-set-theme="light">
+          <span class="theme-icon">☀️</span>
+          <span class="theme-name">Light Mode</span>
+        </button>
+        <button class="theme-card active" data-set-theme="dark">
+          <span class="theme-icon">🌙</span>
+          <span class="theme-name">Dark Mode</span>
+        </button>
+      </div>
+      <div class="step-actions">
+        <button class="btn-ghost" id="btnBackStep2">Back</button>
+        <button class="upload-btn next-step-btn" id="btnNextStep2">Next: Choose Subject ➔</button>
       </div>
     </div>
 
-    <div class="category-choice">
-      <p class="category-label">SELECT CATEGORY TO EXPLORE FIRST</p>
-      <div class="category-grid">
-        <button class="welcome-cat-btn active" data-cat="all">⭐ All</button>
-        <button class="welcome-cat-btn" data-cat="python">🐍 Python</button>
-        <button class="welcome-cat-btn" data-cat="java">☕ Java</button>
-        <button class="welcome-cat-btn" data-cat="c">🔷 C</button>
-        <button class="welcome-cat-btn" data-cat="cpp">⚙️ C++</button>
-        <button class="welcome-cat-btn" data-cat="adsa">🌳 ADSA</button>
-        <button class="welcome-cat-btn" data-cat="dbms">🗄️ DBMS</button>
+    <!-- Step 3: Subject Selection -->
+    <div class="onboard-step-content" id="onboardStep3" style="display:none;">
+      <span class="step-badge">STEP 3 • FAVORITE SUBJECT</span>
+      <h3>Choose Your Primary Subject</h3>
+      <div class="subject-select-grid">
+        <div class="subject-card" data-subject="Java Programming">
+          <span class="subj-icon">☕</span>
+          <div class="subj-title">Java Programming</div>
+          <div class="subj-sub">OOP &amp; Data Structures</div>
+        </div>
+        <div class="subject-card" data-subject="Python Programming">
+          <span class="subj-icon">🐍</span>
+          <div class="subj-title">Python Programming</div>
+          <div class="subj-sub">Programming &amp; ML</div>
+        </div>
+        <div class="subject-card" data-subject="C Programming">
+          <span class="subj-icon">⚡</span>
+          <div class="subj-title">C Programming</div>
+          <div class="subj-sub">Core Logic &amp; Pointers</div>
+        </div>
+        <div class="subject-card" data-subject="C++ Programming">
+          <span class="subj-icon">🚀</span>
+          <div class="subj-title">C++ Programming</div>
+          <div class="subj-sub">STL &amp; Systems</div>
+        </div>
+        <div class="subject-card" data-subject="Advanced Data Structures & Algorithms">
+          <span class="subj-icon">🌳</span>
+          <div class="subj-title">ADSA</div>
+          <div class="subj-sub">Advanced Algorithms</div>
+        </div>
+        <div class="subject-card" data-subject="DBMS Lab">
+          <span class="subj-icon">🗄️</span>
+          <div class="subj-title">DBMS Lab</div>
+          <div class="subj-sub">SQL &amp; Relational DB</div>
+        </div>
+      </div>
+      <div class="step-actions">
+        <button class="btn-ghost" id="btnBackStep3">Back</button>
+        <button class="upload-btn next-step-btn" id="btnNextStep3">Final Step ➔</button>
       </div>
     </div>
 
-    <button class="enter-btn" id="enterAppBtn">Enter ZipShare 🚀</button>
+    <!-- Step 4: Launch Portal -->
+    <div class="onboard-step-content" id="onboardStep4" style="display:none;">
+      <span class="step-badge">STEP 4 • READY</span>
+      <h2 class="ready-title">You're All Set! 🎉</h2>
+      <p class="ready-subtitle">Access executable programs, folder uploads, and interactive code solutions instantly.</p>
+      <div class="step-actions">
+        <button class="btn-ghost" id="btnBackStep4">Back</button>
+        <button class="upload-btn full startup-enter-btn" id="btnEnterPortal">🚀 Launch Portal</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Welcome Splash Animation -->
-<div class="welcome-splash" id="welcomeSplash">
-  <div class="splash-box">
-    <h2>Welcome to <span class="brand">ZipShare</span></h2>
-    <p>Student-Friendly File Sharing Platform</p>
-  </div>
-</div>
+<!-- Main Portal Layout -->
+<div class="portal-wrapper">
 
-<!-- Main App Container -->
-<div class="app" id="app">
-
-  <!-- Header Navigation -->
-  <nav class="navbar">
-    <div class="nav-left">
-      <a href="#" class="logo" id="brandLogo">💠 ZIPSHARE</a>
-    </div>
-    
-    <div class="nav-center">
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Search Python, Java, C, AVL, DBMS, Notes..." autocomplete="off" />
-        <button class="search-clear-btn" id="searchClearBtn" style="display:none;">✕</button>
-        <div class="suggestions-panel" id="suggestionsPanel"></div>
+  <!-- LAB EXPLORER SIDEBAR -->
+  <aside class="lab-explorer-sidebar" id="labExplorerSidebar">
+    <div class="explorer-header">
+      <div class="explorer-title">
+        <span class="vscode-icon">📂</span>
+        <span>LAB EXPLORER</span>
       </div>
+      <button class="sidebar-toggle-btn" id="btnToggleSidebar" title="Collapse Sidebar">◀</button>
     </div>
-
-    <div class="nav-right">
-      <button class="nav-link-btn" id="navHomeBtn">Home</button>
-      <button class="nav-link-btn" id="navRecentBtn">Recent</button>
-      <button class="nav-link-btn" id="navPinnedBtn">Pinned</button>
-      <button class="nav-link-btn admin-only-inline" id="navDashboardBtn" style="display:none;">⚡ Admin Dashboard</button>
-      <button class="nav-link-btn admin-only-inline" id="navRequestsBtn" style="display:none;">Requests <span class="badge-count" id="requestBadgeCount" style="display:none;">0</span></button>
-      <button class="nav-link-btn" id="navAboutBtn">About</button>
-      <button class="icon-btn" id="themeToggle" title="Toggle Light/Dark Theme">🌙</button>
-      <button class="text-btn primary" id="adminLoginBtn">Admin Login</button>
+    <div class="explorer-search">
+      <input type="text" id="explorerSearchInput" placeholder="Filter subjects &amp; programs..." autocomplete="off" />
     </div>
-  </nav>
-
-  <!-- Homepage Hero Section -->
-  <header class="hero">
-    <div class="hero-badge">🚀 ZipShare V3</div>
-    <h1 class="hero-title">ZIPSHARE</h1>
-    <p class="hero-subtitle">Student-Friendly File Sharing Platform</p>
-    <p class="hero-desc">
-      Browse, preview and download programming files, lab records, notes, assignments and folders shared by administrators.
-    </p>
-
-    <!-- Upload Controls (Admin only) -->
-    <div class="hero-actions admin-only-flex" id="heroActions" style="display:none;">
-      <label class="upload-btn primary-btn" id="uploadBtn">
-        <span>⬆ Upload Files</span>
-        <input type="file" id="fileInput" multiple hidden />
-      </label>
-      <label class="upload-btn ghost-btn" id="uploadFolderBtn">
-        <span>📁 Upload Folder</span>
-        <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
-      </label>
+    <div class="explorer-tree" id="explorerTree">
+      <!-- Injected dynamically by JS -->
     </div>
-  </header>
+  </aside>
 
-  <!-- Stats Dashboard Bar -->
-  <section class="stats-bar" id="statsBar"></section>
+  <!-- Main Content Area -->
+  <div class="portal-main-area" id="app">
 
-  <!-- Subject Animation Canvas Stage -->
-  <section class="subject-animation-stage" id="subjectStage">
-    <div class="stage-info">
-      <span class="stage-icon" id="stageIcon">⭐</span>
-      <div>
-        <h3 class="stage-title" id="stageTitle">All Categories</h3>
-        <p class="stage-desc" id="stageDesc">Showing all uploaded code files, notes, and project folders.</p>
+    <nav class="navbar">
+      <div class="nav-left">
+        <button class="icon-btn sidebar-open-btn" id="btnMobileSidebarOpen" title="Open Lab Explorer">☰</button>
+        <span class="logo">💠 ZipShare <small class="sub-brand">Student Hub</small></span>
       </div>
-    </div>
-    <div class="stage-canvas-wrap">
-      <canvas id="subjectCanvas" width="220" height="90"></canvas>
-    </div>
-  </section>
-
-  <!-- Category Interactive Tabs -->
-  <section class="filters-section">
-    <div class="filters" id="filters">
-      <button class="chip active" data-category="all">⭐ All</button>
-      <button class="chip" data-category="python">🐍 Python</button>
-      <button class="chip" data-category="java">☕ Java</button>
-      <button class="chip" data-category="c">🔷 C</button>
-      <button class="chip" data-category="cpp">⚙️ C++</button>
-      <button class="chip" data-category="adsa">🌳 Advanced Data Structures</button>
-      <button class="chip" data-category="dbms">🗄️ DBMS</button>
-      <button class="chip" data-category="folders">📁 Folders Only</button>
-      <button class="chip" data-category="pinned">📌 Pinned</button>
-    </div>
-  </section>
-
-  <!-- File Grid Container -->
-  <section class="file-grid-container">
-    <div class="section-header">
-      <h2 class="section-title" id="gridSectionTitle">Files &amp; Folders</h2>
-      <div class="grid-controls">
-        <label for="sortSelect" class="sort-label">Sort by:</label>
-        <select id="sortSelect" class="sort-select">
-          <option value="recent">Newest Uploads</option>
-          <option value="popular">Most Downloads</option>
-          <option value="name">Alphabetical</option>
-        </select>
+      <div class="nav-center">
+        <div class="search-wrap">
+          <input type="text" id="searchInput" placeholder="Search Java, Python, C, Exercise, Question..." autocomplete="off" />
+          <div class="suggestions-panel" id="suggestionsPanel"></div>
+        </div>
       </div>
+      <div class="nav-right">
+        <button class="icon-btn" id="mascotReopenBtn" title="ZipShare Companion &amp; Onboarding">🤖</button>
+        <button class="icon-btn" id="themeToggle" title="Toggle theme">🌙</button>
+
+        <button class="text-btn" id="aboutBtn">About</button>
+        <button class="text-btn primary" id="adminLoginBtn">Admin Login</button>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <h1>ZipShare Student Code &amp; Lab Portal</h1>
+      <p>Executable Online Solutions • Lab Notes • Instant Folder Sharing</p>
+      <div class="hero-actions">
+        <label class="upload-btn" id="uploadBtn">
+          ⬆ Upload Program
+          <input type="file" id="fileInput" multiple hidden />
+        </label>
+        <label class="upload-btn ghost" id="uploadFolderBtn">
+          📁 Upload Code Folder
+          <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
+        </label>
+      </div>
+    </header>
+
+    <section class="stats-bar" id="statsBar"></section>
+
+    <!-- Active Filter Indicator Banner -->
+    <div class="active-filter-banner" id="activeFilterBanner" style="display:none;">
+      <span id="activeFilterText">Filtered by Java</span>
+      <button class="clear-filter-btn" id="btnClearActiveFilter">Clear Filter ✕</button>
     </div>
 
-    <div class="file-grid" id="fileGrid">
-      <!-- File cards injected via JavaScript -->
-    </div>
+    <!-- Filter chips -->
+    <section class="filters" id="filters">
+      <button class="chip active" data-filter="all">All Files</button>
+      <button class="chip" data-filter="folders">Folders</button>
+      <button class="chip" data-filter="java">Java</button>
+      <button class="chip" data-filter="py">Python</button>
+      <button class="chip" data-filter="c">C</button>
+      <button class="chip" data-filter="cpp">C++</button>
+      <button class="chip" data-filter="sql">DBMS SQL</button>
+      <button class="chip" data-filter="pdf">PDF</button>
+      <button class="chip" data-filter="pinned">📌 Pinned</button>
+    </section>
+
+    <!-- PINNED SECTION -->
+    <section class="pinned-section" id="pinnedSection" style="display:none;">
+      <div class="section-title-wrap">
+        <span class="section-icon">📌</span>
+        <h2>Pinned Programs &amp; Resources</h2>
+      </div>
+      <div class="file-grid pinned-grid" id="pinnedFileGrid"></div>
+    </section>
+
+    <!-- Main File Grid -->
+    <section class="main-section">
+      <div class="section-title-wrap" id="mainSectionTitleWrap">
+        <span class="section-icon">📄</span>
+        <h2 id="mainSectionHeading">All Programs &amp; Folders</h2>
+      </div>
+      <section class="file-grid" id="fileGrid"></section>
+    </section>
 
     <div class="empty-state" id="emptyState" style="display:none;">
       <div class="empty-illustration">🗂️</div>
-      <h3>No files found</h3>
-      <p>Try searching for another keyword or switch category filters.</p>
+      <p>No programs found for this selection.</p>
     </div>
-  </section>
 
-  <!-- Program Request Form Section -->
-  <section class="request-section" id="requestSection">
-    <div class="request-card glass">
-      <div class="request-header">
-        <span class="request-icon">💡</span>
-        <h2>Need a program?</h2>
-        <p>Request it from the administrator.</p>
+    <footer class="site-footer">
+      <div class="footer-copy">© 2026 ZipShare Student Hub</div>
+      <div class="footer-heart">Built for students with ❤️</div>
+      <div class="footer-dev" id="nomadDevBadge" title="Nomad Software Architect">
+        <span class="particle-dot p1"></span>
+        <span class="particle-dot p2"></span>
+        <span class="particle-dot p3"></span>
+        <span>Developed by <strong class="nomad-text">Nomad</strong></span>
       </div>
-      <form id="programRequestForm" class="request-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="reqProgramName">Program Name *</label>
-            <input type="text" id="reqProgramName" placeholder="e.g. Dijkstra Shortest Path in C++" required />
-          </div>
-          <div class="form-group">
-            <label for="reqSubject">Subject / Category *</label>
-            <select id="reqSubject" required>
-              <option value="Python">🐍 Python</option>
-              <option value="Java">☕ Java</option>
-              <option value="C">🔷 C</option>
-              <option value="C++">⚙️ C++</option>
-              <option value="ADSA">🌳 Advanced Data Structures (ADSA)</option>
-              <option value="DBMS">🗄️ Database Management Systems (DBMS)</option>
-              <option value="Other">📄 Other Notes / Lab</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="reqDescription">Description / Lab Question</label>
-          <textarea id="reqDescription" rows="3" placeholder="Paste problem statement or details so the admin can upload the exact solution..."></textarea>
-        </div>
-        <button type="submit" class="upload-btn primary-btn full-btn">Submit Program Request 🚀</button>
-      </form>
-    </div>
-  </section>
-
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="footer-content">
-      <h3 class="footer-title">💠 ZIPSHARE</h3>
-      <p class="footer-tagline">Student-Friendly File Sharing Platform</p>
-      <div class="footer-credits">
-        <p>Developed by <strong>NOMAD TEAM</strong></p>
-        <p>Owner: <strong>Anonymous</strong></p>
-      </div>
-      <p class="footer-copy">&copy; 2026 ZipShare V3 · Powered by Node.js, Express &amp; MongoDB</p>
-    </div>
-  </footer>
-
+    </footer>
+  </div>
 </div>
 
-<!-- Toast Container -->
+<!-- MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+  <button class="nav-item active" id="mNavHome">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Home</span>
+  </button>
+  <button class="nav-item" id="mNavSubjects">
+    <span class="nav-icon">📚</span>
+    <span class="nav-label">Subjects</span>
+  </button>
+  <button class="nav-item" id="mNavPinned">
+    <span class="nav-icon">📌</span>
+    <span class="nav-label">Pinned</span>
+  </button>
+  <button class="nav-item" id="mNavSearch">
+    <span class="nav-icon">🔍</span>
+    <span class="nav-label">Search</span>
+  </button>
+  <button class="nav-item" id="mNavAdmin">
+    <span class="nav-icon">👤</span>
+    <span class="nav-label">Admin</span>
+  </button>
+</nav>
+
+<!-- SOLUTION PANEL / SPLIT VIEW MODAL -->
+<div class="modal-overlay solution-overlay" id="solutionModalOverlay">
+  <div class="modal glass solution-modal" id="solutionModalWindow">
+    <div class="solution-header">
+      <div class="solution-title-wrap">
+        <span class="solution-icon" id="solutionLangIcon">☕</span>
+        <div>
+          <h3 id="solutionProgramTitle">Program Solution</h3>
+          <span class="solution-subj-badge" id="solutionSubjBadge">Java • Exercise 1</span>
+        </div>
+      </div>
+      <div class="solution-actions">
+        <button class="compiler-btn btn-run-code" id="btnRunFromSolution">▶ Run Online</button>
+        <button class="compiler-btn" id="btnCopySolution">📋 Copy Code</button>
+        <button class="compiler-btn" id="btnDownloadSolution">⬇ Download</button>
+        <button class="modal-close" data-close="solutionModalOverlay">✕</button>
+      </div>
+    </div>
+
+    <div class="solution-body">
+      <!-- Left: Code Viewer -->
+      <div class="solution-code-pane">
+        <pre><code id="solutionCodeDisplay">Loading code content...</code></pre>
+      </div>
+
+      <!-- Right: Solution Explorer & Metadata -->
+      <div class="solution-info-pane">
+        <div class="info-group">
+          <label>SUBJECT &amp; EXERCISE</label>
+          <div class="info-val" id="solMetaSubjectEx">Java • Exercise 1</div>
+        </div>
+        <div class="info-group">
+          <label>QUESTION / PROBLEM</label>
+          <div class="info-val highlight" id="solMetaQuestion">Question details</div>
+        </div>
+        <div class="info-group">
+          <label>DESCRIPTION</label>
+          <div class="info-val" id="solMetaDesc">Description</div>
+        </div>
+        <div class="info-group">
+          <label>EXPECTED OUTPUT</label>
+          <pre class="output-preview" id="solMetaOutput">Expected output text...</pre>
+        </div>
+        <div class="info-group">
+          <label>ALGORITHM / STEPS</label>
+          <div class="info-val algorithm-box" id="solMetaAlgorithm">Algorithm steps...</div>
+        </div>
+        <div class="info-group">
+          <label>COMPLEXITY &amp; DIFFICULTY</label>
+          <div class="badges-wrap">
+            <span class="complexity-badge" id="solMetaComplexity">O(N log N)</span>
+            <span class="difficulty-badge" id="solMetaDifficulty">Medium</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- Admin Login Modal -->
+<!-- Admin login modal -->
 <div class="modal-overlay" id="loginModalOverlay">
   <div class="modal glass">
     <button class="modal-close" data-close="loginModalOverlay">✕</button>
-    <div class="modal-icon" id="loginModalIcon">🔐</div>
-    <h3 id="loginModalHeading">Admin Login</h3>
-    <p class="modal-sub">Only administrators are allowed to log in.</p>
-    
-    <div class="login-box" id="loginBox">
-      <input type="password" id="adminPasswordInput" placeholder="Enter Admin Password" autocomplete="off" />
-      <div id="loginMessage" class="login-message"></div>
-      <button class="upload-btn primary-btn full-btn" id="loginSubmitBtn">Login</button>
-    </div>
+    <h3>Admin Login</h3>
+    <p class="modal-sub">Enter admin password to edit programs, tags &amp; subjects.</p>
+    <input type="password" id="adminPasswordInput" placeholder="Password" />
+    <div id="loginMessage" class="login-message"></div>
+    <button class="upload-btn full" id="loginSubmitBtn">Login</button>
   </div>
 </div>
 
-<!-- Admin Dashboard Modal -->
-<div class="modal-overlay" id="dashboardModalOverlay">
-  <div class="modal glass large">
-    <button class="modal-close" data-close="dashboardModalOverlay">✕</button>
-    <div class="dashboard-header">
-      <span class="modal-icon">⚡</span>
-      <h3>Admin Dashboard</h3>
-      <p class="modal-sub">Welcome Administrator! Complete control panel for ZipShare.</p>
-    </div>
-    
-    <div class="dashboard-grid">
-      <div class="dashboard-card">
-        <h4>⬆️ Upload &amp; Manage Files</h4>
-        <p>Upload new code files or full project directory folders.</p>
-        <div class="dashboard-actions">
-          <label class="dash-btn primary">
-            <span>Upload Files</span>
-            <input type="file" id="dashFileInput" multiple hidden />
-          </label>
-          <label class="dash-btn ghost">
-            <span>Upload Folder</span>
-            <input type="file" id="dashFolderInput" webkitdirectory directory multiple hidden />
-          </label>
-        </div>
-      </div>
-
-      <div class="dashboard-card">
-        <h4>📌 Featured &amp; Pinned Items</h4>
-        <p>Pin critical code or lab solutions to the top for students.</p>
-        <button class="dash-btn ghost" id="dashManagePinnedBtn">View Pinned Items</button>
-      </div>
-
-      <div class="dashboard-card">
-        <h4>📋 Student Program Requests</h4>
-        <p>Review, approve, or fulfill program requests from students.</p>
-        <button class="dash-btn primary" id="dashOpenRequestsBtn">Manage Requests (<span id="dashRequestCount">0</span>)</button>
-      </div>
-
-      <div class="dashboard-card">
-        <h4>🔐 Security &amp; PPSK Authorization</h4>
-        <p>Status: <strong>Active JWT Session</strong> · Protected by PSK Security</p>
-        <button class="dash-btn danger" id="dashLogoutBtn">Logout Admin</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Admin Program Requests Dashboard Modal -->
-<div class="modal-overlay" id="requestsModalOverlay">
-  <div class="modal glass large">
-    <button class="modal-close" data-close="requestsModalOverlay">✕</button>
-    <h3>📋 User Program Requests</h3>
-    <p class="modal-sub">Review and approve requests submitted by students.</p>
-    <div class="requests-list" id="requestsListContainer">
-      <!-- User requests list injected here -->
-    </div>
-  </div>
-</div>
-
-<!-- In-Browser File Viewer & Code Editor Modal -->
-<div class="modal-overlay" id="previewModalOverlay">
-  <div class="modal glass large viewer-modal">
-    <button class="modal-close" data-close="previewModalOverlay">✕</button>
-    
-    <div class="viewer-header">
-      <div class="viewer-title-group">
-        <span class="viewer-file-icon" id="previewFileIcon">📝</span>
-        <h3 id="previewTitle">File Preview</h3>
-      </div>
-      <div class="viewer-actions">
-        <button class="btn-action" id="copyCodeBtn" title="Copy Code">📋 Copy</button>
-        <button class="btn-action" id="downloadPreviewBtn" title="Download File">⬇ Download</button>
-        <button class="btn-action admin-only-inline" id="editContentBtn" title="Edit Code Directly" style="display:none;">✏️ Edit Code</button>
-        <button class="btn-action" id="fullscreenViewerBtn" title="Fullscreen View">⛶ Fullscreen</button>
-      </div>
-    </div>
-
-    <div class="viewer-body" id="previewBody">
-      <!-- Code content or media rendered here -->
-    </div>
-
-    <!-- Admin Code Editor Section inside Preview -->
-    <div class="admin-editor-section" id="adminEditorSection" style="display:none;">
-      <div class="editor-header-bar">
-        <span>✏️ Admin Code Editor</span>
-        <span class="editor-tip">Make live changes to this file</span>
-      </div>
-      <textarea id="codeEditorTextarea" rows="12" class="code-textarea" spellcheck="false"></textarea>
-      <div class="editor-footer-bar">
-        <button class="btn-ghost" id="cancelEditContentBtn">Cancel</button>
-        <button class="upload-btn primary-btn" id="saveContentBtn">Save Code Changes 💾</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Edit Metadata Modal (Admin Only) -->
-<div class="modal-overlay" id="editModalOverlay">
-  <div class="modal glass">
-    <button class="modal-close" data-close="editModalOverlay">✕</button>
-    <h3>Edit File Details</h3>
-    <p class="modal-sub">Modify file metadata, category, and tags.</p>
-    <label for="editNameInput">File / Folder Name</label>
-    <input type="text" id="editNameInput" />
-    
-    <label for="editCategorySelect">Category</label>
-    <select id="editCategorySelect" class="modal-select">
-      <option value="python">🐍 Python</option>
-      <option value="java">☕ Java</option>
-      <option value="c">🔷 C</option>
-      <option value="cpp">⚙️ C++</option>
-      <option value="adsa">🌳 ADSA</option>
-      <option value="dbms">🗄️ DBMS</option>
-      <option value="all">📄 General / Other</option>
-    </select>
-
-    <label for="editDescInput">Description</label>
-    <input type="text" id="editDescInput" placeholder="Brief description of the program" />
-    
-    <label for="editTagsInput">Tags (comma separated)</label>
-    <input type="text" id="editTagsInput" placeholder="e.g. lab, trees, avl, semester3" />
-    
-    <div class="checkbox-row">
-      <input type="checkbox" id="editPinnedCheck" />
-      <label for="editPinnedCheck">Pin this file to top</label>
-    </div>
-
-    <button class="upload-btn primary-btn full-btn" id="editSaveBtn">Save Details</button>
-  </div>
-</div>
-
-<!-- Delete Confirm Modal -->
+<!-- Delete confirm modal -->
 <div class="modal-overlay" id="deleteModalOverlay">
   <div class="modal glass small">
-    <h3>Delete Item?</h3>
+    <h3>Delete Program?</h3>
     <p class="modal-sub">This action cannot be undone.</p>
     <div class="modal-actions">
       <button class="btn-ghost" id="deleteCancelBtn">Cancel</button>
-      <button class="btn-danger" id="deleteConfirmBtn">Delete Permanently</button>
+      <button class="btn-danger" id="deleteConfirmBtn">Delete</button>
     </div>
   </div>
 </div>
 
-<!-- About Modal -->
+<!-- Folder Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteFolderModalOverlay">
+  <div class="modal glass small folder-delete-modal">
+    <div class="folder-delete-icon">📁</div>
+    <h3 id="folderDeleteTitle">Delete Folder?</h3>
+    <p class="modal-sub" id="folderDeleteSub">Are you sure you want to delete <strong id="folderDeleteName">Folder</strong>?</p>
+    
+    <div class="folder-delete-meta">
+      <div class="meta-pill"><span id="folderDeleteCount">0</span> Programs</div>
+      <div class="meta-pill"><span id="folderDeleteSize">0 KB</span> Total Size</div>
+    </div>
+    
+    <p class="folder-delete-warning">⚠️ This will delete all programs, nested code files, physical storage, and metadata permanently.</p>
+    
+    <div class="modal-actions">
+      <button class="btn-ghost" id="deleteFolderCancelBtn">Cancel</button>
+      <button class="btn-danger btn-folder-delete-confirm" id="deleteFolderConfirmBtn">
+        <span class="btn-text">Delete Folder</span>
+        <span class="btn-spinner hidden"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editModalOverlay">
+  <div class="modal glass large">
+    <button class="modal-close" data-close="editModalOverlay">✕</button>
+    <h3>Edit Program &amp; Metadata</h3>
+    <div class="edit-grid">
+      <div>
+        <label>Program Name (Clean)</label>
+        <input type="text" id="editNameInput" placeholder="BubbleSort.java" />
+      </div>
+      <div>
+        <label>Subject</label>
+        <select id="editSubjectSelect">
+          <option value="Java Programming">Java Programming</option>
+          <option value="Python Programming">Python Programming</option>
+          <option value="C Programming">C Programming</option>
+          <option value="C++ Programming">C++ Programming</option>
+          <option value="Advanced Data Structures & Algorithms">ADSA</option>
+          <option value="DBMS Lab">DBMS Lab</option>
+          <option value="">Other</option>
+        </select>
+      </div>
+      <div>
+        <label>Exercise (e.g. Exercise 1)</label>
+        <input type="text" id="editExerciseInput" placeholder="Exercise 1" />
+      </div>
+      <div>
+        <label>Question Title</label>
+        <input type="text" id="editQuestionInput" placeholder="Question 1: Bubble Sort Implementation" />
+      </div>
+      <div class="full-width">
+        <label>Description</label>
+        <input type="text" id="editDescInput" placeholder="Brief explanation of program" />
+      </div>
+      <div class="full-width">
+        <label>Expected Output</label>
+        <textarea id="editOutputInput" rows="2" placeholder="Sample program output..."></textarea>
+      </div>
+      <div class="full-width">
+        <label>Algorithm / Steps</label>
+        <textarea id="editAlgorithmInput" rows="2" placeholder="1. Step one... 2. Step two..."></textarea>
+      </div>
+      <div>
+        <label>Complexity (e.g. Time: O(N^2))</label>
+        <input type="text" id="editComplexityInput" placeholder="Time: O(N^2) | Space: O(1)" />
+      </div>
+      <div>
+        <label>Difficulty</label>
+        <select id="editDifficultySelect">
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </div>
+      <div class="full-width">
+        <label>Tags (comma separated)</label>
+        <input type="text" id="editTagsInput" placeholder="java, sorting, lab1" />
+      </div>
+    </div>
+    <button class="upload-btn full" id="editSaveBtn">Save Program Metadata</button>
+  </div>
+</div>
+
+<!-- Online Compiler Modal -->
+<div class="modal-overlay compiler-overlay" id="compilerModalOverlay">
+  <div class="modal glass compiler-modal" id="compilerModalWindow">
+    <div class="compiler-header">
+      <div class="compiler-title-wrap">
+        <span class="compiler-icon">⚡</span>
+        <h3 id="compilerTitle">Online Compiler</h3>
+        <span class="compiler-lang-badge" id="compilerLangBadge">Language</span>
+      </div>
+      <div class="compiler-toolbar">
+        <button class="compiler-btn btn-run-code" id="btnRunCode" title="Run Code">▶ Run</button>
+        <button class="compiler-btn btn-stop-code" id="btnStopCode" title="Stop Execution" style="display:none;">⏹ Stop</button>
+        <button class="compiler-btn" id="btnResetCode" title="Reset to Original">🔄 Reset</button>
+        <button class="compiler-btn" id="btnCopyCode" title="Copy Code">📋 Copy</button>
+        <button class="compiler-btn" id="btnDownloadCode" title="Download Code">⬇ Download</button>
+        <button class="compiler-btn" id="btnFullscreenCompiler" title="Toggle Fullscreen">⛶ Fullscreen</button>
+        <button class="compiler-btn primary" id="btnSaveAdminCode" title="Permanently Save Edits (Admin Only)" style="display:none;">💾 Save</button>
+        <button class="modal-close" data-close="compilerModalOverlay">✕</button>
+      </div>
+    </div>
+
+    <div class="compiler-body">
+      <!-- Editor Container (Left Pane) -->
+      <div class="compiler-editor-pane">
+        <div id="monacoEditorContainer" class="monaco-container"></div>
+      </div>
+
+      <!-- Output & Input Pane (Right Pane) -->
+      <div class="compiler-output-pane">
+        <!-- Input section -->
+        <div class="compiler-section input-section">
+          <div class="section-header">
+            <span>📥 Standard Input (stdin)</span>
+          </div>
+          <textarea id="compilerInput" class="compiler-textarea" placeholder="Enter program input here (if required)..." rows="3"></textarea>
+        </div>
+
+        <!-- Output section -->
+        <div class="compiler-section output-section">
+          <div class="section-header">
+            <span>📤 Output &amp; Results</span>
+            <div class="compiler-stats" id="compilerStats">
+              <span class="status-badge" id="compilerStatusBadge">Ready</span>
+              <span class="stat-tag" id="compilerTimeTag">⏱ --</span>
+              <span class="stat-tag" id="compilerMemTag">💾 --</span>
+            </div>
+          </div>
+          <div class="compiler-output-box" id="compilerOutputBox">
+            <div class="output-placeholder">Click <strong>▶ Run</strong> to execute source file online.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- About modal -->
 <div class="modal-overlay" id="aboutModalOverlay">
   <div class="modal glass">
     <button class="modal-close" data-close="aboutModalOverlay">✕</button>
-    <div class="about-header">
-      <div class="about-logo">💠</div>
-      <h3>ZIPSHARE</h3>
-      <p class="about-tagline">Student-Friendly File Sharing Platform</p>
-    </div>
-    <div class="about-body">
-      <p><strong>Mission:</strong> To make it effortless for students to browse, preview, and download programming solutions, lab records, notes, and full project folders without zipping hurdles.</p>
-      <p><strong>Features:</strong> Preserved folder uploads, in-browser syntax highlighting, real-time multi-keyword search, program requests system, PPSK protected admin engine, and interactive subject animations.</p>
-      <p><strong>Developed By:</strong> NOMAD TEAM</p>
-      <p><strong>Owner:</strong> Anonymous</p>
-      <p><strong>Version:</strong> 3.0 Production Ready</p>
-    </div>
+    <h3>About ZipShare Student Programming Hub</h3>
+    <p><strong>Mission:</strong> Dedicated portal for students to view, execute, and download lab programs, notes, and project folders.</p>
+    <p><strong>Supported Executable Languages:</strong> Java (.java), Python (.py), C (.c), C++ (.cpp, .cc), DBMS SQL (.sql).</p>
+    <p><strong>Engine:</strong> Powered by Judge0 online execution engine and Monaco VS Code editor.</p>
   </div>
 </div>
 
-<!-- Developer Badge -->
-<div class="dev-badge" id="devBadge">
-  🚀 Developed by NOMAD TEAM
-  <div class="dev-badge-tooltip">Building smart solutions for students.</div>
-</div>
+<!-- Session badge -->
+<div class="session-badge" id="sessionBadge">Welcome Student</div>
 
-<!-- Session Badge (Bottom Right) -->
-<div class="session-badge" id="sessionBadge">Welcome Anonymous</div>
+<!-- Floating Welcome Capsule -->
+<div class="welcome-capsule" id="welcomeCapsule">
+  <span class="capsule-text" id="welcomeCapsuleText">Welcome Anonymous 👋</span>
+</div>
 
 <script src="script.js"></script>
 </body>

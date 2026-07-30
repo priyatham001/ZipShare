@@ -7,7 +7,7 @@
     "start": "node server.js",
     "dev": "node server.js",
     "build": "echo 'Build complete'",
-    "lint": "echo 'No lint errors'"
+    "lint": "echo 'Lint complete'"
   },
   "dependencies": {
     "express": "^4.19.2",

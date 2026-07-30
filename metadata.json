@@ -1,6 +1,6 @@
 {
   "name": "ZipShare",
-  "description": "Student-Friendly File Sharing Platform",
+  "description": "ZipShare - SRKR Engineering Lab Portal & Online Compiler",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
