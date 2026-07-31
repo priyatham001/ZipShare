@@ -1,57 +1,53 @@
-// ---------------- State & Constants ----------------
+// ZIPSHARE V3 - Master Application Script
 let adminToken = localStorage.getItem('zipshare_token') || null;
-let currentFilter = 'all';
-let currentSubjectFilter = localStorage.getItem('zipshare_selected_subject') || localStorage.getItem('srkr_selected_subject') || null;
-let currentSearch = '';
-let searchDebounce = null;
+let activeCategory = 'all';
+let activeSyllabusSubject = null;
+let activeSyllabusExercise = null;
+let activeSyllabusQuestion = null;
+let activeTheme = localStorage.getItem('zipshare_theme') || 'dark';
+let searchSearchQuery = '';
+let searchDebounceTimer = null;
 let lastFiles = [];
-let typingTimeout = null;
-let mouseIdleTimer = null;
+let syllabusData = {};
+let pendingDeleteId = null;
+let editingFileId = null;
+let previewingFile = null;
+let subjectAnimFrame = null;
+let monacoEditorInstance = null;
+let currentCompilerFile = null;
+let currentAiSolution = null;
+let lockoutTimerInterval = null;
 
-const EXECUTABLE_EXTENSIONS = new Set([
-  'c', 'cpp', 'cc', 'cxx', 'java', 'py', 'js', 'ts',
-  'go', 'rs', 'cs', 'kt', 'kts', 'php', 'rb', 'swift', 'scala', 'sql'
-]);
-
+// Icon & Color Map per File Type
 const ICONS = {
-  java: { icon: '☕', color: '#f89820' }, py: { icon: '🐍', color: '#3776ab' },
-  c: { icon: '⚡', color: '#5c6bc0' }, cpp: { icon: '🚀', color: '#00599c' },
-  sql: { icon: '🗄️', color: '#00758f' }, html: { icon: '🌐', color: '#e34c26' },
-  css: { icon: '🎨', color: '#264de4' }, js: { icon: '📜', color: '#f0db4f' },
-  json: { icon: '🧾', color: '#8bc34a' }, pdf: { icon: '📕', color: '#e53935' },
-  docx: { icon: '📄', color: '#2b579a' }, ppt: { icon: '📊', color: '#d24726' },
-  zip: { icon: '🗜️', color: '#a67c52' }, rar: { icon: '🗜️', color: '#a67c52' },
-  png: { icon: '🖼️', color: '#66bb6a' }, jpg: { icon: '🖼️', color: '#66bb6a' },
-  jpeg: { icon: '🖼️', color: '#66bb6a' }, mp4: { icon: '🎬', color: '#ab47bc' },
-  txt: { icon: '📝', color: '#90a4ae' }, md: { icon: '📝', color: '#90a4ae' },
-  folder: { icon: '📁', color: '#facc15' }, default: { icon: '📦', color: '#78909c' }
+  java: { icon: '☕', color: '#f89820' },
+  py: { icon: '🐍', color: '#3776ab' },
+  python: { icon: '🐍', color: '#3776ab' },
+  c: { icon: '🔷', color: '#5c6bc0' },
+  cpp: { icon: '⚙️', color: '#00599c' },
+  adsa: { icon: '🌳', color: '#10b981' },
+  dbms: { icon: '🗄️', color: '#06b6d4' },
+  html: { icon: '🌐', color: '#e34c26' },
+  css: { icon: '🎨', color: '#264de4' },
+  js: { icon: '📜', color: '#f0db4f' },
+  ts: { icon: '📘', color: '#3178c6' },
+  sql: { icon: '🗄️', color: '#00838f' },
+  pdf: { icon: '📕', color: '#e53935' },
+  zip: { icon: '🗜️', color: '#a67c52' },
+  png: { icon: '🖼️', color: '#66bb6a' },
+  jpg: { icon: '🖼️', color: '#66bb6a' },
+  jpeg: { icon: '🖼️', color: '#66bb6a' },
+  folder: { icon: '📁', color: '#facc15' },
+  default: { icon: '📄', color: '#8b5cf6' }
 };
 
-// ---------------- Helper Functions ----------------
+const RUNNABLE_EXTENSIONS = new Set([
+  'c', 'cpp', 'cc', 'cxx', 'java', 'py', 'python', 'js', 'ts', 'go', 'rs', 'cs',
+  'php', 'rb', 'swift', 'kt', 'kts', 'scala', 'r', 'm', 'pl', 'lua', 'sh', 'sql'
+]);
+
+// DOM Helper
 function $(id) { return document.getElementById(id); }
-
-function getCleanName(pathOrName) {
-  if (!pathOrName) return 'Untitled';
-  const clean = pathOrName.replace(/\\/g, '/');
-  return clean.split('/').pop() || clean;
-}
-
-function getCleanTitle(pathOrName) {
-  if (!pathOrName) return 'Untitled Program';
-  const clean = pathOrName.replace(/\\/g, '/');
-  const baseName = clean.split('/').pop() || clean;
-  // strip extension
-  const dotIndex = baseName.lastIndexOf('.');
-  const nameWithoutExt = dotIndex > 0 ? baseName.slice(0, dotIndex) : baseName;
-  
-  // replace underscores and hyphens with spaces
-  let spaced = nameWithoutExt.replace(/[_-]+/g, ' ');
-  // insert space before capital letters if camelCase
-  spaced = spaced.replace(/([a-z])([A-Z])/g, '$1 $2');
-  
-  // Capitalize words
-  return spaced.split(' ').map(w => w ? (w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : '').join(' ').trim() || baseName;
-}
 
 function fmtSize(bytes) {
   if (!bytes) return '0 KB';
@@ -61,66 +57,204 @@ function fmtSize(bytes) {
 }
 
 function fmtDate(d) {
-  if (!d) return '';
+  if (!d) return 'Recent';
   return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
 function toast(message, type = 'success') {
-  const container = $('toastContainer');
-  if (!container) return;
+  const container = $('toastContainer') || document.body;
   const el = document.createElement('div');
   el.className = `toast ${type}`;
   el.textContent = message;
   container.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+  setTimeout(() => el.remove(), 4000);
 }
 
-function openModal(id) {
+function openModal(id) { 
   const el = $(id);
-  if (el) el.classList.add('show');
+  if (el) el.classList.add('show'); 
 }
-
-function closeModal(id) {
+function closeModal(id) { 
   const el = $(id);
-  if (el) el.classList.remove('show');
+  if (el) el.classList.remove('show'); 
 }
 
 function authHeaders() {
-  return adminToken ? { Authorization: `Bearer ${adminToken}` } : {};
+  return adminToken ? { 'Authorization': `Bearer ${adminToken}` } : {};
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
-
-function iconFor(ext, isFolder) {
-  if (isFolder) return ICONS.folder;
-  const cleanExt = (ext || '').toLowerCase().replace('.', '');
-  return ICONS[cleanExt] || ICONS.default;
-}
-
-function isExecutableFile(file) {
-  if (!file) return false;
-  if (file.batchId || file.folderName) return false; // Folders must NEVER display Run Online
-  if (!file.extension) return false;
-  return EXECUTABLE_EXTENSIONS.has(file.extension.toLowerCase());
-}
-
-function monacoLanguageFor(ext) {
-  const map = {
-    c: 'cpp', cpp: 'cpp', cc: 'cpp', cxx: 'cpp',
-    java: 'java', py: 'python', js: 'javascript', ts: 'typescript',
-    go: 'go', rs: 'rust', cs: 'csharp', kt: 'kotlin', kts: 'kotlin',
-    php: 'php', rb: 'ruby', swift: 'swift', scala: 'scala', sql: 'sql'
+function jsonAuthHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    ...authHeaders()
   };
-  return map[(ext || '').toLowerCase()] || 'plaintext';
 }
 
-// ---------------- PART 12: PARTICLE CANVAS ----------------
-function initParticleCanvas() {
+function getFileExtension(filenameOrExt) {
+  if (!filenameOrExt) return '';
+  const str = String(filenameOrExt).trim().toLowerCase();
+  const parts = str.split('.');
+  if (parts.length > 1) {
+    return parts.pop();
+  }
+  return str.replace(/^\./, '');
+}
+
+function isRunnableFile(file) {
+  if (!file) return false;
+  const ext = getFileExtension(file.extension || file.originalName || file.relativePath || '');
+  return RUNNABLE_EXTENSIONS.has(ext) || file.category === 'adsa' || file.category === 'dbms';
+}
+
+// ---------------- Theme & Welcome Intro ----------------
+function applyTheme(theme) {
+  activeTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  document.body.setAttribute('data-theme', theme);
+  const toggleBtn = $('themeToggle');
+  if (toggleBtn) {
+    toggleBtn.textContent = theme === 'dark' ? '🌙' : '☀️';
+    toggleBtn.title = theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme';
+  }
+  localStorage.setItem('zipshare_theme', theme);
+
+  document.querySelectorAll('.theme-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === theme);
+  });
+
+  if (window.monaco && window.monaco.editor) {
+    window.monaco.editor.setTheme(theme === 'light' ? 'vs' : 'vs-dark');
+  }
+}
+
+function initMascot() {
+  document.addEventListener('mousemove', e => {
+    const mascots = document.querySelectorAll('.mascot-svg');
+    mascots.forEach(svg => {
+      const rect = svg.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      
+      // Limit pupil displacement to max 4.5px
+      const maxOffset = 4.5;
+      const offX = (dx / dist) * Math.min(dist * 0.1, maxOffset);
+      const offY = (dy / dist) * Math.min(dist * 0.1, maxOffset);
+
+      const pupils = svg.querySelectorAll('.pupil-left, .pupil-right, #mascotPupilLeft, #mascotPupilRight');
+      pupils.forEach(pupil => {
+        pupil.style.transform = `translate(${offX}px, ${offY}px)`;
+      });
+    });
+  });
+
+  // Natural blink animation
+  setInterval(() => {
+    const eyeBases = document.querySelectorAll('.mascot-svg ellipse');
+    eyeBases.forEach(eye => {
+      eye.style.transform = 'scaleY(0.1)';
+      setTimeout(() => eye.style.transform = 'scaleY(1)', 150);
+    });
+  }, 4500);
+}
+
+function initIntro() {
+  applyTheme(activeTheme);
+  initMascot();
+
+  // Step 1 -> Step 2
+  const step1Next = $('step1NextBtn');
+  if (step1Next) {
+    step1Next.addEventListener('click', () => {
+      $('onboardStep1').style.display = 'none';
+      $('onboardStep2').style.display = 'flex';
+    });
+  }
+
+  // Step 2 -> Step 3
+  const step2Next = $('step2NextBtn');
+  if (step2Next) {
+    step2Next.addEventListener('click', () => {
+      $('onboardStep2').style.display = 'none';
+      $('onboardStep3').style.display = 'flex';
+    });
+  }
+
+  // Step 2 Back -> Step 1
+  const step2Back = $('step2BackBtn');
+  if (step2Back) {
+    step2Back.addEventListener('click', () => {
+      $('onboardStep2').style.display = 'none';
+      $('onboardStep1').style.display = 'flex';
+    });
+  }
+
+  // Step 3 Back -> Step 2
+  const step3Back = $('step3BackBtn');
+  if (step3Back) {
+    step3Back.addEventListener('click', () => {
+      $('onboardStep3').style.display = 'none';
+      $('onboardStep2').style.display = 'flex';
+    });
+  }
+
+  // Theme cards inside step 2
+  document.querySelectorAll('.theme-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.theme-card').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyTheme(btn.dataset.theme);
+    });
+  });
+
+  document.querySelectorAll('.welcome-cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.welcome-cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCategory = btn.dataset.cat;
+    });
+  });
+
+  const enterBtn = $('enterAppBtn');
+  if (enterBtn) {
+    enterBtn.addEventListener('click', () => {
+      localStorage.setItem('zipshare_visited', 'true');
+      $('introScreen').classList.add('hidden');
+      $('welcomeSplash').classList.add('show');
+      
+      setTimeout(() => {
+        $('welcomeSplash').classList.remove('show');
+        $('app').classList.add('show');
+        switchCategory(activeCategory);
+      }, 1200);
+    });
+  }
+
+  if (localStorage.getItem('zipshare_visited')) {
+    if ($('introScreen')) $('introScreen').classList.add('hidden');
+    if ($('app')) $('app').classList.add('show');
+  }
+}
+
+const themeToggle = $('themeToggle');
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+  });
+}
+
+// ---------------- Mouse Cursor Particle Bubbles ----------------
+function initParticles() {
   const canvas = $('particleCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -132,1352 +266,2056 @@ function initParticleCanvas() {
     height = canvas.height = window.innerHeight;
   });
 
-  const particles = Array.from({ length: 35 }, () => ({
-    x: Math.random() * width,
-    y: Math.random() * height,
-    vx: (Math.random() - 0.5) * 0.6,
-    vy: (Math.random() - 0.5) * 0.6,
-    radius: Math.random() * 2.5 + 1,
-    alpha: Math.random() * 0.5 + 0.2
-  }));
+  const particles = [];
 
-  function draw() {
+  document.addEventListener('mousemove', e => {
+    const glow = $('glowCursor');
+    if (glow) {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top = e.clientY + 'px';
+    }
+
+    if (Math.random() > 0.4) {
+      particles.push({
+        x: e.clientX,
+        y: e.clientY,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: -Math.random() * 2 - 0.5,
+        radius: Math.random() * 5 + 2,
+        color: Math.random() > 0.5 ? '#8b5cf6' : '#06b6d4',
+        alpha: 1
+      });
+    }
+  });
+
+  function render() {
     ctx.clearRect(0, 0, width, height);
-    const isDark = document.body.getAttribute('data-theme') === 'dark';
-    const color = isDark ? '139, 92, 246' : '124, 58, 237';
-
-    for (let i = 0; i < particles.length; i++) {
+    for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.x += p.vx;
       p.y += p.vy;
+      p.alpha -= 0.02;
 
-      if (p.x < 0) p.x = width;
-      if (p.x > width) p.x = 0;
-      if (p.y < 0) p.y = height;
-      if (p.y > height) p.y = 0;
+      if (p.alpha <= 0) {
+        particles.splice(i, 1);
+        continue;
+      }
 
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${color}, ${p.alpha})`;
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.restore();
+    }
+    requestAnimationFrame(render);
+  }
+  render();
+}
+
+// ---------------- Subject Animations ----------------
+function renderSubjectAnimation(cat) {
+  const canvas = $('subjectCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  if (subjectAnimFrame) cancelAnimationFrame(subjectAnimFrame);
+
+  let frame = 0;
+
+  function animate() {
+    frame++;
+    ctx.clearRect(0, 0, w, h);
+
+    if (cat === 'python') {
+      ctx.beginPath();
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = '#3776ab';
+      ctx.lineCap = 'round';
+      for (let x = 10; x < w - 10; x += 5) {
+        const y = h / 2 + Math.sin((x + frame * 3) * 0.05) * 18;
+        if (x === 10) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      const headX = w - 20;
+      const headY = h / 2 + Math.sin((headX + frame * 3) * 0.05) * 18;
+      ctx.beginPath();
+      ctx.arc(headX, headY, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#f0db4f';
       ctx.fill();
 
-      for (let j = i + 1; j < particles.length; j++) {
-        const p2 = particles[j];
-        const dx = p.x - p2.x;
-        const dy = p.y - p2.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 110) {
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.strokeStyle = `rgba(${color}, ${0.15 * (1 - dist / 110)})`;
-          ctx.stroke();
-        }
+    } else if (cat === 'java') {
+      ctx.fillStyle = '#f89820';
+      ctx.fillRect(w / 2 - 20, h / 2 - 10, 40, 35);
+      ctx.strokeStyle = '#f89820';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(w / 2 + 20, h / 2 - 5, 12, 20);
+
+      for (let i = 0; i < 3; i++) {
+        const sx = w / 2 - 12 + i * 12;
+        const sy = h / 2 - 18 - ((frame * 1.5 + i * 15) % 25);
+        ctx.beginPath();
+        ctx.arc(sx + Math.sin(frame * 0.1 + i) * 4, sy, 3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.fill();
       }
-    }
-    requestAnimationFrame(draw);
-  }
-  draw();
-}
 
-// ---------------- PART 6: ANIMATED CUTE MASCOT WITH EXPRESSIONS ----------------
-let currentMascotMood = 'normal';
+    } else if (cat === 'c') {
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(frame * 0.02);
+      ctx.beginPath();
+      ctx.arc(0, 0, 28, 0.4, Math.PI * 1.6);
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#5c6bc0';
+      ctx.stroke();
+      ctx.restore();
 
-function setMascotMood(mood, labelText) {
-  currentMascotMood = mood;
-  const moodLabel = $('mascotMoodLabel');
-  const mascotFace = $('mascotFace');
-  const smilePath = $('mascotSmile');
+    } else if (cat === 'cpp') {
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(frame * 0.03);
+      ctx.beginPath();
+      ctx.arc(0, 0, 22, 0, Math.PI * 2);
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = '#00599c';
+      ctx.stroke();
 
-  if (moodLabel && labelText) {
-    moodLabel.textContent = labelText;
-  }
+      for (let i = 0; i < 8; i++) {
+        const ang = (i * Math.PI) / 4;
+        ctx.fillRect(Math.cos(ang) * 22 - 3, Math.sin(ang) * 22 - 3, 8, 8);
+      }
+      ctx.restore();
 
-  if (smilePath) {
-    if (mood === 'happy' || mood === 'excited') {
-      smilePath.setAttribute('d', 'M 5,2 Q 25,20 45,2');
-    } else if (mood === 'sad') {
-      smilePath.setAttribute('d', 'M 5,14 Q 25,2 45,14');
-    } else if (mood === 'surprised') {
-      smilePath.setAttribute('d', 'M 18,8 Q 25,16 32,8 Q 25,0 18,8');
+    } else if (cat === 'adsa') {
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2;
+
+      const rootX = w / 2, rootY = 15;
+      const leftX = w / 2 - 35, leftY = 45;
+      const rightX = w / 2 + 35, rightY = 45;
+
+      ctx.beginPath();
+      ctx.moveTo(rootX, rootY);
+      ctx.lineTo(leftX, leftY);
+      ctx.moveTo(rootX, rootY);
+      ctx.lineTo(rightX, rightY);
+      ctx.stroke();
+
+      const pulse = Math.abs(Math.sin(frame * 0.05)) * 3;
+      [
+        { x: rootX, y: rootY },
+        { x: leftX, y: leftY },
+        { x: rightX, y: rightY }
+      ].forEach(node => {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 7 + pulse, 0, Math.PI * 2);
+        ctx.fillStyle = '#8b5cf6';
+        ctx.fill();
+      });
+
+    } else if (cat === 'dbms') {
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 4;
+
+      ctx.beginPath();
+      ctx.ellipse(w / 2, h / 2 - 15, 30, 10, 0, 0, Math.PI * 2);
+      ctx.ellipse(w / 2, h / 2 + 15, 30, 10, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const packetY = h / 2 - 15 + ((frame * 2) % 30);
+      ctx.beginPath();
+      ctx.arc(w / 2, packetY, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fill();
+
     } else {
-      smilePath.setAttribute('d', 'M 5,3 Q 25,15 45,3');
-    }
-  }
-
-  if (mascotFace) {
-    mascotFace.style.borderColor = mood === 'excited' ? 'var(--accent-2)' : 'var(--card-border)';
-  }
-}
-
-function initMascot() {
-  const leftPupil = $('leftPupil');
-  const rightPupil = $('rightPupil');
-  const mascotContainer = $('mascotContainer');
-
-  if (!leftPupil || !rightPupil) return;
-
-  function updateEyes(clientX, clientY) {
-    [leftPupil, rightPupil].forEach(pupil => {
-      const rect = pupil.parentElement.getBoundingClientRect();
-      const eyeCenterX = rect.left + rect.width / 2;
-      const eyeCenterY = rect.top + rect.height / 2;
-
-      const angle = Math.atan2(clientY - eyeCenterY, clientX - eyeCenterX);
-      const dist = Math.min(Math.hypot(clientX - eyeCenterX, clientY - eyeCenterY) / 12, 5);
-
-      const offsetX = Math.cos(angle) * dist;
-      const offsetY = Math.sin(angle) * dist;
-
-      pupil.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-    });
-
-    // Reset sleep timer on mouse activity
-    resetSleepTimer();
-  }
-
-  function resetSleepTimer() {
-    clearTimeout(mouseIdleTimer);
-    if (currentMascotMood === 'sleepy') {
-      setMascotMood('normal', 'ZipShare Robo Companion 🤖');
-      document.querySelectorAll('.eye').forEach(e => e.style.transform = 'scaleY(1)');
-    }
-    mouseIdleTimer = setTimeout(() => {
-      setMascotMood('sleepy', 'ZipShare Robo Zzz... 💤');
-      document.querySelectorAll('.eye').forEach(e => e.style.transform = 'scaleY(0.3)');
-    }, 12000);
-  }
-
-  document.addEventListener('mousemove', e => updateEyes(e.clientX, e.clientY));
-  document.addEventListener('touchmove', e => {
-    if (e.touches[0]) updateEyes(e.touches[0].clientX, e.touches[0].clientY);
-  });
-
-  // Wink / Click Interaction
-  if (mascotContainer) {
-    mascotContainer.addEventListener('click', () => {
-      const leftEye = document.querySelector('.left-eye');
-      if (leftEye) {
-        leftEye.classList.add('wink');
-        setMascotMood('happy', 'Hi Friend! Happy Coding! ✨');
-        setTimeout(() => {
-          leftEye.classList.remove('wink');
-          setMascotMood('normal', 'ZipShare Robo Companion 🤖');
-        }, 1200);
+      for (let i = 0; i < 5; i++) {
+        const px = (frame * 2 + i * 40) % w;
+        const py = h / 2 + Math.sin(frame * 0.05 + i) * 12;
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fillStyle = i % 2 === 0 ? '#8b5cf6' : '#06b6d4';
+        ctx.fill();
       }
-      toast('ZipShare Robo says hello! 🤖✨', 'success');
-    });
-  }
-
-  // Interactive Target Hovering for Mascot
-  const hoverTargets = [
-    { sel: '#searchInput', mood: 'surprised', label: 'Robo watching you search... 🔍' },
-    { sel: '#uploadBtn', mood: 'excited', label: 'Upload your programs! ⬆' },
-    { sel: '#uploadFolderBtn', mood: 'excited', label: 'Upload whole code folder! 📁' },
-    { sel: '#btnRunCode', mood: 'excited', label: 'Ready to execute online! 🚀' }
-  ];
-
-  hoverTargets.forEach(t => {
-    const el = document.querySelector(t.sel);
-    if (el) {
-      el.addEventListener('mouseenter', () => setMascotMood(t.mood, t.label));
-      el.addEventListener('mouseleave', () => setMascotMood('normal', 'ZipShare Robo Companion 🤖'));
     }
-  });
 
-  resetSleepTimer();
+    subjectAnimFrame = requestAnimationFrame(animate);
+  }
+  animate();
 }
 
-// ---------------- PART 5: 4-STEP ONBOARDING EXPERIENCE ----------------
-let currentOnboardStep = 1;
+// ---------------- Category Switcher ----------------
+function switchCategory(cat) {
+  activeCategory = cat;
 
-function showOnboardStep(step) {
-  currentOnboardStep = step;
-
-  // Update step contents visibility
-  [1, 2, 3, 4].forEach(s => {
-    const el = $(`onboardStep${s}`);
-    if (el) el.style.display = s === step ? 'block' : 'none';
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.category === cat);
   });
 
-  // Update stepper dots
-  document.querySelectorAll('.onboarding-stepper .step-dot').forEach(dot => {
-    const s = parseInt(dot.dataset.step);
-    dot.classList.toggle('active', s === step);
-  });
+  const stages = {
+    all: { icon: '⭐', title: 'All Files & Folders', desc: 'Browse all programming code, lab records, notes and project folders.' },
+    java: { icon: '☕', title: 'Java Projects', desc: 'Object Oriented Programming, Multithreading, and Data Structures in Java.' },
+    python: { icon: '🐍', title: 'Python Programs', desc: 'Lab programs, logic problems, algorithms, and scripts.' },
+    adsa: { icon: '🌳', title: 'Advanced Data Structures & Algorithms (ADSA)', desc: 'AVL Trees, Graphs, Hash Tables, and Red-Black Tree implementations.' },
+    c: { icon: '🔷', title: 'C Programming', desc: 'Core C lab exercises, pointers, matrix operations, and algorithms.' },
+    cpp: { icon: '⚙️', title: 'C++ Programs', desc: 'OOPs concepts, template classes, STL, and C++ algorithms.' },
+    dbms: { icon: '🗄️', title: 'Database Management Systems (DBMS)', desc: 'SQL DDL/DML queries, schema files, normalization, and joins.' },
+    os: { icon: '🖥️', title: 'Operating Systems (OS)', desc: 'CPU scheduling, Banker\'s Algorithm, deadlocks, and process synchronization.' },
+    cn: { icon: '🌐', title: 'Computer Networks (CN)', desc: 'Socket programming, distance vector routing, TCP/UDP protocols.' },
+    linux: { icon: '🐧', title: 'Linux Administration', desc: 'Shell scripting, bash utilities, process management, and system commands.' },
+    cyber: { icon: '🔐', title: 'Cyber Security', desc: 'Cryptography, Caesar cipher, AES encryption, and security protocols.' },
+    folders: { icon: '📁', title: 'Project Folders', desc: 'Multi-file student lab project directory structures.' },
+    pinned: { icon: '📌', title: 'Pinned Highlights', desc: 'Important administrative releases and starred lab code.' }
+  };
 
-  // Step specific actions
-  if (step === 1) {
-    startWelcomeTyping();
-  } else if (step === 4) {
-    setMascotMood('happy', 'All Set! Let\'s Launch ZipShare! 🎉');
-  }
+  const s = stages[cat] || stages.all;
+  if ($('stageIcon')) $('stageIcon').textContent = s.icon;
+  if ($('stageTitle')) $('stageTitle').textContent = s.title;
+  if ($('stageDesc')) $('stageDesc').textContent = s.desc;
+  if ($('gridSectionTitle')) $('gridSectionTitle').textContent = `${s.title} (${lastFiles.length})`;
+
+  renderSubjectAnimation(cat);
+  loadFiles();
+  renderBreadcrumbs();
 }
 
-function startWelcomeTyping() {
-  const target = $('welcomeTypingText');
-  if (!target) return;
+function setSyllabusFilter(subject, exercise = null, question = null) {
+  activeSyllabusSubject = subject;
+  activeSyllabusExercise = exercise;
+  activeSyllabusQuestion = question;
 
-  const phrase = "Welcome to ZipShare Student Hub! Your executable programming companion for Java, Python, C, C++, and SQL.";
-  target.textContent = "";
-  let i = 0;
+  const badge = $('activeSyllabusFilterBadge');
+  const textEl = $('syllabusFilterText');
 
-  clearTimeout(typingTimeout);
-  function typeChar() {
-    if (i < phrase.length) {
-      target.textContent += phrase.charAt(i);
-      i++;
-      typingTimeout = setTimeout(typeChar, 30);
-    }
+  if (subject || exercise || question) {
+    if (badge) badge.style.display = 'inline-flex';
+    let filterStr = (subject || '').toUpperCase();
+    if (exercise) filterStr += ` › ${exercise}`;
+    if (question) filterStr += ` › ${question}`;
+    if (textEl) textEl.textContent = filterStr;
+  } else {
+    if (badge) badge.style.display = 'none';
   }
-  typeChar();
+
+  loadFiles();
 }
 
-function initOnboarding() {
-  const overlay = $('startupModalOverlay');
-  const visited = localStorage.getItem('zipshare_visited') || localStorage.getItem('srkr_visited');
-
-  if (!visited && overlay) {
-    overlay.classList.remove('hidden');
-    showOnboardStep(1);
-  } else if (overlay) {
-    overlay.classList.add('hidden');
-  }
-
-  // Next / Back buttons
-  const btnNext1 = $('btnNextStep1');
-  if (btnNext1) btnNext1.addEventListener('click', () => showOnboardStep(2));
-
-  const btnBack2 = $('btnBackStep2');
-  if (btnBack2) btnBack2.addEventListener('click', () => showOnboardStep(1));
-
-  const btnNext2 = $('btnNextStep2');
-  if (btnNext2) btnNext2.addEventListener('click', () => showOnboardStep(3));
-
-  const btnBack3 = $('btnBackStep3');
-  if (btnBack3) btnBack3.addEventListener('click', () => showOnboardStep(2));
-
-  const btnNext3 = $('btnNextStep3');
-  if (btnNext3) btnNext3.addEventListener('click', () => showOnboardStep(4));
-
-  const btnBack4 = $('btnBackStep4');
-  if (btnBack4) btnBack4.addEventListener('click', () => showOnboardStep(3));
-
-  // Enter Portal Button
-  const btnEnter = $('btnEnterPortal');
-  if (btnEnter) {
-    btnEnter.addEventListener('click', () => {
-      localStorage.setItem('zipshare_visited', 'true');
-      if (overlay) overlay.classList.add('hidden');
-      if (currentSubjectFilter) {
-        setSubjectFilter(currentSubjectFilter);
-      } else {
-        loadFiles();
-      }
-      toast('Welcome to ZipShare Student Hub! 🚀', 'success');
-      setMascotMood('happy', 'Enjoy your programming hub! 💻');
-    });
-  }
-
-  // Stepper dots click
-  document.querySelectorAll('.onboarding-stepper .step-dot').forEach(dot => {
-    dot.addEventListener('click', () => {
-      const step = parseInt(dot.dataset.step);
-      showOnboardStep(step);
-    });
-  });
-
-  // Reopen onboarding from navbar mascot button
-  const mascotReopenBtn = $('mascotReopenBtn');
-  if (mascotReopenBtn) {
-    mascotReopenBtn.addEventListener('click', () => {
-      if (overlay) {
-        overlay.classList.remove('hidden');
-        showOnboardStep(1);
-      }
-    });
-  }
-
-  // Theme cards in onboarding
-  document.querySelectorAll('.theme-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      applyTheme(card.dataset.setTheme);
-    });
-  });
-
-  // Subject cards in onboarding
-  document.querySelectorAll('.subject-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      currentSubjectFilter = card.dataset.subject;
-      localStorage.setItem('zipshare_selected_subject', currentSubjectFilter);
-    });
-  });
+function clearSyllabusFilter() {
+  setSyllabusFilter(null, null, null);
 }
 
-// ---------------- Theme Management ----------------
-function applyTheme(theme) {
-  document.body.setAttribute('data-theme', theme);
-  $('themeToggle').textContent = theme === 'dark' ? '🌙' : '☀️';
-  localStorage.setItem('zipshare_theme', theme);
+const clearSyllabusBtn = $('clearSyllabusFilterBtn');
+if (clearSyllabusBtn) {
+  clearSyllabusBtn.addEventListener('click', clearSyllabusFilter);
+}
 
-  if (monacoEditorInstance && window.monaco) {
-    monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
+function renderBreadcrumbs() {
+  const container = $('breadcrumbBar');
+  if (!container) return;
+
+  const categoryNames = {
+    all: 'All Categories',
+    java: 'Java',
+    python: 'Python',
+    adsa: 'ADSA',
+    c: 'C Programming',
+    cpp: 'C++',
+    dbms: 'DBMS',
+    os: 'Operating Systems',
+    cn: 'Computer Networks',
+    linux: 'Linux',
+    cyber: 'Cyber Security',
+    folders: 'Folders',
+    pinned: 'Pinned Items'
+  };
+
+  let html = `<span style="cursor:pointer; font-weight:600; color:var(--primary);" onclick="switchCategory('all')">🏠 Home</span>`;
+
+  if (activeCategory && activeCategory !== 'all') {
+    const name = categoryNames[activeCategory] || activeCategory.toUpperCase();
+    html += ` <span style="color:var(--text-dim);">/</span> <span style="font-weight:600; color:var(--text);">${escapeHtml(name)}</span>`;
   }
+
+  if (activeSyllabusSubject) {
+    html += ` <span style="color:var(--text-dim);">/</span> <span style="color:var(--primary); font-weight:500;">Syllabus: ${escapeHtml(activeSyllabusSubject.toUpperCase())}</span>`;
+  }
+
+  if (searchSearchQuery) {
+    html += ` <span style="color:var(--text-dim);">/</span> <span style="color:var(--primary);">Search: "${escapeHtml(searchSearchQuery)}"</span>`;
+  }
+
+  container.innerHTML = html;
 }
 
-function initTheme() {
-  const savedTheme = localStorage.getItem('zipshare_theme') || 'dark';
-  applyTheme(savedTheme);
-}
-
-$('themeToggle').addEventListener('click', () => {
-  const current = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  applyTheme(current);
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => switchCategory(chip.dataset.category));
 });
 
-document.addEventListener('mousemove', e => {
-  const glow = $('glowCursor');
-  if (glow) {
-    glow.style.left = e.clientX + 'px';
-    glow.style.top = e.clientY + 'px';
+// ---------------- Search & Autocomplete ----------------
+const searchInput = $('searchInput');
+const searchClearBtn = $('searchClearBtn');
+const suggestionsPanel = $('suggestionsPanel');
+
+if (searchInput) {
+  searchInput.addEventListener('focus', () => {
+    if (suggestionsPanel) suggestionsPanel.classList.add('show');
+  });
+
+  searchInput.addEventListener('input', e => {
+    searchSearchQuery = e.target.value.trim();
+    if (searchClearBtn) searchClearBtn.style.display = searchSearchQuery ? 'block' : 'none';
+    
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(loadFiles, 200);
+  });
+}
+
+document.addEventListener('click', e => {
+  if (suggestionsPanel && !e.target.closest('.search-wrap')) {
+    suggestionsPanel.classList.remove('show');
   }
 });
 
-// ---------------- Session & Badges ----------------
-function refreshSessionBadge() {
-  const badge = $('sessionBadge');
-  if (badge) badge.textContent = adminToken ? 'Welcome Admin' : 'Welcome Student';
-  const loginBtn = $('adminLoginBtn');
-  if (loginBtn) loginBtn.textContent = adminToken ? 'Admin Logout' : 'Admin Login';
-  updateWelcomeCapsule();
-  renderFiles(lastFiles || []);
+if (searchClearBtn) {
+  searchClearBtn.addEventListener('click', () => {
+    if (searchInput) searchInput.value = '';
+    searchSearchQuery = '';
+    searchClearBtn.style.display = 'none';
+    loadFiles();
+  });
 }
 
-// ---------------- Stats Bar ----------------
-async function loadStats() {
-  try {
-    const res = await fetch('/api/files/stats');
-    const s = await res.json();
-    $('statsBar').innerHTML = `
-      <div class="stat-card"><b>${s.totalFiles}</b><span>Total Programs</span></div>
-      <div class="stat-card"><b>${s.todayUploads}</b><span>Today's Uploads</span></div>
-      <div class="stat-card"><b>${s.pinned}</b><span>Pinned Items</span></div>
-      <div class="stat-card"><b>${s.totalDownloads}</b><span>Downloads</span></div>
-      <div class="stat-card"><b>${fmtSize(s.storageUsed)}</b><span>Storage Used</span></div>
-    `;
-  } catch { /* stats non-critical */ }
-}
-
-// ---------------- Search & Suggestions ----------------
 async function loadSuggestions() {
+  if (!suggestionsPanel) return;
   try {
     const res = await fetch('/api/files/suggestions');
+    if (!res.ok) return;
     const data = await res.json();
-    const panel = $('suggestionsPanel');
+
     let html = '';
     if (data.trending?.length) {
       html += '<div class="suggestion-group-label">TRENDING SEARCHES</div>';
-      html += data.trending.map(t => `<div class="suggestion-item">${escapeHtml(t)}</div>`).join('');
+      data.trending.forEach(t => {
+        html += `<div class="suggestion-item" data-q="${escapeHtml(t)}"><span>🔍 ${escapeHtml(t)}</span></div>`;
+      });
     }
     if (data.recent?.length) {
-      html += '<div class="suggestion-group-label">RECENTLY UPLOADED</div>';
-      html += data.recent.map(t => `<div class="suggestion-item">${escapeHtml(t)}</div>`).join('');
+      html += '<div class="suggestion-group-label">RECENTLY UPLOADED CODE</div>';
+      data.recent.forEach(r => {
+        html += `<div class="suggestion-item" data-q="${escapeHtml(r)}"><span>📄 ${escapeHtml(r)}</span></div>`;
+      });
     }
-    panel.innerHTML = html || '<div class="suggestion-group-label">Start typing to search...</div>';
-    panel.querySelectorAll('.suggestion-item').forEach(item => {
+
+    suggestionsPanel.innerHTML = html || '<div class="suggestion-group-label">Start typing to search...</div>';
+    
+    suggestionsPanel.querySelectorAll('.suggestion-item').forEach(item => {
       item.addEventListener('click', () => {
-        $('searchInput').value = item.textContent;
-        currentSearch = item.textContent;
-        panel.classList.remove('show');
+        const q = item.dataset.q;
+        if (searchInput) searchInput.value = q;
+        searchSearchQuery = q;
+        if (searchClearBtn) searchClearBtn.style.display = 'block';
+        suggestionsPanel.classList.remove('show');
         loadFiles();
       });
     });
   } catch { /* non-critical */ }
 }
 
-$('searchInput').addEventListener('focus', () => $('suggestionsPanel').classList.add('show'));
-document.addEventListener('click', e => {
-  if (!e.target.closest('.search-wrap')) $('suggestionsPanel').classList.remove('show');
-});
-$('searchInput').addEventListener('input', e => {
-  currentSearch = e.target.value;
-  clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(loadFiles, 300);
-});
-
-// ---------------- PART 8: LAB EXPLORER SIDEBAR ----------------
-function initLabExplorer() {
-  const sidebar = $('labExplorerSidebar');
-  const toggleBtn = $('btnToggleSidebar');
-  const mobileOpenBtn = $('btnMobileSidebarOpen');
-  const explorerSearch = $('explorerSearchInput');
-
-  if (toggleBtn && sidebar) {
-    toggleBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
-      toggleBtn.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
-    });
-  }
-
-  if (mobileOpenBtn && sidebar) {
-    mobileOpenBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-    });
-  }
-
-  if (explorerSearch) {
-    explorerSearch.addEventListener('input', e => {
-      const term = e.target.value.toLowerCase();
-      document.querySelectorAll('.tree-file-item').forEach(item => {
-        const text = item.textContent.toLowerCase();
-        item.style.display = text.includes(term) ? 'flex' : 'none';
-      });
-    });
+// ---------------- Syllabus Sidebar Loading & Rendering ----------------
+async function loadSyllabus() {
+  try {
+    const res = await fetch('/syllabus.json');
+    if (!res.ok) return;
+    syllabusData = await res.json();
+    renderSidebar();
+  } catch (err) {
+    console.warn('Could not load syllabus.json', err);
   }
 }
 
-function renderExplorerTree(files) {
-  const container = $('explorerTree');
-  if (!container) return;
+function renderSidebar() {
+  const treeContainer = $('syllabusTreeContainer');
+  if (!treeContainer) return;
 
-  const subjectsMap = {};
-
-  files.forEach(f => {
-    const subj = f.subject || 'General / Other';
-    const ex = f.exercise || 'Main Programs';
-
-    if (!subjectsMap[subj]) subjectsMap[subj] = {};
-    if (!subjectsMap[subj][ex]) subjectsMap[subj][ex] = [];
-
-    subjectsMap[subj][ex].push(f);
-  });
-
+  const filterText = ($('syllabusSearchInput')?.value || '').toLowerCase().trim();
   let html = '';
 
-  for (const [subjName, exercises] of Object.entries(subjectsMap)) {
-    let exHtml = '';
-    for (const [exName, exFiles] of Object.entries(exercises)) {
-      const filesList = exFiles.map(file => {
-        const cleanName = getCleanName(file.originalName);
-        const meta = iconFor(file.extension, !!file.batchId);
-        return `
-          <div class="tree-file-item" data-id="${file._id}" data-name="${escapeHtml(cleanName)}">
-            <span style="color:${meta.color}">${meta.icon}</span>
-            <span>${escapeHtml(cleanName)}</span>
+  const subjects = Object.keys(syllabusData).length > 0 
+    ? syllabusData 
+    : {
+        java: { title: 'Java Programming', icon: '☕', exercises: [] },
+        python: { title: 'Python Programs', icon: '🐍', exercises: [] },
+        adsa: { title: 'Advanced Data Structures (ADSA)', icon: '🌳', exercises: [] },
+        c: { title: 'C Programming', icon: '🔷', exercises: [] },
+        cpp: { title: 'C++ Programs', icon: '⚙️', exercises: [] },
+        dbms: { title: 'Database Systems (DBMS)', icon: '🗄️', exercises: [] }
+      };
+
+  for (const [subKey, subObj] of Object.entries(subjects)) {
+    const subTitle = subObj.title || subKey.toUpperCase();
+    const subIcon = subObj.icon || (ICONS[subKey] || ICONS.default).icon;
+
+    // Filter matching
+    const exercises = subObj.exercises || [];
+    let matchingExercises = exercises.filter(ex => {
+      if (!filterText) return true;
+      if (ex.title.toLowerCase().includes(filterText)) return true;
+      return (ex.questions || []).some(q => q.title.toLowerCase().includes(filterText) || q.description?.toLowerCase().includes(filterText));
+    });
+
+    const isSubActive = activeSyllabusSubject === subKey;
+
+    html += `
+      <div class="syllabus-subject-node ${isSubActive ? 'active' : ''}">
+        <div class="syllabus-subject-header" onclick="toggleSyllabusSubject('${subKey}')">
+          <span>${subIcon} ${escapeHtml(subTitle)}</span>
+          <span class="tree-arrow" id="arrow_${subKey}">▼</span>
+        </div>
+        <div class="syllabus-subject-body" id="body_${subKey}" style="display: ${isSubActive || filterText ? 'block' : 'none'};">
+    `;
+
+    if (matchingExercises.length === 0) {
+      html += `<div style="padding:6px 12px; font-size:0.8rem; color:var(--text-dim);">No exercises found</div>`;
+    } else {
+      matchingExercises.forEach(ex => {
+        const isExActive = isSubActive && activeSyllabusExercise === ex.title;
+
+        html += `
+          <div class="syllabus-exercise-node ${isExActive ? 'active' : ''}">
+            <div class="syllabus-exercise-title" onclick="setSyllabusFilter('${subKey}', '${escapeHtml(ex.title)}')">
+              📁 ${escapeHtml(ex.title)}
+            </div>
+            <div class="syllabus-questions-list">
+        `;
+
+        (ex.questions || []).forEach(q => {
+          const isQActive = isExActive && activeSyllabusQuestion === q.title;
+          html += `
+            <div class="syllabus-question-item ${isQActive ? 'active' : ''}" onclick="setSyllabusFilter('${subKey}', '${escapeHtml(ex.title)}', '${escapeHtml(q.title)}')">
+              📄 ${escapeHtml(q.title)}
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
           </div>
         `;
-      }).join('');
-
-      exHtml += `
-        <div class="tree-exercise-node expanded">
-          <div class="tree-exercise-header">
-            <span>📁</span>
-            <span>${escapeHtml(exName)}</span>
-          </div>
-          <div class="tree-exercise-children">${filesList}</div>
-        </div>
-      `;
+      });
     }
 
     html += `
-      <div class="tree-subject-node expanded">
-        <div class="tree-subject-header" data-subject="${escapeHtml(subjName)}">
-          <span class="arrow">▶</span>
-          <span>📚 ${escapeHtml(subjName)}</span>
         </div>
-        <div class="tree-children">${exHtml}</div>
       </div>
     `;
   }
 
-  container.innerHTML = html || '<div style="padding:10px;color:var(--text-dim);font-size:0.8rem;">No subjects loaded</div>';
+  treeContainer.innerHTML = html;
+}
 
-  // Attach tree handlers
-  container.querySelectorAll('.tree-subject-header').forEach(header => {
-    header.addEventListener('click', e => {
-      e.stopPropagation();
-      const node = header.closest('.tree-subject-node');
-      node.classList.toggle('expanded');
-    });
-  });
+function toggleSyllabusSubject(subKey) {
+  const body = $(`body_${subKey}`);
+  const arrow = $(`arrow_${subKey}`);
+  if (!body) return;
 
-  container.querySelectorAll('.tree-exercise-header').forEach(header => {
-    header.addEventListener('click', e => {
-      e.stopPropagation();
-      const node = header.closest('.tree-exercise-node');
-      node.classList.toggle('expanded');
-    });
-  });
+  const isHidden = body.style.display === 'none';
+  body.style.display = isHidden ? 'block' : 'none';
+  if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
+}
 
-  container.querySelectorAll('.tree-file-item').forEach(item => {
-    item.addEventListener('click', () => {
-      container.querySelectorAll('.tree-file-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-      const fileId = item.dataset.id;
-      const file = lastFiles.find(f => f._id === fileId);
-      if (file) {
-        openSolutionModal(file);
-      }
-    });
+const syllabusSearchInput = $('syllabusSearchInput');
+if (syllabusSearchInput) {
+  syllabusSearchInput.addEventListener('input', renderSidebar);
+}
+
+// Sidebar toggle drawer for desktop & mobile
+const sidebarToggleBtn = $('sidebarToggleBtn');
+const sidebarCollapseBtn = $('sidebarCollapseBtn');
+const mobileSidebarTrigger = $('mobileSidebarTrigger');
+const labSidebar = $('labSidebar');
+
+if (sidebarToggleBtn && labSidebar) {
+  sidebarToggleBtn.addEventListener('click', () => {
+    labSidebar.classList.toggle('collapsed');
   });
 }
 
-// ---------------- Subject & Filter Handlers ----------------
-function setSubjectFilter(subject) {
-  currentSubjectFilter = subject;
-  localStorage.setItem('zipshare_selected_subject', subject);
-
-  const banner = $('activeFilterBanner');
-  const bannerText = $('activeFilterText');
-  if (banner && bannerText) {
-    bannerText.textContent = `Filtered by Subject: ${subject}`;
-    banner.style.display = 'flex';
-  }
-  loadFiles();
-}
-
-function clearSubjectFilter() {
-  currentSubjectFilter = null;
-  localStorage.removeItem('zipshare_selected_subject');
-  const banner = $('activeFilterBanner');
-  if (banner) banner.style.display = 'none';
-  loadFiles();
-}
-
-const btnClearFilter = $('btnClearActiveFilter');
-if (btnClearFilter) btnClearFilter.addEventListener('click', clearSubjectFilter);
-
-document.querySelectorAll('.chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    currentFilter = chip.dataset.filter;
-    loadFiles();
+if (sidebarCollapseBtn && labSidebar) {
+  sidebarCollapseBtn.addEventListener('click', () => {
+    labSidebar.classList.add('collapsed');
   });
-});
+}
 
-// ---------------- File List & Data Rendering ----------------
+if (mobileSidebarTrigger && labSidebar) {
+  mobileSidebarTrigger.addEventListener('click', () => {
+    labSidebar.classList.toggle('show-mobile');
+  });
+}
+
+// ---------------- Load & Render Files ----------------
 async function loadFiles() {
   try {
     const params = new URLSearchParams();
-    if (currentSearch) params.set('q', currentSearch);
-    if (currentFilter && currentFilter !== 'all') params.set('filter', currentFilter);
-    if (currentSubjectFilter) params.set('subject', currentSubjectFilter);
+    if (searchSearchQuery) params.set('q', searchSearchQuery);
+    if (activeCategory !== 'all') params.set('category', activeCategory);
+    if (activeSyllabusSubject) params.set('subject', activeSyllabusSubject);
+    if (activeSyllabusExercise) params.set('exercise', activeSyllabusExercise);
+    if (activeSyllabusQuestion) params.set('question', activeSyllabusQuestion);
+
+    const sortEl = $('sortSelect');
+    if (sortEl) params.set('sort', sortEl.value);
 
     const res = await fetch(`/api/files?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch files');
+    if (!res.ok) throw new Error('Failed to load files from server');
     const files = await res.json();
     lastFiles = files;
 
+    renderPinnedSection(files);
     renderFiles(files);
-    renderExplorerTree(files);
-
-    if (currentSearch) loadSuggestions();
+    renderBreadcrumbs();
+    loadStats();
+    loadSuggestions();
+    renderSidebar();
   } catch (err) {
-    toast('Could not load program files.', 'error');
+    toast('Could not connect to server file index.', 'error');
   }
+}
+
+const sortSelect = $('sortSelect');
+if (sortSelect) sortSelect.addEventListener('change', loadFiles);
+
+// Render Pinned Highlight Section at the Top (BUG 12)
+function renderPinnedSection(files) {
+  const section = $('pinnedSection');
+  const grid = $('pinnedGrid');
+  if (!section || !grid) return;
+
+  const pinnedFiles = (files || []).filter(f => f.pinned);
+
+  if (pinnedFiles.length === 0) {
+    section.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+
+  section.style.display = 'block';
+  grid.innerHTML = '';
+
+  const isAdmin = Boolean(adminToken);
+
+  pinnedFiles.forEach(file => {
+    const ext = (file.extension || 'default').toLowerCase();
+    const meta = ICONS[ext] || ICONS.default;
+    const runnable = isRunnableFile(file);
+
+    const card = document.createElement('div');
+    card.className = 'pinned-item-card';
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <span class="pinned-icon">${meta.icon}</span>
+        ${isAdmin ? `<button class="card-btn danger" style="padding:2px 6px; font-size:0.7rem;" onclick="togglePinFile('${file._id || file.id}', false)">Unpin</button>` : ''}
+      </div>
+      <h4 class="pinned-title" title="${escapeHtml(file.originalName)}">${escapeHtml(file.originalName)}</h4>
+      <p class="pinned-meta">${file.category ? file.category.toUpperCase() : 'CODE'} · ${fmtSize(file.size)}</p>
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <button class="card-btn" style="flex:1; padding:4px; font-size:0.75rem;" onclick="previewFile('${file._id || file.id}')">👁 View</button>
+        ${runnable ? `<button class="card-btn primary" style="flex:1; padding:4px; font-size:0.75rem;" onclick="runOnlineFile('${file._id || file.id}')">▶ Run</button>` : ''}
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
 }
 
 function renderFiles(files) {
   const grid = $('fileGrid');
-  const pinnedGrid = $('pinnedFileGrid');
-  const pinnedSection = $('pinnedSection');
   const empty = $('emptyState');
+  if (!grid) return;
+  grid.innerHTML = '';
 
-  const pinnedCards = [];
-  const normalCards = [];
+  if (!files || files.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
 
-  const seenBatches = new Set();
+  const isAdmin = Boolean(adminToken);
 
-  for (const f of files) {
-    if (f.batchId) {
-      if (seenBatches.has(f.batchId)) continue;
-      seenBatches.add(f.batchId);
-      const folderFiles = files.filter(x => x.batchId === f.batchId);
-      const folderCardHtml = renderFolderCard(f, folderFiles);
+  // Group items by batchId if present
+  const folderBatches = new Map();
+  const standaloneFiles = [];
 
-      if (f.pinned) pinnedCards.push(folderCardHtml);
-      else normalCards.push(folderCardHtml);
+  files.forEach(file => {
+    if (file.batchId) {
+      if (!folderBatches.has(file.batchId)) {
+        folderBatches.set(file.batchId, []);
+      }
+      folderBatches.get(file.batchId).push(file);
     } else {
-      const cardHtml = renderFileCard(f);
-      if (f.pinned) pinnedCards.push(cardHtml);
-      else normalCards.push(cardHtml);
+      standaloneFiles.push(file);
     }
-  }
+  });
 
-  if (pinnedCards.length > 0) {
-    pinnedSection.style.display = 'block';
-    pinnedGrid.innerHTML = pinnedCards.join('');
-  } else {
-    pinnedSection.style.display = 'none';
-  }
+  // Render folder batch cards
+  folderBatches.forEach((batchFiles, batchId) => {
+    const topFolder = batchFiles[0].folderName || 'Uploaded Folder';
+    const totalSize = batchFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+    const isPinned = batchFiles.some(f => f.pinned);
+    const uploadDate = batchFiles[0].uploadDate;
 
-  grid.innerHTML = normalCards.join('');
-  empty.style.display = (pinnedCards.length + normalCards.length) ? 'none' : 'block';
+    const card = document.createElement('div');
+    card.className = `file-card ${isPinned ? 'pinned-card' : ''}`;
 
-  attachCardHandlers();
-}
+    let actionBtns = `
+      <button class="card-btn" onclick="downloadFolder('${batchId}')">⬇ Download Zip</button>
+      <button class="card-btn" onclick="toggleFolderDetails('${batchId}')">📁 View Files (${batchFiles.length})</button>
+    `;
 
-function renderFolderCard(f, folderFiles) {
-  const meta = iconFor(null, true);
-  const folderName = getCleanName(f.folderName || f.originalName);
-  const totalFolderSize = folderFiles.reduce((sum, item) => sum + (item.size || 0), 0);
+    if (isAdmin) {
+      actionBtns += `
+        ${isPinned ? `<button class="card-btn" onclick="togglePinFolder('${batchId}', false)">📌 Unpin</button>` : `<button class="card-btn" onclick="togglePinFolder('${batchId}', true)">📌 Pin</button>`}
+        <button class="card-btn danger" onclick="deleteFolderBatch('${batchId}')">🗑️ Delete Folder</button>
+      `;
+    }
 
-  const programListHtml = folderFiles.map(file => {
-    const cleanTitle = getCleanTitle(file.originalName);
-    const cleanName = getCleanName(file.originalName);
-    const itemMeta = iconFor(file.extension, false);
-    const runBtn = isExecutableFile(file) ? `
-      <button class="btn-run" data-id="${file._id}" data-name="${escapeHtml(cleanName)}">▶ Run Online</button>` : '';
-
-    return `
-      <div class="folder-program-item">
-        <div class="prog-item-left">
-          <span class="prog-icon" style="color:${itemMeta.color}">${itemMeta.icon}</span>
-          <div>
-            <div class="prog-clean-name">${escapeHtml(cleanTitle)}</div>
-            <div class="prog-meta-sub">${fmtSize(file.size)} • ${fmtDate(file.uploadDate)}</div>
+    const filesListHtml = batchFiles.map(f => {
+      const runnable = isRunnableFile(f);
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--card-border); font-size:0.82rem;">
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:50%;" title="${escapeHtml(f.relativePath || f.originalName)}">📄 ${escapeHtml(f.relativePath || f.originalName)}</span>
+          <div style="display:flex; gap:4px;">
+            <button class="card-btn" style="padding:2px 6px; font-size:0.75rem;" onclick="previewFile('${f._id || f.id}')">👁 View</button>
+            ${runnable ? `<button class="card-btn primary" style="padding:2px 6px; font-size:0.75rem;" onclick="runOnlineFile('${f._id || f.id}')">▶ Run</button>` : ''}
+            <button class="card-btn" style="padding:2px 6px; font-size:0.75rem;" onclick="downloadFile('${f._id || f.id}')">⬇</button>
           </div>
         </div>
-        <div class="prog-item-actions">
-          ${runBtn}
-          <button class="btn-solution" data-id="${file._id}">💡 Solution</button>
-          <button class="btn-download" data-id="${file._id}">⬇ Download</button>
+      `;
+    }).join('');
+
+    card.innerHTML = `
+      ${isPinned ? '<span class="pin-badge">📌</span>' : ''}
+      <div>
+        <div class="card-top">
+          <div class="file-icon-box">📁</div>
+          <div class="file-info">
+            <h4 class="file-name">${escapeHtml(topFolder)}</h4>
+            <div class="file-meta">
+              <span>${batchFiles.length} file(s) · ${fmtSize(totalSize)}</span> · <span>${fmtDate(uploadDate)}</span>
+            </div>
+          </div>
         </div>
+        <p class="file-desc">Folder containing ${batchFiles.length} file(s)</p>
+        <div class="file-tags"><span class="tag-pill">#folder</span><span class="tag-pill">#zip</span></div>
+        <div id="folder_files_${batchId}" style="display:none; margin-top:12px; background:var(--card); padding:10px; border-radius:10px; max-height:200px; overflow-y:auto;">
+          ${filesListHtml}
+        </div>
+      </div>
+      <div class="card-actions" style="margin-top:12px;">
+        ${actionBtns}
       </div>
     `;
-  }).join('');
 
-  const adminFolderButtons = adminToken ? `
-    <button class="btn-delete-folder upload-btn danger ghost" data-batch="${f.batchId || f.folderName}" data-name="${escapeHtml(folderName)}" data-count="${folderFiles.length}" data-size="${fmtSize(totalFolderSize)}">🗑️ Delete Folder</button>` : '';
+    grid.appendChild(card);
+  });
 
-  return `
-    <div class="folder-expanded-section" data-batch="${f.batchId || f.folderName}">
-      <div class="folder-expanded-header">
-        <div class="folder-info-title">
-          <span style="font-size:1.5rem;color:${meta.color}">${meta.icon}</span>
-          <div>
-            <h3>${escapeHtml(folderName)}</h3>
-            <span class="badge-tag">${f.subject || 'Lab Folder'} • ${folderFiles.length} Programs • ${fmtSize(totalFolderSize)}</span>
+  // Render standalone files
+  standaloneFiles.forEach(file => {
+    const ext = (file.extension || 'default').toLowerCase();
+    const meta = ICONS[ext] || ICONS.default;
+    const runnable = isRunnableFile(file);
+
+    const card = document.createElement('div');
+    card.className = `file-card ${file.pinned ? 'pinned-card' : ''}`;
+
+    let actionBtns = `
+      <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
+      ${runnable ? `<button class="card-btn primary" onclick="runOnlineFile('${file._id || file.id}')">▶ Run Online</button>` : ''}
+      <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
+    `;
+
+    if (isAdmin) {
+      actionBtns += `
+        <button class="card-btn" onclick="openEditModal('${file._id || file.id}')">✏️ Edit</button>
+        ${file.pinned ? `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', false)">📌 Unpin</button>` : `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', true)">📌 Pin</button>`}
+        <button class="card-btn danger" onclick="confirmDeleteFile('${file._id || file.id}')">🗑️ Delete</button>
+      `;
+    }
+
+    const tagsHtml = (file.tags || []).map(t => `<span class="tag-pill">#${escapeHtml(t)}</span>`).join('');
+
+    card.innerHTML = `
+      ${file.pinned ? '<span class="pin-badge">📌</span>' : ''}
+      <div>
+        <div class="card-top">
+          <div class="file-icon-box">${meta.icon}</div>
+          <div class="file-info">
+            ${file.relativePath && file.relativePath.includes('/') ? `<div style="font-size:0.75rem; color:var(--primary); margin-bottom:2px; font-weight:500;">📍 ${escapeHtml(file.relativePath.replace(/\//g, ' › '))}</div>` : ''}
+            <h4 class="file-name">${escapeHtml(file.originalName)}</h4>
+            <div class="file-meta">
+              <span>${fmtSize(file.size)}</span> · <span>${fmtDate(file.uploadDate)}</span>
+            </div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn-download-folder upload-btn ghost" data-batch="${f.batchId || f.folderName}" data-name="${escapeHtml(folderName)}">⬇ Download Folder Zip</button>
-          ${adminFolderButtons}
-        </div>
+        ${file.description ? `<p class="file-desc">${escapeHtml(file.description)}</p>` : ''}
+        ${tagsHtml ? `<div class="file-tags">${tagsHtml}</div>` : ''}
       </div>
-      <div class="folder-program-list">
-        ${programListHtml}
+      <div class="card-actions">
+        ${actionBtns}
       </div>
-    </div>
-  `;
-}
+    `;
 
-function renderFileCard(f) {
-  const cleanTitle = getCleanTitle(f.originalName);
-  const cleanName = getCleanName(f.originalName);
-  const meta = iconFor(f.extension, false);
-  const tags = (f.tags || []).map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('');
-
-  const adminButtons = adminToken ? `
-    <button class="btn-edit" data-id="${f._id}">✏️ Edit</button>
-    <button class="btn-pin" data-id="${f._id}" data-pinned="${f.pinned}">${f.pinned ? '📌 Unpin' : '📌 Pin'}</button>
-    <button class="btn-delete danger" data-id="${f._id}">🗑️ Delete</button>` : '';
-
-  const runBtn = isExecutableFile(f) ? `
-    <button class="btn-run" data-id="${f._id}" data-name="${escapeHtml(cleanName)}">▶ Run Online</button>` : '';
-
-  const subjBadge = f.subject ? `<span class="card-subj-badge">${escapeHtml(f.subject)}</span>` : '';
-  const exBadge = f.exercise ? `<span class="card-ex-badge">${escapeHtml(f.exercise)}</span>` : '';
-
-  return `
-    <div class="file-card" data-id="${f._id}">
-      ${f.pinned ? '<span class="pin-badge">📌</span>' : ''}
-      <div>${subjBadge}${exBadge}</div>
-      <div class="file-icon" style="color:${meta.color}">${meta.icon}</div>
-      <div class="file-name">${escapeHtml(cleanTitle)}</div>
-      <div class="file-meta">${fmtSize(f.size)} • ${fmtDate(f.uploadDate)} • ${f.downloads} downloads</div>
-      ${f.description ? `<div class="file-desc">${escapeHtml(f.description)}</div>` : ''}
-      <div class="file-tags">${tags}</div>
-      <div class="file-actions">
-        ${runBtn}
-        <button class="btn-solution" data-id="${f._id}">💡 Solution</button>
-        <button class="btn-download" data-id="${f._id}">⬇ Download</button>
-        ${adminButtons}
-      </div>
-    </div>`;
-}
-
-function attachCardHandlers() {
-  document.querySelectorAll('.btn-run').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openCompilerModal(b.dataset.id, b.dataset.name);
-  }));
-
-  document.querySelectorAll('.btn-solution').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const file = lastFiles.find(f => f._id === b.dataset.id);
-    if (file) openSolutionModal(file);
-  }));
-
-  document.querySelectorAll('.btn-download').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    window.location = `/api/files/${b.dataset.id}/download`;
-    toast('Download Started', 'success');
-  }));
-
-  document.querySelectorAll('.btn-download-folder').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    window.location = `/api/files/folder/${encodeURIComponent(b.dataset.batch)}/download`;
-    toast('Folder Download Started', 'success');
-  }));
-
-  document.querySelectorAll('.btn-delete-folder').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openDeleteFolderConfirm(b.dataset.batch, b.dataset.name, b.dataset.count, b.dataset.size);
-  }));
-
-  document.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openDeleteConfirm(b.dataset.id);
-  }));
-
-  document.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openEditModal(b.dataset.id);
-  }));
-
-  document.querySelectorAll('.btn-pin').forEach(b => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    togglePin(b.dataset.id, b.dataset.pinned === 'true');
-  }));
-}
-
-// ---------------- PART 10: SOLUTION PANEL SPLIT VIEW ----------------
-let currentSolutionFile = null;
-
-async function openSolutionModal(file) {
-  currentSolutionFile = file;
-  const cleanName = getCleanName(file.originalName);
-
-  $('solutionProgramTitle').textContent = cleanName;
-  $('solutionSubjBadge').textContent = `${file.subject || 'General'} • ${file.exercise || 'Lab Program'}`;
-
-  $('solMetaSubjectEx').textContent = `${file.subject || 'General'} • ${file.exercise || 'N/A'}`;
-  $('solMetaQuestion').textContent = file.question || cleanName;
-  $('solMetaDesc').textContent = file.description || 'Student Lab Exercise Program';
-  $('solMetaOutput').textContent = file.expectedOutput || 'Program execution output will be displayed here upon running.';
-  $('solMetaAlgorithm').textContent = file.algorithm || 'Standard algorithm logic for ' + cleanName;
-  $('solMetaComplexity').textContent = file.complexity || 'O(N)';
-  $('solMetaDifficulty').textContent = file.difficulty || 'Medium';
-
-  const runBtn = $('btnRunFromSolution');
-  if (isExecutableFile(file)) {
-    runBtn.style.display = 'inline-flex';
-    runBtn.onclick = () => {
-      closeModal('solutionModalOverlay');
-      openCompilerModal(file._id, cleanName);
-    };
-  } else {
-    runBtn.style.display = 'none';
-  }
-
-  $('solutionCodeDisplay').textContent = 'Loading source code...';
-  openModal('solutionModalOverlay');
-
-  try {
-    const res = await fetch(`/api/files/${file._id}/preview`);
-    const data = await res.json();
-    $('solutionCodeDisplay').textContent = data.content || '// Code empty or binary file';
-  } catch {
-    $('solutionCodeDisplay').textContent = '// Failed to load code content';
-  }
-}
-
-$('btnCopySolution').addEventListener('click', () => {
-  const code = $('solutionCodeDisplay').textContent;
-  navigator.clipboard.writeText(code);
-  toast('Solution code copied to clipboard!', 'success');
-});
-
-$('btnDownloadSolution').addEventListener('click', () => {
-  if (currentSolutionFile) {
-    window.location = `/api/files/${currentSolutionFile._id}/download`;
-  }
-});
-
-// ---------------- PART 7: MOBILE BOTTOM NAV ----------------
-function initMobileNav() {
-  const mHome = $('mNavHome');
-  const mSubjects = $('mNavSubjects');
-  const mPinned = $('mNavPinned');
-  const mSearch = $('mNavSearch');
-  const mAdmin = $('mNavAdmin');
-
-  function clearActive() {
-    [mHome, mSubjects, mPinned, mSearch, mAdmin].forEach(b => b && b.classList.remove('active'));
-  }
-
-  if (mHome) {
-    mHome.addEventListener('click', () => {
-      clearActive();
-      mHome.classList.add('active');
-      clearSubjectFilter();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
-
-  if (mSubjects) {
-    mSubjects.addEventListener('click', () => {
-      clearActive();
-      mSubjects.classList.add('active');
-      const sidebar = $('labExplorerSidebar');
-      if (sidebar) sidebar.classList.toggle('open');
-    });
-  }
-
-  if (mPinned) {
-    mPinned.addEventListener('click', () => {
-      clearActive();
-      mPinned.classList.add('active');
-      currentFilter = 'pinned';
-      loadFiles();
-    });
-  }
-
-  if (mSearch) {
-    mSearch.addEventListener('click', () => {
-      clearActive();
-      mSearch.classList.add('active');
-      const input = $('searchInput');
-      if (input) input.focus();
-    });
-  }
-
-  if (mAdmin) {
-    mAdmin.addEventListener('click', () => {
-      clearActive();
-      mAdmin.classList.add('active');
-      $('adminLoginBtn').click();
-    });
-  }
-}
-
-// ---------------- Delete ----------------
-let pendingDeleteId = null;
-let pendingDeleteFolderBatch = null;
-
-function openDeleteConfirm(id) { pendingDeleteId = id; openModal('deleteModalOverlay'); }
-$('deleteCancelBtn').addEventListener('click', () => { pendingDeleteId = null; closeModal('deleteModalOverlay'); });
-$('deleteConfirmBtn').addEventListener('click', async () => {
-  if (!pendingDeleteId) return;
-  try {
-    const res = await fetch(`/api/files/${pendingDeleteId}`, { method: 'DELETE', headers: authHeaders() });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    toast('Deleted Successfully', 'success');
-    closeModal('deleteModalOverlay');
-    loadFiles();
-    loadStats();
-  } catch (err) {
-    toast(err.message || 'Delete failed.', 'error');
-  }
-  pendingDeleteId = null;
-});
-
-// ---------------- Folder Delete System ----------------
-function openDeleteFolderConfirm(batchId, name, count, size) {
-  pendingDeleteFolderBatch = batchId;
-  const nameEl = $('folderDeleteName');
-  const countEl = $('folderDeleteCount');
-  const sizeEl = $('folderDeleteSize');
-
-  if (nameEl) nameEl.textContent = name || 'Folder';
-  if (countEl) countEl.textContent = count || '0';
-  if (sizeEl) sizeEl.textContent = size || '0 KB';
-
-  openModal('deleteFolderModalOverlay');
-}
-
-const deleteFolderCancelBtn = $('deleteFolderCancelBtn');
-if (deleteFolderCancelBtn) {
-  deleteFolderCancelBtn.addEventListener('click', () => {
-    pendingDeleteFolderBatch = null;
-    closeModal('deleteFolderModalOverlay');
+    grid.appendChild(card);
   });
 }
 
-const deleteFolderConfirmBtn = $('deleteFolderConfirmBtn');
-if (deleteFolderConfirmBtn) {
-  deleteFolderConfirmBtn.addEventListener('click', async () => {
-    if (!pendingDeleteFolderBatch) return;
+function toggleFolderDetails(batchId) {
+  const el = $(`folder_files_${batchId}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
 
-    const btnText = deleteFolderConfirmBtn.querySelector('.btn-text');
-    const btnSpinner = deleteFolderConfirmBtn.querySelector('.btn-spinner');
+async function deleteFolderBatch(batchId) {
+  if (!confirm('Are you sure you want to delete this entire folder and all its files?')) return;
+  try {
+    const res = await fetch(`/api/files/folder/${batchId}`, {
+      method: 'DELETE',
+      headers: jsonAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Delete failed');
+    toast('Folder deleted successfully.');
 
-    if (btnText) btnText.textContent = 'Deleting...';
-    if (btnSpinner) btnSpinner.classList.remove('hidden');
-    deleteFolderConfirmBtn.disabled = true;
+    // Immediate local state update (BUG 11)
+    lastFiles = lastFiles.filter(f => f.batchId !== batchId);
+    renderFiles(lastFiles);
+    renderPinnedSection(lastFiles);
+    loadStats();
+    loadFiles();
+  } catch (err) {
+    toast('Failed to delete folder.', 'error');
+  }
+}
 
-    try {
-      const res = await fetch(`/api/files/folder/${encodeURIComponent(pendingDeleteFolderBatch)}`, {
-        method: 'DELETE',
-        headers: {
-          ...authHeaders(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ batchId: pendingDeleteFolderBatch })
+async function togglePinFolder(batchId, pinned) {
+  try {
+    const files = lastFiles.filter(f => f.batchId === batchId);
+    for (const f of files) {
+      await fetch(`/api/files/${f._id || f.id}`, {
+        method: 'PATCH',
+        headers: jsonAuthHeaders(),
+        body: JSON.stringify({ pinned })
       });
-      const data = await res.json();
+      f.pinned = pinned;
+    }
+    toast(pinned ? 'Folder pinned to top! 📌' : 'Folder unpinned.');
+    renderPinnedSection(lastFiles);
+    renderFiles(lastFiles);
+  } catch (err) {
+    toast('Failed to update folder pin status.', 'error');
+  }
+}
 
-      if (!res.ok) throw new Error(data.error || 'Folder deletion failed.');
+// ---------------- Stats ----------------
+async function loadStats() {
+  try {
+    const res = await fetch('/api/files/stats');
+    if (!res.ok) return;
+    const s = await res.json();
+    const statsBar = $('statsBar');
+    if (statsBar) {
+      statsBar.innerHTML = `
+        <div class="stat-card"><b>${s.totalFiles}</b><span>Total Files</span></div>
+        <div class="stat-card"><b>${s.pinned}</b><span>Pinned Items</span></div>
+        <div class="stat-card"><b>${s.totalDownloads}</b><span>Downloads</span></div>
+        <div class="stat-card"><b>${fmtSize(s.storageUsed)}</b><span>Storage Used</span></div>
+      `;
+    }
+  } catch { /* non-critical */ }
+}
 
-      toast(`Folder deleted! (${data.deletedCount || 0} programs removed)`, 'success');
-      setMascotMood('happy', 'Folder deleted successfully! 🗑️');
-      closeModal('deleteFolderModalOverlay');
-      loadFiles();
-      loadStats();
-    } catch (err) {
-      toast(err.message || 'Folder deletion failed.', 'error');
-      setMascotMood('sad', 'Failed to delete folder.');
-    } finally {
-      if (btnText) btnText.textContent = 'Delete Folder';
-      if (btnSpinner) btnSpinner.classList.add('hidden');
-      deleteFolderConfirmBtn.disabled = false;
-      pendingDeleteFolderBatch = null;
+// ---------------- File Downloads & Previews ----------------
+function downloadFile(id) {
+  window.open(`/api/files/${id}/download`, '_blank');
+}
+
+function downloadFolder(batchId) {
+  window.open(`/api/files/folder/${batchId}/download`, '_blank');
+}
+
+async function previewFile(id) {
+  try {
+    const res = await fetch(`/api/files/${id}/preview`);
+    if (!res.ok) throw new Error('Preview error');
+    const data = await res.json();
+    previewingFile = data.file;
+
+    if ($('previewTitle')) $('previewTitle').textContent = data.file.originalName;
+    const ext = data.file.extension || 'default';
+    if ($('previewFileIcon')) $('previewFileIcon').textContent = (ICONS[ext] || ICONS.default).icon;
+
+    const body = $('previewBody');
+    const adminEditBtn = $('editContentBtn');
+
+    if (adminToken && data.type === 'text') {
+      if (adminEditBtn) adminEditBtn.style.display = 'inline-block';
+      if ($('codeEditorTextarea')) $('codeEditorTextarea').value = data.content || '';
+    } else {
+      if (adminEditBtn) adminEditBtn.style.display = 'none';
+    }
+
+    if ($('adminEditorSection')) $('adminEditorSection').style.display = 'none';
+
+    // Update solution explorer panel if exercise metadata exists
+    renderSolutionPanel(data.file);
+
+    if (body) {
+      if (data.type === 'text') {
+        body.innerHTML = `<pre><code class="language-${ext}">${escapeHtml(data.content)}</code></pre>`;
+        if (window.hljs) window.hljs.highlightAll();
+      } else if (data.type === 'image') {
+        body.innerHTML = `<img src="${data.url}" style="max-width:100%; border-radius:12px; display:block; margin:0 auto;" />`;
+      } else if (data.type === 'pdf') {
+        body.innerHTML = `<iframe src="${data.url}" style="width:100%; height:450px; border:none; border-radius:12px;"></iframe>`;
+      } else {
+        body.innerHTML = `<p style="text-align:center; padding:30px;">Binary / Unsupported format. Please download to view on your system.</p>`;
+      }
+    }
+
+    openModal('previewModalOverlay');
+  } catch (err) {
+    toast('Could not load file preview.', 'error');
+  }
+}
+
+function renderSolutionPanel(file) {
+  const panel = $('solutionExplorerPanel');
+  if (!panel) return;
+
+  if (!file || (!file.subject && !file.exercise && !file.question)) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+
+  if ($('solSubjectBadge')) $('solSubjectBadge').textContent = (file.subject || file.category || 'GENERAL').toUpperCase();
+  if ($('solExerciseText')) $('solExerciseText').textContent = file.exercise || 'Lab Exercise';
+  if ($('solQuestionText')) $('solQuestionText').textContent = file.question || file.originalName;
+  if ($('solDescriptionText')) $('solDescriptionText').textContent = file.description || 'Student lab program record.';
+  if ($('solExpectedOutputText')) $('solExpectedOutputText').textContent = file.expectedOutput || '(Expected output available after execution)';
+
+  // Render related program chips
+  const relatedGrid = $('solRelatedGrid');
+  if (relatedGrid) {
+    const related = lastFiles.filter(f => (f._id || f.id) !== (file._id || file.id) && f.subject === file.subject).slice(0, 4);
+    if (related.length === 0) {
+      relatedGrid.innerHTML = '<span style="font-size:0.8rem; color:var(--text-dim);">No related items found</span>';
+    } else {
+      relatedGrid.innerHTML = related.map(r => `
+        <span class="sol-chip" onclick="previewFile('${r._id || r.id}')">📄 ${escapeHtml(r.originalName)}</span>
+      `).join('');
+    }
+  }
+}
+
+const copyCodeBtn = $('copyCodeBtn');
+if (copyCodeBtn) {
+  copyCodeBtn.addEventListener('click', () => {
+    const codeEl = document.querySelector('#previewBody code') || document.querySelector('#previewBody');
+    if (codeEl) {
+      navigator.clipboard.writeText(codeEl.textContent);
+      toast('Code copied to clipboard! 📋');
     }
   });
 }
 
-// ---------------- Welcome Capsule & Session ----------------
-let capsuleTimer = null;
-
-function updateWelcomeCapsule() {
-  const capsule = $('welcomeCapsule');
-  const textEl = $('welcomeCapsuleText');
-  if (!capsule || !textEl) return;
-
-  textEl.textContent = adminToken ? 'Welcome Admin 👋' : 'Welcome Anonymous 👋';
-  capsule.classList.remove('hidden-capsule');
-
-  clearTimeout(capsuleTimer);
-  capsuleTimer = setTimeout(() => {
-    capsule.classList.add('hidden-capsule');
-  }, 5000);
+const downloadPreviewBtn = $('downloadPreviewBtn');
+if (downloadPreviewBtn) {
+  downloadPreviewBtn.addEventListener('click', () => {
+    if (previewingFile) downloadFile(previewingFile._id || previewingFile.id);
+  });
 }
 
-// ---------------- Edit / Metadata ----------------
-let editingId = null;
-function openEditModal(id) {
-  const file = lastFiles.find(f => f._id === id);
-  if (!file) return;
-  editingId = id;
-  $('editNameInput').value = getCleanName(file.originalName);
-  $('editSubjectSelect').value = file.subject || 'Java Programming';
-  $('editExerciseInput').value = file.exercise || 'Exercise 1';
-  $('editQuestionInput').value = file.question || '';
-  $('editDescInput').value = file.description || '';
-  $('editOutputInput').value = file.expectedOutput || '';
-  $('editAlgorithmInput').value = file.algorithm || '';
-  $('editComplexityInput').value = file.complexity || 'O(N)';
-  $('editDifficultySelect').value = file.difficulty || 'Medium';
-  $('editTagsInput').value = (file.tags || []).join(', ');
-  openModal('editModalOverlay');
+const editContentBtn = $('editContentBtn');
+if (editContentBtn) {
+  editContentBtn.addEventListener('click', () => {
+    if ($('adminEditorSection')) $('adminEditorSection').style.display = 'block';
+  });
 }
 
-$('editSaveBtn').addEventListener('click', async () => {
-  if (!editingId) return;
-  try {
-    const res = await fetch(`/api/files/${editingId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({
-        originalName: $('editNameInput').value,
-        subject: $('editSubjectSelect').value,
-        exercise: $('editExerciseInput').value,
-        question: $('editQuestionInput').value,
-        description: $('editDescInput').value,
-        expectedOutput: $('editOutputInput').value,
-        algorithm: $('editAlgorithmInput').value,
-        complexity: $('editComplexityInput').value,
-        difficulty: $('editDifficultySelect').value,
-        tags: $('editTagsInput').value
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    toast('Metadata Saved Successfully', 'success');
-    closeModal('editModalOverlay');
-    loadFiles();
-  } catch (err) {
-    toast(err.message || 'Update failed.', 'error');
-  }
-});
+const cancelEditContentBtn = $('cancelEditContentBtn');
+if (cancelEditContentBtn) {
+  cancelEditContentBtn.addEventListener('click', () => {
+    if ($('adminEditorSection')) $('adminEditorSection').style.display = 'none';
+  });
+}
 
-async function togglePin(id, currentlyPinned) {
+const saveContentBtn = $('saveContentBtn');
+if (saveContentBtn) {
+  saveContentBtn.addEventListener('click', async () => {
+    if (!previewingFile) return;
+    const content = $('codeEditorTextarea').value;
+    try {
+      const res = await fetch(`/api/files/${previewingFile._id || previewingFile.id}/content`, {
+        method: 'PUT',
+        headers: jsonAuthHeaders(),
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) throw new Error('Save failed');
+      toast('Code content updated successfully! 💾');
+      closeModal('previewModalOverlay');
+      loadFiles();
+    } catch (err) {
+      toast('Failed to save code content.', 'error');
+    }
+  });
+}
+
+async function togglePinFile(id, pinned) {
   try {
     const res = await fetch(`/api/files/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ pinned: !currentlyPinned })
+      headers: jsonAuthHeaders(),
+      body: JSON.stringify({ pinned })
     });
-    if (!res.ok) throw new Error((await res.json()).error);
-    loadFiles();
+    if (!res.ok) throw new Error('Update failed');
+    toast(pinned ? 'File pinned to top! 📌' : 'File unpinned.');
+
+    // Immediate local state update (BUG 12)
+    const file = lastFiles.find(f => (f._id || f.id) === id);
+    if (file) file.pinned = pinned;
+
+    renderPinnedSection(lastFiles);
+    renderFiles(lastFiles);
   } catch (err) {
-    toast(err.message || 'Pin failed.', 'error');
+    toast('Failed to update pin status.', 'error');
   }
 }
 
-// ---------------- Upload ----------------
-async function doUpload(fileList, isFolder) {
-  if (!fileList || !fileList.length) return;
-  const formData = new FormData();
-  Array.from(fileList).forEach(file => {
-    formData.append('files', file);
-    formData.append('paths', isFolder ? (file.webkitRelativePath || file.name) : file.name);
-  });
-  try {
-    toast('Uploading program / folder...', 'warn');
-    setMascotMood('excited', 'Uploading programs... ⚡');
-    const res = await fetch('/api/files/upload', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    toast('Upload Successful!', 'success');
-    setMascotMood('happy', 'Upload Complete! 🎉');
-    loadFiles();
-    loadStats();
-    loadSuggestions();
-  } catch (err) {
-    setMascotMood('sad', 'Upload Failed 😢');
-    toast(err.message || 'Upload failed.', 'error');
-  }
-}
-$('fileInput').addEventListener('change', e => doUpload(e.target.files, false));
-$('folderInput').addEventListener('change', e => doUpload(e.target.files, true));
-
-// ---------------- Admin Login ----------------
-$('adminLoginBtn').addEventListener('click', () => {
-  if (adminToken) {
-    adminToken = null;
-    localStorage.removeItem('zipshare_token');
-    toast('Logout Successful', 'success');
-    refreshSessionBadge();
-  } else {
-    openModal('loginModalOverlay');
-  }
-});
-
-$('loginSubmitBtn').addEventListener('click', submitLogin);
-$('adminPasswordInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitLogin(); });
-
-async function submitLogin() {
-  const password = $('adminPasswordInput').value;
+// ---------------- Admin Auth & PPSK Lockout ----------------
+function startLockoutTimer(seconds) {
+  if (lockoutTimerInterval) clearInterval(lockoutTimerInterval);
+  
+  let remaining = seconds;
+  const pwdInput = $('adminPasswordInput');
+  const submitBtn = $('loginSubmitBtn');
   const msgEl = $('loginMessage');
-  msgEl.textContent = '';
-  msgEl.className = 'login-message';
+  const modalHeading = $('loginModalHeading');
+  const modalIcon = $('loginModalIcon');
+
+  if (pwdInput) {
+    pwdInput.disabled = true;
+    pwdInput.classList.add('input-error');
+  }
+  if (submitBtn) submitBtn.disabled = true;
+  
+  if (modalIcon) modalIcon.textContent = '😂';
+  if (modalHeading) modalHeading.textContent = '😂 Nice Try!';
+
+  function updateDisplay() {
+    if (submitBtn) submitBtn.textContent = `Locked (${remaining}s)`;
+    if (msgEl) {
+      msgEl.textContent = `😂 Nice Try!\nProtected by PSK.\nTry again in ${remaining}s...`;
+      msgEl.className = 'login-message error';
+    }
+  }
+
+  updateDisplay();
+
+  lockoutTimerInterval = setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      clearInterval(lockoutTimerInterval);
+      lockoutTimerInterval = null;
+      if (pwdInput) {
+        pwdInput.disabled = false;
+        pwdInput.value = '';
+        pwdInput.classList.remove('input-error');
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
+      }
+      if (msgEl) {
+        msgEl.textContent = '';
+        msgEl.className = 'login-message';
+      }
+      if (modalIcon) modalIcon.textContent = '🔐';
+      if (modalHeading) modalHeading.textContent = 'Admin Login';
+    } else {
+      updateDisplay();
+    }
+  }, 1000);
+}
+
+function updateSessionBadge() {
+  const isAdmin = Boolean(adminToken);
+  if ($('sessionBadge')) $('sessionBadge').textContent = isAdmin ? 'Welcome Admin' : 'Welcome Anonymous';
+  if ($('adminLoginBtn')) $('adminLoginBtn').textContent = isAdmin ? '⚡ Admin Dashboard' : 'Admin Login';
+
+  document.querySelectorAll('.admin-only-inline').forEach(el => {
+    el.style.display = isAdmin ? 'inline-block' : 'none';
+  });
+  document.querySelectorAll('.admin-only-flex').forEach(el => {
+    el.style.display = isAdmin ? 'flex' : 'none';
+  });
+  document.querySelectorAll('.admin-only-block').forEach(el => {
+    el.style.display = isAdmin ? 'block' : 'none';
+  });
+
+  renderFiles(lastFiles);
+  renderPinnedSection(lastFiles);
+  if (isAdmin) checkPendingRequests();
+}
+
+const adminLoginBtn = $('adminLoginBtn');
+if (adminLoginBtn) {
+  adminLoginBtn.addEventListener('click', () => {
+    if (adminToken) {
+      openModal('dashboardModalOverlay');
+    } else {
+      openModal('loginModalOverlay');
+    }
+  });
+}
+
+const loginSubmitBtn = $('loginSubmitBtn');
+if (loginSubmitBtn) loginSubmitBtn.addEventListener('click', handleAdminLogin);
+
+const adminPasswordInput = $('adminPasswordInput');
+if (adminPasswordInput) {
+  adminPasswordInput.addEventListener('keyup', e => {
+    if (e.key === 'Enter') handleAdminLogin();
+  });
+}
+
+async function handleAdminLogin() {
+  if (lockoutTimerInterval) return;
+
+  const pwdInput = $('adminPasswordInput');
+  const password = pwdInput ? pwdInput.value : '';
+  const msgEl = $('loginMessage');
+  const loginBox = $('loginBox');
+  if (msgEl) {
+    msgEl.textContent = '';
+    msgEl.className = 'login-message';
+  }
+  if (pwdInput) pwdInput.classList.remove('input-error');
+
+  if (!password) {
+    if (pwdInput) pwdInput.classList.add('input-error');
+    if (msgEl) {
+      msgEl.textContent = "❌ Wrong Password\nProtected by PSK.";
+      msgEl.className = 'login-message error';
+    }
+    if (loginBox) {
+      loginBox.classList.add('shake');
+      setTimeout(() => loginBox.classList.remove('shake'), 500);
+    }
+    return;
+  }
+
   try {
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
     });
+
     const data = await res.json();
 
-    if (res.status === 429) {
-      msgEl.textContent = `${data.message} ${data.emoji || ''}`;
-      msgEl.className = 'login-message locked';
-      toast(`${data.emoji || '😂'} ${data.message}`, 'warn');
-      setTimeout(() => closeModal('loginModalOverlay'), 1500);
-      return;
-    }
     if (!res.ok) {
-      msgEl.textContent = data.message || 'Access Denied. Incorrect password. Please try again.';
-      msgEl.className = 'login-message error';
+      if (loginBox) {
+        loginBox.classList.add('shake');
+        setTimeout(() => loginBox.classList.remove('shake'), 500);
+      }
+      if (pwdInput) pwdInput.classList.add('input-error');
+
+      if (res.status === 429 || data.error === 'locked') {
+        const secs = data.retryAfter || 30;
+        startLockoutTimer(secs);
+        toast('😂 Nice Try. Protected by PSK Lockout Active!', 'warning');
+      } else {
+        if (msgEl) {
+          msgEl.textContent = "❌ Wrong Password\nProtected by PSK.";
+          msgEl.className = 'login-message error';
+        }
+        toast('❌ Wrong Password. Protected by PSK.', 'error');
+      }
       return;
     }
 
+    if (pwdInput) pwdInput.classList.remove('input-error');
     adminToken = data.token;
     localStorage.setItem('zipshare_token', adminToken);
-    toast('Login Successful', 'success');
+    toast('Login successful! Welcome Admin 🚀');
     closeModal('loginModalOverlay');
-    $('adminPasswordInput').value = '';
-    refreshSessionBadge();
-  } catch {
-    msgEl.textContent = 'Something went wrong. Please try again.';
-    msgEl.className = 'login-message error';
+    if (pwdInput) pwdInput.value = '';
+    updateSessionBadge();
+    
+    openModal('dashboardModalOverlay');
+  } catch (err) {
+    toast('Server authentication error.', 'error');
   }
 }
 
-// ---------------- Online Compiler ----------------
-let monacoEditorInstance = null;
-let currentCompilerFile = null;
-let activeRunAbortController = null;
-
-function initMonacoLoader(callback) {
-  if (window.monaco) return callback();
-  if (window.require) {
-    window.require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
-    window.require(['vs/editor/editor.main'], function () {
-      callback();
+function setupDashboardBindings() {
+  const navDash = $('navDashboardBtn');
+  if (navDash) {
+    navDash.addEventListener('click', () => {
+      if (!adminToken) {
+        openModal('loginModalOverlay');
+      } else {
+        openModal('dashboardModalOverlay');
+      }
     });
-  } else {
-    setTimeout(() => initMonacoLoader(callback), 100);
+  }
+
+  const openReqs = $('dashOpenRequestsBtn');
+  if (openReqs) {
+    openReqs.addEventListener('click', () => {
+      closeModal('dashboardModalOverlay');
+      loadAdminRequestsList();
+      openModal('requestsModalOverlay');
+    });
+  }
+
+  const managePinned = $('dashManagePinnedBtn');
+  if (managePinned) {
+    managePinned.addEventListener('click', () => {
+      closeModal('dashboardModalOverlay');
+      switchCategory('pinned');
+    });
+  }
+
+  const dashLogout = $('dashLogoutBtn');
+  if (dashLogout) {
+    dashLogout.addEventListener('click', () => {
+      closeModal('dashboardModalOverlay');
+      adminToken = null;
+      localStorage.removeItem('zipshare_token');
+      toast('Admin logged out.');
+      updateSessionBadge();
+    });
+  }
+
+  const dashFileInput = $('dashFileInput');
+  const dashFolderInput = $('dashFolderInput');
+  if (dashFileInput) {
+    dashFileInput.addEventListener('change', () => {
+      closeModal('dashboardModalOverlay');
+      handleUpload(dashFileInput.files, []);
+    });
+  }
+  if (dashFolderInput) {
+    dashFolderInput.addEventListener('change', () => {
+      closeModal('dashboardModalOverlay');
+      const files = dashFolderInput.files;
+      const paths = Array.from(files).map(f => f.webkitRelativePath || f.name);
+      handleUpload(files, paths);
+    });
   }
 }
 
-async function openCompilerModal(id, name) {
-  const file = lastFiles.find(f => f._id === id);
-  const ext = file ? (file.extension || '') : (name.split('.').pop() || '');
-  const cleanName = getCleanName(name);
+// ---------------- Upload Handlers ----------------
+function uploadWithProgress(formData) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/files/upload');
 
-  currentCompilerFile = {
-    id: id,
-    originalName: cleanName,
-    extension: ext.toLowerCase(),
-    content: ''
-  };
+    if (adminToken) {
+      xhr.setRequestHeader('Authorization', `Bearer ${adminToken}`);
+    }
 
-  $('compilerTitle').textContent = cleanName;
-  $('compilerLangBadge').textContent = ext ? ext.toUpperCase() : 'CODE';
-  $('compilerInput').value = '';
-  $('compilerOutputBox').innerHTML = '<div class="output-placeholder">Click <strong>▶ Run</strong> to execute source file online.</div>';
+    let toastEl = document.querySelector('.toast.upload-toast');
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'toast warning upload-toast';
+      const container = $('toastContainer') || document.body;
+      container.appendChild(toastEl);
+    }
+    toastEl.textContent = 'Uploading... 0%';
 
-  updateCompilerStatus('Ready', 'default');
-  $('compilerTimeTag').textContent = '⏱ --';
-  $('compilerMemTag').textContent = '💾 --';
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        toastEl.textContent = `Uploading... ${percent}%`;
+      }
+    };
 
-  $('btnSaveAdminCode').style.display = adminToken ? 'inline-flex' : 'none';
+    xhr.onload = () => {
+      toastEl.remove();
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data);
+        } catch (e) {
+          reject(new Error('Invalid response from server'));
+        }
+      } else {
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          reject(new Error(errData.error || 'Upload failed'));
+        } catch {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      }
+    };
 
-  openModal('compilerModalOverlay');
+    xhr.onerror = () => {
+      toastEl.remove();
+      reject(new Error('Network error during upload'));
+    };
+
+    xhr.send(formData);
+  });
+}
+
+function setupUploads() {
+  const fileInput = $('fileInput');
+  const folderInput = $('folderInput');
+
+  if (fileInput) fileInput.addEventListener('change', () => handleUpload(fileInput.files, []));
+  if (folderInput) folderInput.addEventListener('change', () => {
+    const files = folderInput.files;
+    const paths = Array.from(files).map(f => f.webkitRelativePath || f.name);
+    handleUpload(files, paths);
+  });
+}
+
+async function handleUpload(fileList, pathsList = []) {
+  if (!fileList || fileList.length === 0) return;
+
+  if (!adminToken) {
+    toast('Admin authorization required to upload files or folders.', 'warning');
+    openModal('loginModalOverlay');
+    return;
+  }
+
+  const formData = new FormData();
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i];
+    const relPath = (pathsList && pathsList[i]) ? pathsList[i] : (file.webkitRelativePath || file.name);
+    formData.append('files', file);
+    formData.append('paths', relPath);
+  }
 
   try {
-    const res = await fetch(`/api/files/${id}/preview`);
-    const data = await res.json();
-    currentCompilerFile.content = data.content || '';
-  } catch {
-    currentCompilerFile.content = '';
+    const data = await uploadWithProgress(formData);
+    toast(`Successfully uploaded ${data.files ? data.files.length : fileList.length} item(s)! 🚀`);
+    loadFiles();
+  } catch (err) {
+    toast(err.message || 'Upload failed. Please check file sizes.', 'error');
   }
+}
 
-  initMonacoLoader(() => {
-    const container = $('monacoEditorContainer');
-    const isDark = document.body.getAttribute('data-theme') === 'dark';
-    const lang = monacoLanguageFor(currentCompilerFile.extension);
+// ---------------- User Request System ----------------
+const reqForm = $('programRequestForm');
+if (reqForm) {
+  reqForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const programName = $('reqProgramName').value;
+    const subject = $('reqSubject').value;
+    const description = $('reqDescription').value;
 
-    if (!monacoEditorInstance) {
-      container.innerHTML = '';
-      monacoEditorInstance = monaco.editor.create(container, {
-        value: currentCompilerFile.content,
-        language: lang,
-        theme: isDark ? 'vs-dark' : 'vs',
-        automaticLayout: true,
-        fontSize: 14,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ programName, subject, description })
       });
-    } else {
-      const model = monaco.editor.createModel(currentCompilerFile.content, lang);
-      monacoEditorInstance.setModel(model);
-      monaco.editor.setTheme(isDark ? 'vs-dark' : 'vs');
+
+      if (!res.ok) throw new Error('Submission failed');
+      toast('Program request submitted to administrator! 💡');
+      reqForm.reset();
+    } catch (err) {
+      toast('Could not submit request.', 'error');
     }
   });
 }
 
-function updateCompilerStatus(statusText, type = 'default') {
-  const badge = $('compilerStatusBadge');
-  badge.textContent = statusText;
-  badge.className = `status-badge ${type}`;
+async function checkPendingRequests() {
+  if (!adminToken) return;
+  try {
+    const res = await fetch('/api/requests', { headers: authHeaders() });
+    if (!res.ok) return;
+    const requests = await res.json();
+    const badge = $('requestBadgeCount');
+    if (!badge) return;
+    const pendingCount = requests.filter(r => r.status === 'pending').length;
+    if (pendingCount > 0) {
+      badge.textContent = pendingCount;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch { /* non-critical */ }
 }
 
-$('btnRunCode').addEventListener('click', runCode);
-$('btnStopCode').addEventListener('click', stopCode);
-$('btnResetCode').addEventListener('click', () => {
-  if (monacoEditorInstance && currentCompilerFile) {
-    monacoEditorInstance.setValue(currentCompilerFile.content);
-    toast('Code reset to original content.', 'success');
+const navRequestsBtn = $('navRequestsBtn');
+if (navRequestsBtn) {
+  navRequestsBtn.addEventListener('click', async () => {
+    if (!adminToken) {
+      toast('Program requests management requires Admin login.', 'warning');
+      openModal('loginModalOverlay');
+      return;
+    }
+    loadAdminRequestsList();
+    openModal('requestsModalOverlay');
+  });
+}
+
+async function loadAdminRequestsList() {
+  const container = $('requestsListContainer');
+  if (!container) return;
+  try {
+    const res = await fetch('/api/requests', { headers: authHeaders() });
+    if (!res.ok) throw new Error('Load failed');
+    const requests = await res.json();
+
+    if (!requests || requests.length === 0) {
+      container.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-dim);">No requests submitted yet.</p>';
+      return;
+    }
+
+    container.innerHTML = requests.map(r => `
+      <div class="request-item">
+        <div class="request-item-top">
+          <span class="request-item-title">${escapeHtml(r.programName)} (${escapeHtml(r.subject)})</span>
+          <span class="request-status-badge status-${r.status}">${r.status}</span>
+        </div>
+        ${r.description ? `<p style="font-size:0.85rem; color:var(--text-dim); margin:4px 0 10px;">${escapeHtml(r.description)}</p>` : ''}
+        <div class="card-actions">
+          <button class="card-btn" onclick="updateRequestStatus('${r._id || r.id}', 'approved')">Approve</button>
+          <button class="card-btn" onclick="updateRequestStatus('${r._id || r.id}', 'completed')">Mark Completed</button>
+          <button class="card-btn danger" onclick="deleteUserRequest('${r._id || r.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = '<p style="color:var(--danger); text-align:center;">Failed to load requests.</p>';
   }
-});
-$('btnCopyCode').addEventListener('click', () => {
-  if (monacoEditorInstance) {
-    const code = monacoEditorInstance.getValue();
-    navigator.clipboard.writeText(code);
-    toast('Code copied to clipboard.', 'success');
+}
+
+async function updateRequestStatus(id, status) {
+  try {
+    const res = await fetch(`/api/requests/${id}`, {
+      method: 'PATCH',
+      headers: jsonAuthHeaders(),
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error('Update failed');
+    toast(`Request status marked as ${status}.`);
+    loadAdminRequestsList();
+    checkPendingRequests();
+  } catch (err) {
+    toast('Failed to update request.', 'error');
   }
+}
+
+async function deleteUserRequest(id) {
+  try {
+    const res = await fetch(`/api/requests/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (!res.ok) throw new Error('Delete failed');
+    toast('Request deleted.');
+    loadAdminRequestsList();
+    checkPendingRequests();
+  } catch (err) {
+    toast('Failed to delete request.', 'error');
+  }
+}
+
+// ---------------- Admin Edit Details & Delete File ----------------
+function openEditModal(id) {
+  editingFileId = id;
+  const file = lastFiles.find(f => (f._id || f.id) === id);
+  if (!file) return;
+
+  if ($('editNameInput')) $('editNameInput').value = file.originalName || '';
+  if ($('editCategorySelect')) $('editCategorySelect').value = file.category || 'all';
+  if ($('editDescInput')) $('editDescInput').value = file.description || '';
+  if ($('editTagsInput')) $('editTagsInput').value = (file.tags || []).join(', ');
+  if ($('editPinnedCheck')) $('editPinnedCheck').checked = Boolean(file.pinned);
+
+  openModal('editModalOverlay');
+}
+
+const editSaveBtn = $('editSaveBtn');
+if (editSaveBtn) {
+  editSaveBtn.addEventListener('click', async () => {
+    if (!editingFileId) return;
+
+    const payload = {
+      originalName: $('editNameInput').value,
+      category: $('editCategorySelect').value,
+      description: $('editDescInput').value,
+      tags: $('editTagsInput').value.split(',').map(t => t.trim()).filter(Boolean),
+      pinned: $('editPinnedCheck').checked
+    };
+
+    try {
+      const res = await fetch(`/api/files/${editingFileId}`, {
+        method: 'PATCH',
+        headers: jsonAuthHeaders(),
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Update failed');
+      toast('File details updated successfully!');
+      closeModal('editModalOverlay');
+      loadFiles();
+    } catch (err) {
+      toast('Failed to update file details.', 'error');
+    }
+  });
+}
+
+function confirmDeleteFile(id) {
+  pendingDeleteId = id;
+  openModal('deleteModalOverlay');
+}
+
+const deleteCancelBtn = $('deleteCancelBtn');
+if (deleteCancelBtn) deleteCancelBtn.addEventListener('click', () => closeModal('deleteModalOverlay'));
+
+const deleteConfirmBtn = $('deleteConfirmBtn');
+if (deleteConfirmBtn) {
+  deleteConfirmBtn.addEventListener('click', async () => {
+    if (!pendingDeleteId) return;
+    try {
+      const res = await fetch(`/api/files/${pendingDeleteId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (!res.ok) throw new Error('Delete error');
+      toast('File deleted successfully.');
+      closeModal('deleteModalOverlay');
+
+      // Immediate local state update (BUG 11)
+      lastFiles = lastFiles.filter(f => (f._id || f.id) !== pendingDeleteId);
+      renderFiles(lastFiles);
+      renderPinnedSection(lastFiles);
+      loadStats();
+      loadFiles();
+    } catch (err) {
+      toast('Failed to delete file.', 'error');
+    }
+  });
+}
+
+// Modal close bindings
+document.querySelectorAll('.modal-close').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.close;
+    if (target) closeModal(target);
+  });
 });
-$('btnDownloadCode').addEventListener('click', () => {
-  if (monacoEditorInstance && currentCompilerFile) {
+
+const navAboutBtn = $('navAboutBtn');
+if (navAboutBtn) navAboutBtn.addEventListener('click', () => openModal('aboutModalOverlay'));
+
+const navHomeBtn = $('navHomeBtn');
+if (navHomeBtn) navHomeBtn.addEventListener('click', () => {
+  clearSyllabusFilter();
+  switchCategory('all');
+});
+
+const navRecentBtn = $('navRecentBtn');
+if (navRecentBtn) navRecentBtn.addEventListener('click', () => {
+  if ($('sortSelect')) $('sortSelect').value = 'recent';
+  loadFiles();
+});
+
+const navPinnedBtn = $('navPinnedBtn');
+if (navPinnedBtn) navPinnedBtn.addEventListener('click', () => switchCategory('pinned'));
+
+// ---------------- Monaco Editor & Online Code Compiler Integration ----------------
+function detectMonacoLang(extOrName) {
+  const ext = getFileExtension(extOrName);
+  switch (ext) {
+    case 'py': case 'python': return 'python';
+    case 'java': return 'java';
+    case 'c': return 'c';
+    case 'cpp': case 'cc': case 'cxx': case 'c++': case 'adsa': return 'cpp';
+    case 'js': case 'javascript': return 'javascript';
+    case 'ts': case 'typescript': return 'typescript';
+    case 'go': return 'go';
+    case 'rs': case 'rust': return 'rust';
+    case 'cs': case 'csharp': return 'csharp';
+    case 'php': return 'php';
+    case 'rb': case 'ruby': return 'ruby';
+    case 'swift': return 'swift';
+    case 'kt': case 'kts': case 'kotlin': return 'kotlin';
+    case 'scala': return 'scala';
+    case 'r': return 'r';
+    case 'm': return 'objective-c';
+    case 'pl': case 'perl': return 'perl';
+    case 'lua': return 'lua';
+    case 'sh': case 'bash': return 'shell';
+    case 'sql': case 'dbms': return 'sql';
+    default: return 'python';
+  }
+}
+
+function initMonacoEditor(code = '', lang = 'python') {
+  const container = $('monacoEditorContainer');
+  if (!container) return;
+
+  const currentTheme = document.body.getAttribute('data-theme') === 'light' ? 'vs' : 'vs-dark';
+  const monacoLang = detectMonacoLang(lang);
+
+  const init = () => {
+    if (window.monaco && window.monaco.editor) {
+      if (!monacoEditorInstance) {
+        monacoEditorInstance = window.monaco.editor.create(container, {
+          value: code,
+          language: monacoLang,
+          theme: currentTheme,
+          automaticLayout: true,
+          fontSize: 14,
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          padding: { top: 10, bottom: 10 }
+        });
+      } else {
+        const model = monacoEditorInstance.getModel();
+        if (model) {
+          window.monaco.editor.setModelLanguage(model, monacoLang);
+          monacoEditorInstance.setValue(code);
+        }
+        window.monaco.editor.setTheme(currentTheme);
+      }
+    }
+  };
+
+  if (window.monaco && window.monaco.editor) {
+    init();
+  } else if (window.require) {
+    window.require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    window.require(['vs/editor/editor.main'], function () {
+      init();
+    });
+  }
+}
+
+async function runOnlineFile(id) {
+  try {
+    const res = await fetch(`/api/files/${id}/preview`);
+    if (!res.ok) throw new Error('Could not fetch file content');
+    const data = await res.json();
+    const file = data.file;
+    const code = data.content || '';
+    const lang = detectMonacoLang(file.extension || file.originalName || file.category);
+
+    currentCompilerFile = {
+      id: file._id || file.id,
+      name: file.originalName,
+      code: code,
+      originalCode: code,
+      language: lang
+    };
+
+    const titleEl = $('compilerFileName');
+    if (titleEl) titleEl.textContent = file.originalName;
+    const langSelect = $('compilerLangSelect');
+    if (langSelect) langSelect.value = lang;
+
+    const stdinEl = $('compilerStdin');
+    if (stdinEl) stdinEl.value = file.expectedOutput ? '' : ''; // Ready for user stdin
+
+    const stdoutText = $('compilerStdoutText');
+    if (stdoutText) stdoutText.textContent = 'Press "▶ Run" to compile & execute online...';
+    
+    const stderrText = $('compilerStderrText');
+    if (stderrText) {
+      stderrText.style.display = 'none';
+      stderrText.textContent = '';
+    }
+    const iframe = $('compilerIframePreview');
+    if (iframe) iframe.style.display = 'none';
+    const consoleBox = $('compilerConsole');
+    if (consoleBox) consoleBox.style.display = 'block';
+    const metrics = $('compilerMetrics');
+    if (metrics) metrics.style.display = 'none';
+
+    const statusBadge = $('compilerStatusBadge');
+    if (statusBadge) {
+      statusBadge.textContent = 'Ready';
+      statusBadge.className = 'status-badge ready';
+    }
+
+    const saveBtn = $('compilerSaveBtn');
+    if (saveBtn) saveBtn.style.display = adminToken ? 'inline-block' : 'none';
+
+    openModal('compilerModalOverlay');
+    setTimeout(() => {
+      initMonacoEditor(code, lang);
+    }, 150);
+  } catch (err) {
+    toast(`Could not open file in online compiler: ${err.message || 'File read error'}`, 'error');
+  }
+}
+
+// Complete Compiler Run Engine (BUG 1, 2, 3, 4, 5, 6)
+const compRunBtn = $('compilerRunBtn');
+if (compRunBtn) {
+  compRunBtn.addEventListener('click', async () => {
+    if (!monacoEditorInstance) return;
+
     const code = monacoEditorInstance.getValue();
+    const lang = $('compilerLangSelect').value;
+    
+    // Read EXACT stdin from textarea preserving all newlines (BUG 1 - BUG 4)
+    const stdin = $('compilerStdin') ? $('compilerStdin').value : '';
+
+    const statusBadge = $('compilerStatusBadge');
+    const consoleOutput = $('compilerStdoutText');
+    const stderrOutput = $('compilerStderrText');
+    const loading = $('compilerLoading');
+    const loadingText = $('compilerLoadingText');
+    const iframe = $('compilerIframePreview');
+    const metrics = $('compilerMetrics');
+
+    if (lang === 'html') {
+      iframe.style.display = 'block';
+      if ($('compilerConsole')) $('compilerConsole').style.display = 'none';
+      if (metrics) metrics.style.display = 'none';
+      iframe.srcdoc = code;
+      if (statusBadge) {
+        statusBadge.textContent = 'Accepted';
+        statusBadge.className = 'status-badge success';
+      }
+      return;
+    }
+
+    iframe.style.display = 'none';
+    if ($('compilerConsole')) $('compilerConsole').style.display = 'block';
+    if (loading) loading.style.display = 'flex';
+    if (loadingText) loadingText.textContent = 'Compiling & Executing code...';
+    
+    // Clear previous output before each execution (BUG 6)
+    if (consoleOutput) consoleOutput.textContent = '';
+    if (stderrOutput) {
+      stderrOutput.style.display = 'none';
+      stderrOutput.textContent = '';
+    }
+
+    compRunBtn.disabled = true;
+    if (statusBadge) {
+      statusBadge.textContent = 'Compiling...';
+      statusBadge.className = 'status-badge running';
+    }
+
+    try {
+      const res = await fetch('/api/compiler/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, language: lang, stdin })
+      });
+
+      const data = await res.json();
+      if (loading) loading.style.display = 'none';
+      compRunBtn.disabled = false;
+
+      if (!res.ok) {
+        if (statusBadge) {
+          statusBadge.textContent = 'Compilation Error';
+          statusBadge.className = 'status-badge error';
+        }
+        if (stderrOutput) {
+          stderrOutput.style.display = 'block';
+          stderrOutput.textContent = data.error || data.details || 'Compilation Failed.';
+        }
+        return;
+      }
+
+      // Display stderr if any
+      if (data.stderr) {
+        if (stderrOutput) {
+          stderrOutput.style.display = 'block';
+          stderrOutput.textContent = data.stderr;
+        }
+      }
+
+      // Display stdout
+      if (consoleOutput) {
+        consoleOutput.textContent = data.stdout || (data.stderr ? '' : '(No output produced)');
+      }
+
+      // Classify Verdict Status Badge (BUG 6)
+      const verdictStatus = data.status || (data.exitCode === 0 ? 'Accepted' : 'Runtime Error');
+      if (statusBadge) {
+        statusBadge.textContent = verdictStatus;
+        if (verdictStatus === 'Accepted') {
+          statusBadge.className = 'status-badge success';
+        } else if (verdictStatus === 'Compilation Error') {
+          statusBadge.className = 'status-badge error';
+        } else if (verdictStatus === 'Time Limit Exceeded') {
+          statusBadge.className = 'status-badge warning';
+        } else {
+          statusBadge.className = 'status-badge error';
+        }
+      }
+
+      // Execution Metrics & Exit Code (BUG 6)
+      if (metrics) {
+        metrics.style.display = 'flex';
+        if ($('metricTime')) $('metricTime').textContent = data.time || '0.00s';
+        if ($('metricMemory')) $('metricMemory').textContent = `${data.memory || '0 MB'} · Exit Code: ${data.exitCode}`;
+      }
+    } catch (err) {
+      if (loading) loading.style.display = 'none';
+      compRunBtn.disabled = false;
+      if (statusBadge) {
+        statusBadge.textContent = 'Compiler Offline';
+        statusBadge.className = 'status-badge error';
+      }
+      if (stderrOutput) {
+        stderrOutput.style.display = 'block';
+        stderrOutput.textContent = 'Compiler API is currently offline. Please check connection and try again.';
+      }
+    }
+  });
+}
+
+const compClearBtn = $('compilerClearBtn');
+if (compClearBtn) {
+  compClearBtn.addEventListener('click', () => {
+    if ($('compilerStdin')) $('compilerStdin').value = '';
+    if ($('compilerStdoutText')) $('compilerStdoutText').textContent = '';
+    if ($('compilerStderrText')) $('compilerStderrText').style.display = 'none';
+    if ($('compilerIframePreview')) $('compilerIframePreview').srcdoc = '';
+    if ($('compilerMetrics')) $('compilerMetrics').style.display = 'none';
+    const statusBadge = $('compilerStatusBadge');
+    if (statusBadge) {
+      statusBadge.textContent = 'Ready';
+      statusBadge.className = 'status-badge ready';
+    }
+  });
+}
+
+const compResetBtn = $('compilerResetBtn');
+if (compResetBtn) {
+  compResetBtn.addEventListener('click', () => {
+    if (currentCompilerFile && monacoEditorInstance) {
+      monacoEditorInstance.setValue(currentCompilerFile.originalCode || '');
+      toast('Code reset to original version.');
+    }
+  });
+}
+
+// ---------------- VS Code Terminal Tabs & Live Stdin Prompt ----------------
+document.querySelectorAll('.term-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.term-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    
+    const target = tab.dataset.tab;
+    const consoleTab = $('termTabConsole');
+    const stdinTab = $('termTabStdin');
+    const aiTab = $('termTabAi');
+
+    if (consoleTab) consoleTab.style.display = target === 'console' ? 'flex' : 'none';
+    if (stdinTab) stdinTab.style.display = target === 'stdin' ? 'block' : 'none';
+    if (aiTab) aiTab.style.display = target === 'ai' ? 'block' : 'none';
+  });
+});
+
+function handleTerminalLiveInput() {
+  const inputEl = $('terminalLiveInput');
+  if (!inputEl) return;
+  const val = inputEl.value.trim();
+  if (!val) return;
+
+  const stdinArea = $('compilerStdin');
+  if (stdinArea) {
+    stdinArea.value = (stdinArea.value ? stdinArea.value + '\n' : '') + val;
+  }
+
+  const stdoutText = $('compilerStdoutText');
+  if (stdoutText) {
+    stdoutText.textContent += (stdoutText.textContent ? '\n' : '') + `❯ ${val}`;
+  }
+
+  inputEl.value = '';
+
+  // Trigger compiler execution with updated stdin
+  const compRunBtn = $('compilerRunBtn');
+  if (compRunBtn) compRunBtn.click();
+}
+
+const termSendBtn = $('terminalSendInputBtn');
+if (termSendBtn) {
+  termSendBtn.addEventListener('click', handleTerminalLiveInput);
+}
+
+const termInputEl = $('terminalLiveInput');
+if (termInputEl) {
+  termInputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTerminalLiveInput();
+    }
+  });
+}
+
+// AI Code Tutor Explanation
+const aiExplainBtn = $('aiExplainCodeBtn');
+if (aiExplainBtn) {
+  aiExplainBtn.addEventListener('click', async () => {
+    if (!monacoEditorInstance) return;
+    const code = monacoEditorInstance.getValue();
+    const lang = $('compilerLangSelect') ? $('compilerLangSelect').value : 'python';
+
+    aiExplainBtn.disabled = true;
+    aiExplainBtn.textContent = '⏳ Analyzing...';
+
+    try {
+      const res = await fetch('/api/ai/explain-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, language: lang })
+      });
+
+      const data = await res.json();
+      aiExplainBtn.disabled = false;
+      aiExplainBtn.textContent = '✨ Analyze Code';
+
+      if (res.ok) {
+        if ($('aiExplainEmpty')) $('aiExplainEmpty').style.display = 'none';
+        if ($('aiExplainResults')) $('aiExplainResults').style.display = 'flex';
+
+        if ($('aiExplainText')) $('aiExplainText').textContent = data.explanation || 'No explanation provided.';
+        if ($('aiExplainTime')) $('aiExplainTime').textContent = data.timeComplexity || 'O(N)';
+        if ($('aiExplainSpace')) $('aiExplainSpace').textContent = data.spaceComplexity || 'O(1)';
+        if ($('aiExplainDryRun')) $('aiExplainDryRun').textContent = data.dryRunTrace || 'Execution trace unavailable.';
+        if ($('aiExplainOptimization')) $('aiExplainOptimization').textContent = data.optimizationTips || 'Code is optimal.';
+      } else {
+        toast('AI explanation error: ' + (data.error || 'Server error'), 'error');
+      }
+    } catch (err) {
+      aiExplainBtn.disabled = false;
+      aiExplainBtn.textContent = '✨ Analyze Code';
+      toast('AI explanation offline.', 'error');
+    }
+  });
+}
+
+const compCopyBtn = $('compilerCopyBtn');
+if (compCopyBtn) {
+  compCopyBtn.addEventListener('click', () => {
+    if (monacoEditorInstance) {
+      navigator.clipboard.writeText(monacoEditorInstance.getValue());
+      toast('Code copied to clipboard! 📋');
+    }
+  });
+}
+
+const compDownloadBtn = $('compilerDownloadBtn');
+if (compDownloadBtn) {
+  compDownloadBtn.addEventListener('click', () => {
+    if (!monacoEditorInstance) return;
+    const code = monacoEditorInstance.getValue();
+    const lang = $('compilerLangSelect').value;
+    const extMap = { python: 'py', java: 'java', c: 'c', cpp: 'cpp', javascript: 'js', html: 'html', sql: 'sql', adsa: 'cpp' };
+    const ext = extMap[lang] || 'txt';
+    const name = currentCompilerFile ? currentCompilerFile.name : `code.${ext}`;
+    
     const blob = new Blob([code], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = currentCompilerFile.originalName;
+    a.download = name;
     a.click();
     URL.revokeObjectURL(url);
-    toast('Downloaded source file.', 'success');
-  }
-});
-$('btnFullscreenCompiler').addEventListener('click', () => {
-  const modal = $('compilerModalWindow');
-  modal.classList.toggle('fullscreen');
-  if (monacoEditorInstance) {
-    setTimeout(() => monacoEditorInstance.layout(), 100);
-  }
-});
-$('btnSaveAdminCode').addEventListener('click', async () => {
-  if (!currentCompilerFile || !adminToken) return;
-  const content = monacoEditorInstance ? monacoEditorInstance.getValue() : '';
-  try {
-    const res = await fetch(`/api/files/${currentCompilerFile.id}/content`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ content })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    currentCompilerFile.content = content;
-    toast('File content saved permanently by Admin!', 'success');
-    loadFiles();
-  } catch (err) {
-    toast(err.message || 'Save failed.', 'error');
-  }
-});
+    toast(`Downloaded ${name} ⬇`);
+  });
+}
 
-async function runCode() {
-  if (!currentCompilerFile || !monacoEditorInstance) return;
+const compFullscreenBtn = $('compilerFullscreenBtn');
+if (compFullscreenBtn) {
+  compFullscreenBtn.addEventListener('click', () => {
+    const box = $('compilerModalBox');
+    if (box) box.classList.toggle('fullscreen');
+  });
+}
 
-  const code = monacoEditorInstance.getValue();
-  const stdin = $('compilerInput').value;
-
-  if (!code.trim()) {
-    toast('Source code is empty.', 'warn');
-    return;
-  }
-
-  $('btnRunCode').style.display = 'none';
-  $('btnStopCode').style.display = 'inline-flex';
-  updateCompilerStatus('Running...', 'running');
-  setMascotMood('thinking', 'Executing code online via Judge0... ⚡');
-  $('compilerOutputBox').innerHTML = '<div class="output-placeholder">Compiling and executing code via Judge0...</div>';
-
-  activeRunAbortController = new AbortController();
-
-  try {
-    const res = await fetch('/api/compiler/run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fileId: currentCompilerFile.id,
-        filename: currentCompilerFile.originalName,
-        extension: currentCompilerFile.extension,
-        sourceCode: code,
-        stdin
-      }),
-      signal: activeRunAbortController.signal
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      updateCompilerStatus('Error', 'error');
-      setMascotMood('sad', 'Execution failed 😢');
-      $('compilerOutputBox').innerHTML = `<div class="output-block"><div class="output-label">Compiler Error</div><div class="output-content compile-error">${escapeHtml(data.error || 'Execution failed.')}</div></div>`;
+const compSaveBtn = $('compilerSaveBtn');
+if (compSaveBtn) {
+  compSaveBtn.addEventListener('click', async () => {
+    if (!currentCompilerFile || !currentCompilerFile.id) {
+      toast('No persistent file selected.', 'warning');
       return;
     }
-
-    $('compilerTimeTag').textContent = `⏱ ${data.time || '--'}`;
-    $('compilerMemTag').textContent = `💾 ${data.memory || '--'}`;
-
-    let html = '';
-
-    if (data.compile_output) {
-      updateCompilerStatus('Compilation Error', 'error');
-      setMascotMood('sad', 'Compilation error detected 😢');
-      html += `<div class="output-block"><div class="output-label">Compilation Errors</div><div class="output-content compile-error">${escapeHtml(data.compile_output)}</div></div>`;
+    const code = monacoEditorInstance.getValue();
+    try {
+      const res = await fetch(`/api/files/${currentCompilerFile.id}/content`, {
+        method: 'PUT',
+        headers: jsonAuthHeaders(),
+        body: JSON.stringify({ content: code })
+      });
+      if (!res.ok) throw new Error('Save failed');
+      currentCompilerFile.originalCode = code;
+      toast('File updated permanently in database! 💾');
+      loadFiles();
+    } catch (err) {
+      toast('Failed to save file changes.', 'error');
     }
-
-    if (data.stderr) {
-      if (!data.compile_output) {
-        updateCompilerStatus(data.status?.description || 'Runtime Error', 'error');
-        setMascotMood('sad', 'Runtime error detected 😢');
-      }
-      html += `<div class="output-block"><div class="output-label">Runtime Errors</div><div class="output-content runtime-error">${escapeHtml(data.stderr)}</div></div>`;
-    }
-
-    if (data.stdout) {
-      if (!data.compile_output && !data.stderr) {
-        updateCompilerStatus(data.status?.description || 'Accepted', 'accepted');
-        setMascotMood('happy', 'Execution Successful! 🎉');
-      }
-      html += `<div class="output-block"><div class="output-label">Program Output (stdout)</div><div class="output-content">${escapeHtml(data.stdout)}</div></div>`;
-    }
-
-    if (!data.stdout && !data.stderr && !data.compile_output) {
-      updateCompilerStatus(data.status?.description || 'Accepted', 'accepted');
-      setMascotMood('happy', 'Executed with no output! 🎉');
-      html = `<div class="output-block"><div class="output-label">Program Output</div><div class="output-content">Program executed successfully with no output.</div></div>`;
-    }
-
-    $('compilerOutputBox').innerHTML = html;
-
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      updateCompilerStatus('Stopped', 'default');
-      setMascotMood('normal', 'Execution stopped by user.');
-      $('compilerOutputBox').innerHTML = '<div class="output-placeholder">Execution stopped by user.</div>';
-    } else {
-      updateCompilerStatus('Execution Error', 'error');
-      setMascotMood('sad', 'Server error during execution.');
-      $('compilerOutputBox').innerHTML = `<div class="output-block"><div class="output-label">Error</div><div class="output-content compile-error">${escapeHtml(err.message || 'Server network error.')}</div></div>`;
-    }
-  } finally {
-    $('btnRunCode').style.display = 'inline-flex';
-    $('btnStopCode').style.display = 'none';
-    activeRunAbortController = null;
-  }
-}
-
-function stopCode() {
-  if (activeRunAbortController) {
-    activeRunAbortController.abort();
-  }
-}
-
-// ---------------- Generic Modal Close Handlers ----------------
-document.querySelectorAll('[data-close]').forEach(btn => {
-  btn.addEventListener('click', () => closeModal(btn.dataset.close));
-});
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('show'); });
-});
-$('aboutBtn').addEventListener('click', () => openModal('aboutModalOverlay'));
-
-// ---------------- Initialization ----------------
-const nomadBadge = $('nomadDevBadge');
-if (nomadBadge) {
-  nomadBadge.addEventListener('click', () => {
-    toast('Developed with ❤️ by Nomad!', 'success');
-    setMascotMood('excited', 'Crafted by Nomad! 🚀');
   });
 }
 
-const welcomeCapsule = $('welcomeCapsule');
-if (welcomeCapsule) {
-  welcomeCapsule.addEventListener('click', () => {
-    updateWelcomeCapsule();
+// ---------------- AI Programming Assistant Handlers ----------------
+const aiForm = $('aiAssistantForm');
+if (aiForm) {
+  aiForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const prompt = $('aiPromptInput').value.trim();
+    const subject = $('aiSubjectSelect').value;
+    const submitBtn = $('aiSubmitBtn');
+    
+    if (!prompt) return;
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '✨ AI is generating solution... ⌛';
+    }
+
+    const resultCard = $('aiResultCard');
+    const fallbackCard = $('aiFallbackCard');
+    if (resultCard) resultCard.style.display = 'none';
+    if (fallbackCard) fallbackCard.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/ai/generate-program', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, subject })
+      });
+
+      const data = await res.json();
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '✨ Ask AI Assistant for Instant Solution';
+      }
+
+      if (!data || !data.verified) {
+        if (fallbackCard) fallbackCard.style.display = 'block';
+        if ($('aiFallbackText')) $('aiFallbackText').textContent = data.message || "I couldn't generate a verified solution.";
+        return;
+      }
+
+      currentAiSolution = data;
+      if (resultCard) resultCard.style.display = 'block';
+      if ($('aiResultTitle')) $('aiResultTitle').textContent = data.title || prompt;
+      if ($('aiLangTag')) $('aiLangTag').textContent = (data.language || 'code').toLowerCase();
+      if ($('aiTimeTag')) $('aiTimeTag').textContent = `Time: ${data.timeComplexity || 'O(N)'}`;
+      if ($('aiSpaceTag')) $('aiSpaceTag').textContent = `Space: ${data.spaceComplexity || 'O(1)'}`;
+      if ($('aiExplanation')) $('aiExplanation').textContent = data.explanation || '';
+      if ($('aiCodeBlock')) $('aiCodeBlock').textContent = data.code || '';
+      if ($('aiSampleInput')) $('aiSampleInput').textContent = data.sampleInput || '(None)';
+      if ($('aiSampleOutput')) $('aiSampleOutput').textContent = data.sampleOutput || '(None)';
+
+    } catch (err) {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '✨ Ask AI Assistant for Instant Solution';
+      }
+      if (fallbackCard) fallbackCard.style.display = 'block';
+      if ($('aiFallbackText')) $('aiFallbackText').textContent = "I couldn't generate a verified solution.";
+    }
   });
 }
 
-initParticleCanvas();
-initMascot();
-initTheme();
-initOnboarding();
-initLabExplorer();
-initMobileNav();
-refreshSessionBadge();
-loadStats();
-loadFiles();
-loadSuggestions();
+const aiRunBtn = $('aiRunOnlineBtn');
+if (aiRunBtn) {
+  aiRunBtn.addEventListener('click', () => {
+    if (!currentAiSolution) return;
+    const lang = detectMonacoLang(currentAiSolution.language);
+    currentCompilerFile = {
+      id: null,
+      name: `${(currentAiSolution.title || 'ai_program').toLowerCase().replace(/[^a-z0-9]/g, '_')}.${lang === 'python' ? 'py' : lang}`,
+      code: currentAiSolution.code,
+      originalCode: currentAiSolution.code,
+      language: lang
+    };
+
+    if ($('compilerFileName')) $('compilerFileName').textContent = currentAiSolution.title || 'AI Generated Program';
+    if ($('compilerLangSelect')) $('compilerLangSelect').value = lang;
+    if ($('compilerStdin')) $('compilerStdin').value = currentAiSolution.sampleInput || '';
+    if ($('compilerStdoutText')) $('compilerStdoutText').textContent = 'Press "▶ Run" to execute code on Judge0...';
+    if ($('compilerStderrText')) $('compilerStderrText').style.display = 'none';
+    if ($('compilerIframePreview')) $('compilerIframePreview').style.display = 'none';
+    if ($('compilerConsole')) $('compilerConsole').style.display = 'block';
+    if ($('compilerMetrics')) $('compilerMetrics').style.display = 'none';
+    if ($('compilerSaveBtn')) $('compilerSaveBtn').style.display = 'none';
+
+    openModal('compilerModalOverlay');
+    setTimeout(() => {
+      initMonacoEditor(currentAiSolution.code, lang);
+    }, 150);
+  });
+}
+
+const aiCopyBtn = $('aiCopyBtn');
+if (aiCopyBtn) {
+  aiCopyBtn.addEventListener('click', () => {
+    if (currentAiSolution && currentAiSolution.code) {
+      navigator.clipboard.writeText(currentAiSolution.code);
+      toast('AI code copied to clipboard! 📋');
+    }
+  });
+}
+
+const aiDownloadBtn = $('aiDownloadBtn');
+if (aiDownloadBtn) {
+  aiDownloadBtn.addEventListener('click', () => {
+    if (!currentAiSolution || !currentAiSolution.code) return;
+    const lang = detectMonacoLang(currentAiSolution.language);
+    const extMap = { python: 'py', java: 'java', c: 'c', cpp: 'cpp', javascript: 'js', html: 'html', sql: 'sql' };
+    const ext = extMap[lang] || 'txt';
+    const filename = `${(currentAiSolution.title || 'program').toLowerCase().replace(/[^a-z0-9]/g, '_')}.${ext}`;
+    
+    const blob = new Blob([currentAiSolution.code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(`Downloaded ${filename} ⬇`);
+  });
+}
+
+const showAdminReqBtn = $('showAdminReqFormBtn');
+if (showAdminReqBtn) {
+  showAdminReqBtn.addEventListener('click', () => {
+    const wrap = $('adminReqFormWrap');
+    if (wrap) {
+      wrap.style.display = 'block';
+      const promptVal = $('aiPromptInput') ? $('aiPromptInput').value : '';
+      if (promptVal && $('reqProgramName')) $('reqProgramName').value = promptVal;
+      const subjVal = $('aiSubjectSelect') ? $('aiSubjectSelect').value : '';
+      if (subjVal && $('reqSubject')) $('reqSubject').value = subjVal;
+      wrap.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+}
+
+// Global Init
+window.addEventListener('DOMContentLoaded', () => {
+  initIntro();
+  initParticles();
+  setupUploads();
+  setupDashboardBindings();
+  updateSessionBadge();
+  loadSyllabus();
+  renderSubjectAnimation('all');
+  loadFiles();
+});

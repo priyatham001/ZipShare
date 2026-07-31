@@ -1,0 +1,457 @@
+{
+  "java": {
+    "title": "Java Programming",
+    "icon": "☕",
+    "exercises": [
+      {
+        "id": "java-ex1",
+        "title": "Exercise 1 - Basics",
+        "questions": [
+          {
+            "id": "java-ex1-q1",
+            "title": "Default Values",
+            "keywords": ["defaultvalues", "default values", "primitive"],
+            "description": "Write a Java program to display the default values of all primitive data types.",
+            "expectedOutput": "Default Primitive Values in Java:\nbyte: 0\nshort: 0\nint: 0\nlong: 0\nfloat: 0.0\ndouble: 0.0\nchar: 0\nboolean: false"
+          },
+          {
+            "id": "java-ex1-q2",
+            "title": "Quadratic Equation",
+            "keywords": ["quadratic", "quadraticroots", "roots"],
+            "description": "Write a Java program to calculate roots of a quadratic equation ax^2 + bx + c = 0.",
+            "expectedOutput": "Equation: 1.0x^2 + -5.0x + 6.0 = 0\nRoot 1 = 3.0\nRoot 2 = 2.0"
+          }
+        ]
+      },
+      {
+        "id": "java-ex2",
+        "title": "Exercise 2 - Classes & Constructors",
+        "questions": [
+          {
+            "id": "java-ex2-q1",
+            "title": "Class Mechanism",
+            "keywords": ["class mechanism", "box", "class"],
+            "description": "Demonstrating class creation, instance attributes, and method mechanisms in Java.",
+            "expectedOutput": "Box Volume: 3000.0"
+          },
+          {
+            "id": "java-ex2-q2",
+            "title": "Method Overloading",
+            "keywords": ["method overloading", "methodoverloading", "add"],
+            "description": "Demonstrating compile-time polymorphism through overloaded methods.",
+            "expectedOutput": "2 args sum: 15\n3 args sum: 30\ndouble sum: 6.0"
+          },
+          {
+            "id": "java-ex2-q3",
+            "title": "Constructor Overloading",
+            "keywords": ["constructor overloading", "constructoroverloading"],
+            "description": "Demonstrating multiple constructors with different parameter signatures.",
+            "expectedOutput": "Name: Unknown, Roll: 0\nName: Raju, Roll: 101"
+          },
+          {
+            "id": "java-ex2-q4",
+            "title": "this Keyword",
+            "keywords": ["this keyword", "thiskeyword", "this"],
+            "description": "Demonstrating usage of 'this' keyword to resolve variable shadowing.",
+            "expectedOutput": "Area of rectangle: 40"
+          }
+        ]
+      },
+      {
+        "id": "java-ex3",
+        "title": "Exercise 3 - Arrays, Collections & Strings",
+        "questions": [
+          {
+            "id": "java-ex3-q1",
+            "title": "Binary Search",
+            "keywords": ["binary search", "binarysearch"],
+            "description": "Implementation of Binary Search algorithm on a sorted integer array in Java.",
+            "expectedOutput": "Element 40 found at index 3"
+          },
+          {
+            "id": "java-ex3-q2",
+            "title": "Bubble Sort",
+            "keywords": ["bubble sort", "bubblesort"],
+            "description": "Sorting array elements in ascending order using Bubble Sort algorithm.",
+            "expectedOutput": "Sorted array: 11 12 22 25 34 64 90"
+          },
+          {
+            "id": "java-ex3-q3",
+            "title": "ArrayList",
+            "keywords": ["arraylist"],
+            "description": "Demonstrating dynamic array operations using Java Collection Framework ArrayList.",
+            "expectedOutput": "ArrayList Elements: [Java, Python, C++]\nAfter Removal: [Java, C++]"
+          },
+          {
+            "id": "java-ex3-q4",
+            "title": "HashMap",
+            "keywords": ["hashmap"],
+            "description": "Demonstrating key-value pair mapping and retrieval using Java HashMap.",
+            "expectedOutput": "Student Marks Map: {Alice=95, Bob=88, Charlie=92}\nBob's Mark: 88"
+          },
+          {
+            "id": "java-ex3-q5",
+            "title": "HashSet",
+            "keywords": ["hashset"],
+            "description": "Demonstrating unique element storage and duplicate rejection using HashSet.",
+            "expectedOutput": "HashSet Unique Items: [Apple, Banana]"
+          },
+          {
+            "id": "java-ex3-q6",
+            "title": "String Operations",
+            "keywords": ["string operations", "string"],
+            "description": "Demonstrating standard String manipulation functions in Java.",
+            "expectedOutput": "Original String: Hello SRKR Engineering College\nLength: 30\nUppercase: HELLO SRKR ENGINEERING COLLEGE"
+          },
+          {
+            "id": "java-ex3-q7",
+            "title": "StringBuffer",
+            "keywords": ["stringbuffer", "string buffer"],
+            "description": "Demonstrating mutable StringBuffer appends, inserts, and reversals.",
+            "expectedOutput": "Buffer Content: ZipShare V3 Code Compiler\nReversed: relipmoC edoC 3V erahSpiz"
+          }
+        ]
+      },
+      {
+        "id": "java-ex4a",
+        "title": "Exercise 4 - Inheritance",
+        "questions": [
+          {
+            "id": "java-ex4a-q1",
+            "title": "Single Inheritance",
+            "keywords": ["single inheritance", "singleinheritance"],
+            "description": "Demonstrating parent-child class hierarchy in single inheritance.",
+            "expectedOutput": "Animal is eating...\nDog is barking..."
+          },
+          {
+            "id": "java-ex4a-q2",
+            "title": "Multilevel Inheritance",
+            "keywords": ["multilevel inheritance", "multilevel"],
+            "description": "Demonstrating multi-tier inheritance hierarchy.",
+            "expectedOutput": "Grandfather Status\nFather Profession\nSon Hobby"
+          },
+          {
+            "id": "java-ex4a-q3",
+            "title": "Abstract Class",
+            "keywords": ["abstract class", "abstract"],
+            "description": "Demonstrating abstract classes and polymorphic method overriding.",
+            "expectedOutput": "Circle Area: 78.53981633974483"
+          },
+          {
+            "id": "java-ex4a-q4",
+            "title": "Runtime Polymorphism",
+            "keywords": ["runtime polymorphism", "polymorphism", "dynamic dispatch"],
+            "description": "Demonstrating dynamic method dispatch at runtime.",
+            "expectedOutput": "SBI Interest Rate: 8.4%\nHDFC Interest Rate: 7.3%"
+          },
+          {
+            "id": "java-ex4a-q5",
+            "title": "super Keyword",
+            "keywords": ["super keyword", "super"],
+            "description": "Demonstrating invocation of parent constructor using super().",
+            "expectedOutput": "Parent Constructor Called\nChild Constructor Called"
+          },
+          {
+            "id": "java-ex4a-q6",
+            "title": "Interface",
+            "keywords": ["interface"],
+            "description": "Implementing interface abstractions and contracts in Java.",
+            "expectedOutput": "Printing Document Content..."
+          }
+        ]
+      },
+      {
+        "id": "java-ex4b",
+        "title": "Exercise 4 - Packages & Exceptions",
+        "questions": [
+          { "id": "java-ex4b-q1", "title": "Packages", "keywords": ["packages", "package"], "description": "Defining and importing custom Java user packages.", "expectedOutput": "Package imported and class invoked successfully!" },
+          { "id": "java-ex4b-q2", "title": "Sub Packages", "keywords": ["sub packages", "subpackages"], "description": "Hierarchical package structuring in Java.", "expectedOutput": "Sub-package method called." },
+          { "id": "java-ex4b-q3", "title": "Arithmetic Exception", "keywords": ["arithmetic exception", "arithmeticexception", "divide by zero"], "description": "Handling division by zero with try-catch block.", "expectedOutput": "Caught Exception: Division by zero is not allowed." },
+          { "id": "java-ex4b-q4", "title": "ArrayIndexOutOfBoundsException", "keywords": ["arrayindexoutofboundsexception", "array bounds"], "description": "Handling illegal array index access exceptions.", "expectedOutput": "Caught Exception: Array index out of bounds!" },
+          { "id": "java-ex4b-q5", "title": "NumberFormatException", "keywords": ["numberformatexception"], "description": "Catching invalid String-to-Number conversion errors.", "expectedOutput": "Invalid number format caught." },
+          { "id": "java-ex4b-q6", "title": "NullPointerException", "keywords": ["nullpointerexception"], "description": "Handling null object reference access.", "expectedOutput": "NullPointerException handled gracefully." },
+          { "id": "java-ex4b-q7", "title": "Multiple Catch", "keywords": ["multiple catch", "multiplecatch"], "description": "Handling different exception types with chained catch blocks.", "expectedOutput": "Specific exception caught in multiple catch block." },
+          { "id": "java-ex4b-q8", "title": "User Defined Exception", "keywords": ["user defined exception", "custom exception"], "description": "Creating custom exception class extending Exception.", "expectedOutput": "Custom Exception: Invalid age for voting." }
+        ]
+      },
+      {
+        "id": "java-ex5",
+        "title": "Exercise 5 - Multithreading & File I/O",
+        "questions": [
+          { "id": "java-ex5-q1", "title": "Thread Class", "keywords": ["thread class", "thread"], "description": "Creating concurrent threads by extending Thread class.", "expectedOutput": "Good Morning!\nWelcome to Java Multithreading!" },
+          { "id": "java-ex5-q2", "title": "Runnable", "keywords": ["runnable"], "description": "Implementing multithreading via Runnable interface.", "expectedOutput": "Thread running via Runnable Interface!" },
+          { "id": "java-ex5-q3", "title": "Thread Priority", "keywords": ["thread priority", "priority"], "description": "Setting MIN_PRIORITY, NORM_PRIORITY, and MAX_PRIORITY for threads.", "expectedOutput": "Thread Priority 10 executed first." },
+          { "id": "java-ex5-q4", "title": "Thread Synchronization", "keywords": ["thread synchronization", "synchronized"], "description": "Preventing thread interference with synchronized blocks.", "expectedOutput": "Thread 1 acquired lock.\nThread 2 waiting for lock." },
+          { "id": "java-ex5-q5", "title": "Byte IO", "keywords": ["byte io", "fileinputstream", "fileoutputstream"], "description": "Reading and writing binary data using FileInputStream and FileOutputStream.", "expectedOutput": "Byte Stream copy complete." },
+          { "id": "java-ex5-q6", "title": "Character IO", "keywords": ["character io", "filereader", "filewriter"], "description": "Reading and writing text data using FileReader and FileWriter.", "expectedOutput": "Character Stream operation complete." }
+        ]
+      },
+      {
+        "id": "java-ex6",
+        "title": "Exercise 6 - JDBC Connectivity",
+        "questions": [
+          { "id": "java-ex6-q1", "title": "JDBC Insert", "keywords": ["jdbc insert", "insert"], "description": "Executing SQL INSERT statement using PreparedStatement in JDBC.", "expectedOutput": "Record Inserted Successfully!" },
+          { "id": "java-ex6-q2", "title": "JDBC Delete", "keywords": ["jdbc delete", "delete"], "description": "Executing SQL DELETE statement using JDBC connection.", "expectedOutput": "Record Deleted Successfully!" },
+          { "id": "java-ex6-q3", "title": "JDBC Update", "keywords": ["jdbc update", "update"], "description": "Executing SQL UPDATE query to modify database rows.", "expectedOutput": "Record Updated Successfully!" },
+          { "id": "java-ex6-q4", "title": "JDBC Retrieve", "keywords": ["jdbc retrieve", "select", "jdbc select"], "description": "Executing SQL SELECT query and iterating ResultSet in JDBC.", "expectedOutput": "JDBC Connection Initialized...\nExecuting SQL: SELECT * FROM Students;\nQuery Executed Successfully." }
+        ]
+      }
+    ]
+  },
+  "python": {
+    "title": "Python Programming",
+    "icon": "🐍",
+    "exercises": [
+      {
+        "id": "py-mod1",
+        "title": "Module 1 - Fundamentals & Control Logic",
+        "questions": [
+          { "id": "py-mod1-q1", "title": "Largest Among Three", "keywords": ["largest among three", "greatest_of_three", "largest"], "description": "Find the largest of three numbers using conditional statements.", "expectedOutput": "Greatest number is 45" },
+          { "id": "py-mod1-q2", "title": "Prime Numbers", "keywords": ["prime numbers", "prime", "primes_in_given_range"], "description": "Check if a number is prime or print prime numbers in a range.", "expectedOutput": "29 is a Prime Number." },
+          { "id": "py-mod1-q3", "title": "Swap Without Temp", "keywords": ["swap without temp", "swap"], "description": "Swap two numbers without using a third temporary variable.", "expectedOutput": "Before: a=5, b=10\nAfter: a=10, b=5" },
+          { "id": "py-mod1-q4", "title": "Operators", "keywords": ["operators", "operators_demonstrate"], "description": "Demonstrate arithmetic, comparison, logical, and bitwise operators in Python.", "expectedOutput": "Sum: 15\nProduct: 50\nBitwise AND: 0" },
+          { "id": "py-mod1-q5", "title": "Complex Numbers", "keywords": ["complex numbers", "complex"], "description": "Perform addition and multiplication on complex numbers.", "expectedOutput": "Sum = (5+7j)" },
+          { "id": "py-mod1-q6", "title": "Multiplication Table", "keywords": ["multiplication table", "table"], "description": "Generate multiplication table for a given integer.", "expectedOutput": "5 x 1 = 5\n5 x 2 = 10\n5 x 3 = 15..." }
+        ]
+      },
+      {
+        "id": "py-mod2",
+        "title": "Module 2 - Functions & Sequences",
+        "questions": [
+          { "id": "py-mod2-q1", "title": "Multiple Return", "keywords": ["multiple return"], "description": "Python functions returning multiple values as a tuple.", "expectedOutput": "Sum: 15, Difference: 5, Product: 50" },
+          { "id": "py-mod2-q2", "title": "Default Arguments", "keywords": ["default arguments"], "description": "Functions with default parameter values.", "expectedOutput": "Hello Student, Welcome to Python!" },
+          { "id": "py-mod2-q3", "title": "String Length", "keywords": ["string length", "len"], "description": "Calculate length of a string without using len().", "expectedOutput": "Length of string: 14" },
+          { "id": "py-mod2-q4", "title": "Substring", "keywords": ["substring", "slicing"], "description": "Check presence of substring and string slicing.", "expectedOutput": "'Lab' found in string at index 7" },
+          { "id": "py-mod2-q5", "title": "List Operations", "keywords": ["list operations", "list"], "description": "Append, insert, remove, pop, and sort on Python lists.", "expectedOutput": "List after operations: [10, 20, 30, 40]" },
+          { "id": "py-mod2-q6", "title": "Built-in Functions", "keywords": ["built-in functions", "builtin"], "description": "Using abs(), max(), min(), sum(), sorted(), and zip().", "expectedOutput": "Max: 99, Min: 12, Sum: 250" }
+        ]
+      },
+      {
+        "id": "py-mod3",
+        "title": "Module 3 - Tuples & Dictionaries",
+        "questions": [
+          { "id": "py-mod3-q1", "title": "Tuples", "keywords": ["tuples", "tuple"], "description": "Tuple creation, immutability, unpacking, and indexing.", "expectedOutput": "Unpacked: a=10, b=20, c=30" },
+          { "id": "py-mod3-q2", "title": "Vowels", "keywords": ["vowels", "count vowels"], "description": "Count occurrences of vowels in a given paragraph.", "expectedOutput": "Vowel counts: {'a': 5, 'e': 8, 'i': 4, 'o': 6, 'u': 2}" },
+          { "id": "py-mod3-q3", "title": "Dictionary Search", "keywords": ["dictionary search", "dict search"], "description": "Search key presence and fetch values in Python dictionary.", "expectedOutput": "Key 'Aarav' found with Roll '22B91A0501'" },
+          { "id": "py-mod3-q4", "title": "Dictionary Insert", "keywords": ["dictionary insert"], "description": "Add and update key-value pairs in a dictionary.", "expectedOutput": "Updated Dictionary: {'CSE': 180, 'ECE': 240, 'AIML': 120}" },
+          { "id": "py-mod3-q5", "title": "Dictionary Sum", "keywords": ["dictionary sum"], "description": "Sum all numeric values inside a dictionary.", "expectedOutput": "Total Marks Sum: 485" }
+        ]
+      },
+      {
+        "id": "py-mod4",
+        "title": "Module 4 - Files & OOP",
+        "questions": [
+          { "id": "py-mod4-q1", "title": "File Sort", "keywords": ["file sort"], "description": "Read lines from a text file and write sorted lines to a new file.", "expectedOutput": "File content sorted alphabetically." },
+          { "id": "py-mod4-q2", "title": "Reverse File", "keywords": ["reverse file"], "description": "Reverse order of lines or characters in a text file.", "expectedOutput": "File content reversed successfully." },
+          { "id": "py-mod4-q3", "title": "Count Words", "keywords": ["count words"], "description": "Count total lines, words, and characters in a text file.", "expectedOutput": "Lines: 12, Words: 84, Characters: 520" },
+          { "id": "py-mod4-q4", "title": "Arrays", "keywords": ["array", "arrays"], "description": "Python array module operations.", "expectedOutput": "Array elements: array('i', [1, 2, 3, 4, 5])" },
+          { "id": "py-mod4-q5", "title": "Matrix Operations", "keywords": ["matrix operations", "matrix"], "description": "Matrix addition and multiplication using nested lists.", "expectedOutput": "Result Matrix:\n[[12, 14],\n [16, 18]]" },
+          { "id": "py-mod4-q6", "title": "Shape OOP", "keywords": ["shape oop", "class mechanism"], "description": "Object-oriented class inheritance with Circle and Rectangle shapes.", "expectedOutput": "Circle Area: 78.54\nRectangle Area: 50.0" }
+        ]
+      },
+      {
+        "id": "py-mod5",
+        "title": "Module 5 - NumPy & Pandas",
+        "questions": [
+          { "id": "py-mod5-q1", "title": "NumPy Arrays", "keywords": ["numpy arrays", "numpy"], "description": "Create 1D and 2D arrays using NumPy.", "expectedOutput": "NumPy Array Shape: (3, 3)" },
+          { "id": "py-mod5-q2", "title": "Indexing", "keywords": ["indexing", "slicing"], "description": "Array slicing and boolean indexing in NumPy.", "expectedOutput": "Filtered elements (> 5): [6 7 8 9]" },
+          { "id": "py-mod5-q3", "title": "Array Manipulation", "keywords": ["array manipulation", "reshape"], "description": "Reshaping, flattening, and concatenating NumPy arrays.", "expectedOutput": "Reshaped 1D to 3x3 Matrix." },
+          { "id": "py-mod5-q4", "title": "Mathematical Operations", "keywords": ["mathematical operations"], "description": "Element-wise matrix operations, mean, and standard deviation.", "expectedOutput": "Mean: 25.4, Std Dev: 4.12" },
+          { "id": "py-mod5-q5", "title": "Pandas Series", "keywords": ["pandas series"], "description": "Creating and querying a Pandas Series with custom index.", "expectedOutput": "Pandas Series:\nSRKR    95\nCSE     98" },
+          { "id": "py-mod5-q6", "title": "Pandas DataFrame", "keywords": ["dataframe basics", "pandas dataframe", "dataframe"], "description": "Creating, filtering, and summarizing Pandas DataFrames.", "expectedOutput": "Student Alice scored 92\nStudent Bob scored 85\nStudent Charlie scored 88" }
+        ]
+      }
+    ]
+  },
+  "adsa": {
+    "title": "Advanced Data Structures & Algorithms",
+    "icon": "🌳",
+    "exercises": [
+      {
+        "id": "adsa-part1",
+        "title": "Searching & Sorting",
+        "questions": [
+          { "id": "adsa-p1-q1", "title": "Binary Search", "keywords": ["binary search", "binarysearch"], "description": "O(log N) binary search on sorted dataset.", "expectedOutput": "Element 23 found at index 5 in ADSA array." },
+          { "id": "adsa-p1-q2", "title": "Linear Search", "keywords": ["linear search"], "description": "Sequential search element lookup.", "expectedOutput": "Element 22 found at position 3" },
+          { "id": "adsa-p1-q3", "title": "Quick Sort", "keywords": ["quick sort", "quicksort"], "description": "Divide and conquer quicksort algorithm with pivot partitioning.", "expectedOutput": "Quick Sorted Array: 1 5 7 8 9 10" },
+          { "id": "adsa-p1-q4", "title": "Merge Sort", "keywords": ["merge sort", "mergesort"], "description": "Stable divide and conquer O(N log N) sorting algorithm.", "expectedOutput": "Merge Sorted Array: 11 12 22 25 34 64 90" }
+        ]
+      },
+      {
+        "id": "adsa-part2",
+        "title": "Trees & Graph Algorithms",
+        "questions": [
+          { "id": "adsa-p2-q1", "title": "AVL Tree", "keywords": ["avl tree", "avl"], "description": "Self-balancing binary search tree with LL, RR, LR, RL rotations.", "expectedOutput": "Preorder traversal of created AVL tree: 30 20 10 25 40 50\nAVL Tree Balanced Successfully!" },
+          { "id": "adsa-p2-q2", "title": "Heap", "keywords": ["heap", "min heap", "max heap"], "description": "Min Heap and Max Heap insertion, deletion, and heapify.", "expectedOutput": "Max Heap Root: 99\nHeapified successfully." },
+          { "id": "adsa-p2-q3", "title": "BFS", "keywords": ["bfs", "breadth first search"], "description": "Breadth First Search traversal on graph using queue.", "expectedOutput": "BFS Traversal starting from vertex 0: 0 1 2 3 4" },
+          { "id": "adsa-p2-q4", "title": "DFS", "keywords": ["dfs", "depth first search"], "description": "Depth First Search graph traversal using recursion or stack.", "expectedOutput": "DFS Traversal starting from vertex 0: 0 1 3 4 2" },
+          { "id": "adsa-p2-q5", "title": "Bi Connected Components", "keywords": ["bi connected", "biconnected"], "description": "Finding articulation points and biconnected components in a graph.", "expectedOutput": "Articulation point found at vertex 2." }
+        ]
+      },
+      {
+        "id": "adsa-part3",
+        "title": "Greedy & Dynamic Programming",
+        "questions": [
+          { "id": "adsa-p3-q1", "title": "Dijkstra", "keywords": ["dijkstra", "shortest path"], "description": "Single-source shortest path algorithm using Greedy choice.", "expectedOutput": "Vertex   Distance from Source (0)\n0        0\n1        10\n2        50\n3        30\n4        60" },
+          { "id": "adsa-p3-q2", "title": "Job Sequencing", "keywords": ["job sequencing"], "description": "Greedy job scheduling with deadlines to maximize profit.", "expectedOutput": "Scheduled Jobs: J1 -> J3 -> J4 | Max Profit: 180" },
+          { "id": "adsa-p3-q3", "title": "N Queens", "keywords": ["n queens", "nqueens"], "description": "Backtracking algorithm to place N queens on NxN chessboard.", "expectedOutput": "4-Queens Solution Matrix:\n. Q . .\n. . . Q\nQ . . .\n. . Q ." },
+          { "id": "adsa-p3-q4", "title": "0/1 Knapsack Backtracking", "keywords": ["0/1 knapsack backtracking", "knapsack backtracking"], "description": "Solving 0/1 Knapsack using state space tree backtracking.", "expectedOutput": "Maximum Profit (Backtracking): 220" },
+          { "id": "adsa-p3-q5", "title": "0/1 Knapsack Dynamic Programming", "keywords": ["0/1 knapsack dynamic programming", "knapsack dp"], "description": "Solving 0/1 Knapsack using bottom-up DP table matrix.", "expectedOutput": "Max Profit DP Table filled. Maximum Profit: 220" },
+          { "id": "adsa-p3-q6", "title": "Travelling Salesperson", "keywords": ["travelling salesperson", "tsp"], "description": "Solving TSP using Dynamic Programming / Bitmasking.", "expectedOutput": "Minimum Tour Cost: 80 | Path: 1 -> 3 -> 4 -> 2 -> 1" }
+        ]
+      }
+    ]
+  },
+  "dbms": {
+    "title": "DBMS Lab",
+    "icon": "🗄️",
+    "exercises": [
+      {
+        "id": "dbms-exp1",
+        "title": "Experiment 1 - DDL & Table Creation",
+        "questions": [{ "id": "dbms-exp1-q1", "title": "DDL & Table Creation", "keywords": ["ddl & table creation", "ddl dml", "table creation"], "description": "CREATE, ALTER, DROP, and TRUNCATE SQL DDL statements.", "expectedOutput": "Tables Department and Employee created successfully." }]
+      },
+      {
+        "id": "dbms-exp2",
+        "title": "Experiment 2 - Sub Queries",
+        "questions": [{ "id": "dbms-exp2-q1", "title": "Sub Queries", "keywords": ["sub queries", "nested queries"], "description": "Single-row and multi-row nested SQL subqueries.", "expectedOutput": "Employees earning above average salary retrieved." }]
+      },
+      {
+        "id": "dbms-exp3",
+        "title": "Experiment 3 - Aggregate Functions",
+        "questions": [{ "id": "dbms-exp3-q1", "title": "Aggregate Functions", "keywords": ["aggregate functions", "group by"], "description": "SUM, AVG, COUNT, MIN, MAX with GROUP BY and HAVING clauses.", "expectedOutput": "Department-wise Total Salary Summary Table." }]
+      },
+      {
+        "id": "dbms-exp4",
+        "title": "Experiment 4 - String & Date Functions",
+        "questions": [{ "id": "dbms-exp4-q1", "title": "String & Date Functions", "keywords": ["string & date functions"], "description": "CONCAT, SUBSTR, LENGTH, SYSDATE, and ADD_MONTHS operations.", "expectedOutput": "Formatted Student Joining Dates and Upper Names." }]
+      },
+      {
+        "id": "dbms-exp5",
+        "title": "Experiment 5 - PLSQL Basics",
+        "questions": [{ "id": "dbms-exp5-q1", "title": "PLSQL Basics", "keywords": ["plsql basics", "pl/sql"], "description": "Anonymous PL/SQL block variable declaration and output.", "expectedOutput": "PL/SQL Procedure successfully completed." }]
+      },
+      {
+        "id": "dbms-exp6",
+        "title": "Experiment 6 - Control Structures",
+        "questions": [{ "id": "dbms-exp6-q1", "title": "CASE & IF", "keywords": ["case", "if"], "description": "IF-THEN-ELSE and CASE conditional logic in PL/SQL.", "expectedOutput": "Grade A assigned for Marks > 90." }]
+      },
+      {
+        "id": "dbms-exp7",
+        "title": "Experiment 7 - Loops & Exceptions",
+        "questions": [{ "id": "dbms-exp7-q1", "title": "Loops & Exceptions", "keywords": ["loops", "exceptions"], "description": "FOR, WHILE loops and NO_DATA_FOUND exception handling.", "expectedOutput": "Loop execution completed. Exception caught if record missing." }]
+      },
+      {
+        "id": "dbms-exp8",
+        "title": "Experiment 8 - Procedures",
+        "questions": [{ "id": "dbms-exp8-q1", "title": "Procedures", "keywords": ["procedures", "stored procedure"], "description": "Creating stored procedures with IN and OUT parameters.", "expectedOutput": "Procedure CalculateBonus executed successfully." }]
+      },
+      {
+        "id": "dbms-exp9",
+        "title": "Experiment 9 - Functions",
+        "questions": [{ "id": "dbms-exp9-q1", "title": "Functions", "keywords": ["functions", "stored function"], "description": "Creating PL/SQL stored functions returning values.", "expectedOutput": "Function GetDeptName returned 'Computer Science'." }]
+      },
+      {
+        "id": "dbms-exp10",
+        "title": "Experiment 10 - Cursor",
+        "questions": [{ "id": "dbms-exp10-q1", "title": "Cursor", "keywords": ["cursor", "implicit cursor"], "description": "Explicit Cursors with OPEN, FETCH, %NOTFOUND, and CLOSE.", "expectedOutput": "Cursor fetched 15 employee records sequentially." }]
+      },
+      {
+        "id": "dbms-exp11",
+        "title": "Experiment 11 - Triggers",
+        "questions": [{ "id": "dbms-exp11-q1", "title": "Triggers", "keywords": ["triggers", "database trigger"], "description": "BEFORE and AFTER row-level database triggers for auditing.", "expectedOutput": "Audit log row inserted on Employee table update." }]
+      },
+      {
+        "id": "dbms-exp12",
+        "title": "Experiment 12 - Indexing",
+        "questions": [{ "id": "dbms-exp12-q1", "title": "Indexing", "keywords": ["indexing", "b-tree index"], "description": "B-Tree and Bitmap indexes for query optimization.", "expectedOutput": "Index idx_emp_dept created on Employee(dept_id)." }]
+      },
+      {
+        "id": "dbms-exp13",
+        "title": "Experiment 13 - Mini Project",
+        "questions": [{ "id": "dbms-exp13-q1", "title": "Mini Project", "keywords": ["mini project", "dbms project"], "description": "Complete database schema design for University Management System.", "expectedOutput": "University DB Mini Project tables and views initialized." }]
+      },
+      {
+        "id": "dbms-addon",
+        "title": "Add-on Module",
+        "questions": [{ "id": "dbms-addon-q1", "title": "JDBC & MySQL", "keywords": ["jdbc", "mysql"], "description": "Connecting Java application to MySQL database.", "expectedOutput": "Connected to MySQL via JDBC Driver." }]
+      }
+    ]
+  },
+  "c": {
+    "title": "C Programming",
+    "icon": "🔷",
+    "exercises": [
+      {
+        "id": "c-exp1",
+        "title": "Lab Experiment 1 - Fundamentals",
+        "questions": [
+          { "id": "c-exp1-q1", "title": "Input Output", "keywords": ["input output", "printf scanf"], "description": "Basic formatted input and output in C.", "expectedOutput": "Enter integer: 10\nYou entered: 10" },
+          { "id": "c-exp1-q2", "title": "Data Types & Operators", "keywords": ["data types", "operators"], "description": "Demonstrating C data types and operator precedence.", "expectedOutput": "Result = 25" }
+        ]
+      },
+      {
+        "id": "c-exp2",
+        "title": "Lab Experiment 2 - Control Statements",
+        "questions": [
+          { "id": "c-exp2-q1", "title": "If Else & Switch Case", "keywords": ["if else", "switch case"], "description": "Decision making and menu-driven switch programs.", "expectedOutput": "Option selected: 1" },
+          { "id": "c-exp2-q2", "title": "Prime & Fibonacci", "keywords": ["prime", "fibonacci"], "description": "Looping statements for prime check and Fibonacci generation.", "expectedOutput": "Fibonacci: 0 1 1 2 3 5 8 13" }
+        ]
+      },
+      {
+        "id": "c-exp3",
+        "title": "Lab Experiment 3 - Functions & Arrays",
+        "questions": [
+          { "id": "c-exp3-q1", "title": "Functions & Recursion", "keywords": ["functions", "recursion"], "description": "User defined functions and recursive factorial calculation.", "expectedOutput": "Factorial of 5 = 120" },
+          { "id": "c-exp3-q2", "title": "Matrix Operations", "keywords": ["matrix operations", "matrix"], "description": "2D Array matrix addition and transpose.", "expectedOutput": "Matrix Transpose generated." }
+        ]
+      },
+      {
+        "id": "c-exp4",
+        "title": "Lab Experiment 4 - Pointers & Structures",
+        "questions": [
+          { "id": "c-exp4-q1", "title": "Pointers", "keywords": ["pointers", "swap pointers"], "description": "Pointer arithmetic and call by reference swapping.", "expectedOutput": "Swapped values: a=20, b=10" },
+          { "id": "c-exp4-q2", "title": "Structures & Unions", "keywords": ["structures", "unions"], "description": "Defining structure records for student database.", "expectedOutput": "Student Name: Aarav, Marks: 95" }
+        ]
+      },
+      {
+        "id": "c-exp5",
+        "title": "Lab Experiment 5 - File Management",
+        "questions": [
+          { "id": "c-exp5-q1", "title": "File Read Write", "keywords": ["file read write", "fopen"], "description": "Reading and writing files using fopen, fprintf, and fscanf.", "expectedOutput": "File written and read successfully." }
+        ]
+      }
+    ]
+  },
+  "cpp": {
+    "title": "C++ Programming",
+    "icon": "⚙️",
+    "exercises": [
+      {
+        "id": "cpp-exp1",
+        "title": "Lab Experiment 1 - OOP Basics",
+        "questions": [
+          { "id": "cpp-exp1-q1", "title": "Classes & Objects", "keywords": ["classes & objects", "class"], "description": "Encapsulation, public/private access specifiers.", "expectedOutput": "Student Object created successfully." },
+          { "id": "cpp-exp1-q2", "title": "Constructors & Destructors", "keywords": ["constructors & destructors"], "description": "Default, parameterized, and copy constructors.", "expectedOutput": "Constructor initialized.\nDestructor called." }
+        ]
+      },
+      {
+        "id": "cpp-exp2",
+        "title": "Lab Experiment 2 - Overloading & Inheritance",
+        "questions": [
+          { "id": "cpp-exp2-q1", "title": "Function Overloading", "keywords": ["function overloading"], "description": "Overloading functions with different arguments.", "expectedOutput": "Area of Square: 25\nArea of Rectangle: 50" },
+          { "id": "cpp-exp2-q2", "title": "Operator Overloading", "keywords": ["operator overloading"], "description": "Overloading '+' operator for complex numbers.", "expectedOutput": "Complex Sum = 5 + 7i" },
+          { "id": "cpp-exp2-q3", "title": "Inheritance Types", "keywords": ["inheritance types", "inheritance"], "description": "Single, Multiple, and Hierarchical inheritance.", "expectedOutput": "Base and Derived class methods executed." }
+        ]
+      },
+      {
+        "id": "cpp-exp3",
+        "title": "Lab Experiment 3 - Templates & STL",
+        "questions": [
+          { "id": "cpp-exp3-q1", "title": "Function & Class Templates", "keywords": ["templates", "template"], "description": "Generic programming using template <typename T>.", "expectedOutput": "Max int: 20\nMax double: 15.5" },
+          { "id": "cpp-exp3-q2", "title": "STL Vector & Map", "keywords": ["stl vector & map", "vector", "map"], "description": "Standard Template Library vector and map containers.", "expectedOutput": "Vector size: 5 | Map key-value retrieved." }
+        ]
+      }
+    ]
+  }
+}

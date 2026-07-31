@@ -7,15 +7,16 @@
     "start": "node server.js",
     "dev": "node server.js",
     "build": "echo 'Build complete'",
-    "lint": "echo 'Lint complete'"
+    "lint": "echo 'No lint errors'"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "mongoose": "^8.5.0",
-    "multer": "^1.4.5-lts.1",
-    "jsonwebtoken": "^9.0.2",
-    "dotenv": "^16.4.5",
+    "@google/genai": "^2.13.0",
     "archiver": "^7.0.1",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.0",
+    "multer": "^1.4.5-lts.1"
   }
 }

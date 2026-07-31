@@ -1,0 +1,149 @@
+{
+  "files": [
+    {
+      "_id": "6a69f6f543b8c52430bf13e4",
+      "originalName": "greatest_of_three.py",
+      "storedName": "a5b487e3-48ab-43c5-89dc-2d7771e567b0.py",
+      "relativePath": "greatest_of_three.py",
+      "folderName": null,
+      "batchId": null,
+      "extension": "py",
+      "category": "python",
+      "size": 314,
+      "tags": [
+        "py",
+        "python"
+      ],
+      "description": "Python program to find greatest of three numbers",
+      "pinned": true,
+      "downloads": 12,
+      "uploadDate": "2026-07-29T10:00:00.000Z"
+    },
+    {
+      "_id": "6a69f6f543b8c52430bf13e5",
+      "originalName": "primes_in_given_range.py",
+      "storedName": "313ff036-561e-4898-8401-9a3fd52a6393.py",
+      "relativePath": "primes_in_given_range.py",
+      "folderName": null,
+      "batchId": null,
+      "extension": "py",
+      "category": "python",
+      "size": 420,
+      "tags": [
+        "py",
+        "python"
+      ],
+      "description": "Prime numbers generation in range",
+      "pinned": false,
+      "downloads": 8,
+      "uploadDate": "2026-07-29T10:05:00.000Z"
+    },
+    {
+      "_id": "6a69f6f543b8c52430bf13e6",
+      "originalName": "Operators_demonstrate.py",
+      "storedName": "9e0764e7-b2e7-4da4-99f5-4f0caf14f33f.py",
+      "relativePath": "Operators_demonstrate.py",
+      "folderName": null,
+      "batchId": null,
+      "extension": "py",
+      "category": "python",
+      "size": 280,
+      "tags": [
+        "py",
+        "python"
+      ],
+      "description": "Demonstration of Python operators",
+      "pinned": false,
+      "downloads": 5,
+      "uploadDate": "2026-07-29T10:10:00.000Z"
+    },
+    {
+      "_id": "6a69f6f543b8c52430bf13e7",
+      "originalName": "QuadraticRoots.java",
+      "storedName": "b86078c1-a736-4064-98a2-0689e7417b0e.py",
+      "relativePath": "QuadraticRoots.java",
+      "folderName": null,
+      "batchId": null,
+      "extension": "java",
+      "category": "java",
+      "size": 512,
+      "tags": [
+        "java"
+      ],
+      "description": "Roots of quadratic equation in Java",
+      "pinned": true,
+      "downloads": 15,
+      "uploadDate": "2026-07-29T10:15:00.000Z"
+    },
+    {
+      "_id": "6a69f6f543b8c52430bf13e8",
+      "originalName": "DefaultValues.java",
+      "storedName": "f721e527-8609-471f-b700-835ea6260ff6.py",
+      "relativePath": "DefaultValues.java",
+      "folderName": null,
+      "batchId": null,
+      "extension": "java",
+      "category": "java",
+      "size": 480,
+      "tags": [
+        "java"
+      ],
+      "description": "Default values of primitives in Java",
+      "pinned": true,
+      "downloads": 20,
+      "uploadDate": "2026-07-29T10:20:00.000Z"
+    }
+  ],
+  "suggestions": [
+    {
+      "_id": "s1",
+      "text": "Binary Search in Java",
+      "type": "manual",
+      "pinned": true,
+      "order": 1,
+      "createdAt": "2026-07-29T13:37:42.579Z"
+    },
+    {
+      "_id": "s2",
+      "text": "AVL Tree in C",
+      "type": "manual",
+      "pinned": true,
+      "order": 2,
+      "createdAt": "2026-07-29T13:37:42.579Z"
+    },
+    {
+      "_id": "s3",
+      "text": "Display Default Primitive Values.java",
+      "type": "manual",
+      "pinned": true,
+      "order": 3,
+      "createdAt": "2026-07-29T13:37:42.579Z"
+    },
+    {
+      "_id": "s4",
+      "text": "Quadratic Equation Roots.java",
+      "type": "manual",
+      "pinned": false,
+      "order": 4,
+      "createdAt": "2026-07-29T13:37:42.579Z"
+    },
+    {
+      "_id": "s5",
+      "text": "Prime Numbers in Python",
+      "type": "manual",
+      "pinned": false,
+      "order": 5,
+      "createdAt": "2026-07-29T13:37:42.579Z"
+    }
+  ],
+  "requests": [
+    {
+      "_id": "r1",
+      "programName": "Dijkstra Shortest Path in C++",
+      "subject": "ADSA",
+      "description": "Need graph algorithm for finding shortest path with adjacency matrix.",
+      "status": "pending",
+      "createdAt": "2026-07-29T13:37:42.579Z"
+    }
+  ]
+}
