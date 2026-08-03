@@ -28,9 +28,16 @@ const fileSchema = new mongoose.Schema({
   size: { type: Number, default: 0 },
   tags: [String],
   description: { type: String, default: '' },
+  content: { type: String, default: null },
+  cloudinaryUrl: { type: String, default: null },
+  cloudinaryPublicId: { type: String, default: null },
+  assetId: { type: String, default: null },
+  mimeType: { type: String, default: null },
+  uploadedBy: { type: String, default: 'admin' },
   pinned: { type: Boolean, default: false },
   downloads: { type: Number, default: 0 },
-  uploadDate: { type: Date, default: Date.now }
+  uploadDate: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
 const suggestionSchema = new mongoose.Schema({
@@ -334,12 +341,23 @@ const filesDB = {
       batchId: d.batchId || null,
       extension: d.extension || 'txt',
       category: d.category || 'all',
+      subject: d.subject || null,
+      exercise: d.exercise || null,
+      question: d.question || null,
+      expectedOutput: d.expectedOutput || null,
+      content: d.content || null,
+      cloudinaryUrl: d.cloudinaryUrl || null,
+      cloudinaryPublicId: d.cloudinaryPublicId || null,
+      assetId: d.assetId || null,
+      mimeType: d.mimeType || null,
+      uploadedBy: d.uploadedBy || 'admin',
       size: d.size || 0,
       tags: d.tags || [],
       description: d.description || '',
-      pinned: false,
-      downloads: 0,
-      uploadDate: new Date().toISOString()
+      pinned: Boolean(d.pinned),
+      downloads: d.downloads || 0,
+      uploadDate: d.uploadDate || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }));
     db.files.push(...created);
     saveJsonDB(db);

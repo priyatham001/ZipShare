@@ -16,9 +16,15 @@ const fileSchema = new mongoose.Schema({
   question: { type: String, default: null },
   expectedOutput: { type: String, default: null },
   content: { type: String, default: null },
+  cloudinaryUrl: { type: String, default: null },
+  cloudinaryPublicId: { type: String, default: null },
+  assetId: { type: String, default: null },
+  mimeType: { type: String, default: null },
+  uploadedBy: { type: String, default: 'admin' },
   pinned: { type: Boolean, default: false },
   downloads: { type: Number, default: 0 },
-  uploadDate: { type: Date, default: Date.now }
+  uploadDate: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('File', fileSchema);

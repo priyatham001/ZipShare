@@ -6,6 +6,8 @@ const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { filesDB } = require('../db');
+const { fetchRemoteContent } = require('../services/cloudinary');
 
 // Active running execution tasks registry for POST /api/compiler/stop
 const runningTasks = new Map();
@@ -260,7 +262,24 @@ router.post('/stop', (req, res) => {
 // POST /api/compiler/run
 router.post('/run', async (req, res) => {
   try {
-    let { code, language, stdin, taskId } = req.body;
+    let { fileId, code, language, stdin, taskId } = req.body;
+
+    if (fileId && !code) {
+      const file = await filesDB.findById(fileId);
+      if (file) {
+        if (file.content) {
+          code = file.content;
+        } else if (file.cloudinaryUrl) {
+          try {
+            const buf = await fetchRemoteContent(file.cloudinaryUrl);
+            code = buf.toString('utf-8');
+          } catch (e) { /* ignore */ }
+        }
+        if (!language && file.extension) {
+          language = file.extension;
+        }
+      }
+    }
 
     if (!code || typeof code !== 'string') {
       return res.status(400).json({ error: 'Source code is required.' });

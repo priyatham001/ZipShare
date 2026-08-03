@@ -7,6 +7,7 @@ const archiver = require('archiver');
 const router = express.Router();
 const { filesDB, suggestionsDB } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
+const { isCloudinaryConfigured, uploadToCloudinary, deleteFromCloudinary, fetchRemoteContent } = require('../services/cloudinary');
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -122,7 +123,9 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
     const isFolderUpload = rawPaths.some(p => p && p.includes('/'));
     const batchId = isFolderUpload ? crypto.randomUUID() : null;
 
-    const docs = req.files.map((file, i) => {
+    const docs = [];
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
       const relPath = sanitizeRelativePath(rawPaths[i]) || file.originalname;
       const topFolder = relPath.includes('/') ? relPath.split('/')[0] : null;
       const ext = path.extname(file.originalname).replace('.', '').toLowerCase();
@@ -140,7 +143,37 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         cat = fileSubject.toLowerCase();
       }
 
-      return {
+      let cloudUrl = null;
+      let cloudPublicId = null;
+      let assetId = null;
+      let fileContent = null;
+
+      // Read small code or text file into content cache
+      if (CODE_EXTENSIONS.includes(ext) && file.size < 300 * 1024) {
+        try {
+          fileContent = fs.readFileSync(file.path, 'utf-8');
+        } catch (e) { /* ignore */ }
+      }
+
+      if (isCloudinaryConfigured()) {
+        try {
+          const resType = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(ext) ? 'auto' : 'raw';
+          const cloudRes = await uploadToCloudinary(file.path, {
+            folder: topFolder ? `zipshare_uploads/${topFolder}` : 'zipshare_uploads',
+            resource_type: resType
+          });
+          cloudUrl = cloudRes.secure_url;
+          cloudPublicId = cloudRes.public_id;
+          assetId = cloudRes.asset_id || null;
+
+          // Clean up temp file
+          try { fs.unlinkSync(file.path); } catch (e) { /* ignore */ }
+        } catch (cErr) {
+          console.error(`Cloudinary upload failed for ${file.originalname}:`, cErr.message);
+        }
+      }
+
+      docs.push({
         originalName: file.originalname,
         storedName: file.filename,
         relativePath: relPath,
@@ -153,13 +186,20 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         question: fileQuestion,
         expectedOutput: fileExpectedOutput,
         size: file.size,
+        mimeType: file.mimetype,
+        content: fileContent,
+        cloudinaryUrl: cloudUrl,
+        cloudinaryPublicId: cloudPublicId,
+        assetId: assetId,
+        uploadedBy: 'admin',
         tags: Array.from(new Set([ext, cat, fileSubject, topFolder].filter(Boolean))),
         description: fileDesc,
         pinned: false,
         downloads: 0,
-        uploadDate: new Date()
-      };
-    });
+        uploadDate: new Date(),
+        updatedAt: new Date()
+      });
+    }
 
     const saved = await filesDB.insertMany(docs);
     res.status(201).json({ message: 'Upload Successful', files: saved });
@@ -312,14 +352,30 @@ router.get('/folder/:identifier/download', async (req, res) => {
     archive.pipe(res);
 
     for (const f of files) {
-      const fullPath = path.join(UPLOAD_DIR, f.storedName);
-      if (fs.existsSync(fullPath)) {
-        archive.file(fullPath, { name: f.relativePath || f.originalName });
+      let appended = false;
+      if (f.cloudinaryUrl) {
+        try {
+          const buf = await fetchRemoteContent(f.cloudinaryUrl);
+          archive.append(buf, { name: f.relativePath || f.originalName });
+          appended = true;
+        } catch (e) {
+          console.error(`Failed to fetch ${f.originalName} from Cloudinary for zip:`, e.message);
+        }
+      }
+      if (!appended) {
+        const fullPath = path.join(UPLOAD_DIR, f.storedName);
+        if (fs.existsSync(fullPath)) {
+          archive.file(fullPath, { name: f.relativePath || f.originalName });
+          appended = true;
+        }
+      }
+      if (appended) {
         await filesDB.findByIdAndUpdate(f._id || f.id, { downloads: (f.downloads || 0) + 1 });
       }
     }
     archive.finalize();
   } catch (err) {
+    console.error('Folder download failed:', err.message);
     res.status(500).json({ error: 'Folder download failed.' });
   }
 });
@@ -339,7 +395,6 @@ router.delete('/folder/:identifier', requireAdmin, async (req, res) => {
       files = await filesDB.find({ folderName: safeReg });
     }
     if (!files || !files.length) {
-      // Also try matching raw identifier if different
       files = await filesDB.find({ batchId: rawIdentifier });
       if (!files || !files.length) {
         files = await filesDB.find({ folderName: rawIdentifier });
@@ -349,13 +404,25 @@ router.delete('/folder/:identifier', requireAdmin, async (req, res) => {
 
     let deletedCount = 0;
     for (const f of files) {
+      if (f.cloudinaryPublicId) {
+        try {
+          const ext = (f.extension || '').toLowerCase();
+          const resType = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(ext) ? 'image' : 'raw';
+          await deleteFromCloudinary(f.cloudinaryPublicId, resType);
+        } catch (cErr) {
+          console.error(`Cloudinary folder file destroy warning (${f.originalName}):`, cErr.message);
+        }
+      }
+
       const fullPath = path.join(UPLOAD_DIR, f.storedName);
       if (fs.existsSync(fullPath)) {
-        try { fs.unlinkSync(fullPath); } catch (e) { /* ignore unlink error */ }
+        try { fs.unlinkSync(fullPath); } catch (e) { /* ignore */ }
       }
+
       await filesDB.findByIdAndDelete(f._id || f.id);
       deletedCount++;
     }
+
     res.json({ message: 'Folder deleted successfully.', deletedCount });
   } catch (err) {
     console.error('Delete folder error:', err.message);
@@ -368,13 +435,28 @@ router.get('/:id/download', async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found.' });
-    const fullPath = path.join(UPLOAD_DIR, file.storedName);
-    if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'File missing on server.' });
 
     file.downloads = (file.downloads || 0) + 1;
     await filesDB.findByIdAndUpdate(file._id || file.id, { downloads: file.downloads });
 
-    res.download(fullPath, file.originalName);
+    if (file.cloudinaryUrl) {
+      try {
+        const buf = await fetchRemoteContent(file.cloudinaryUrl);
+        res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.originalName)}"`);
+        return res.send(buf);
+      } catch (err) {
+        console.warn('Remote fetch failed, redirecting directly to Cloudinary:', err.message);
+        return res.redirect(file.cloudinaryUrl);
+      }
+    }
+
+    const fullPath = path.join(UPLOAD_DIR, file.storedName);
+    if (fs.existsSync(fullPath)) {
+      return res.download(fullPath, file.originalName);
+    }
+
+    return res.status(404).json({ error: 'File missing on cloud storage or server.' });
   } catch (err) {
     res.status(500).json({ error: 'Download failed.' });
   }
@@ -385,27 +467,62 @@ router.get('/:id/preview', async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found.' });
-    const fullPath = path.join(UPLOAD_DIR, file.storedName);
-    if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'File missing on server.' });
 
-    if (CODE_EXTENSIONS.includes(file.extension)) {
-      const content = fs.readFileSync(fullPath, 'utf-8').slice(0, 200000);
-      return res.json({ type: 'text', extension: file.extension, content, file });
+    if (CODE_EXTENSIONS.includes((file.extension || '').toLowerCase())) {
+      let content = file.content;
+      if (!content && file.cloudinaryUrl) {
+        try {
+          const buf = await fetchRemoteContent(file.cloudinaryUrl);
+          content = buf.toString('utf-8').slice(0, 200000);
+        } catch (cErr) {
+          console.error('Fetch preview content error:', cErr.message);
+        }
+      }
+
+      if (!content) {
+        const fullPath = path.join(UPLOAD_DIR, file.storedName);
+        if (fs.existsSync(fullPath)) {
+          content = fs.readFileSync(fullPath, 'utf-8').slice(0, 200000);
+        }
+      }
+
+      if (content !== null && content !== undefined) {
+        return res.json({ type: 'text', extension: file.extension, content, file });
+      }
+      return res.status(404).json({ error: 'Could not load file preview from Cloud storage.' });
     }
-    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(file.extension)) {
-      return res.json({ type: file.extension === 'pdf' ? 'pdf' : 'image', url: `/api/files/${file._id || file.id}/raw`, file });
+
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes((file.extension || '').toLowerCase())) {
+      const url = file.cloudinaryUrl || `/api/files/${file._id || file.id}/raw`;
+      return res.json({ type: file.extension === 'pdf' ? 'pdf' : 'image', url, file });
     }
+
     return res.json({ type: 'unsupported', file });
   } catch (err) {
+    console.error('Preview error:', err.message);
     res.status(500).json({ error: 'Preview failed.' });
   }
 });
 
 // GET /api/files/:id/raw
 router.get('/:id/raw', async (req, res) => {
-  const file = await filesDB.findById(req.params.id);
-  if (!file) return res.status(404).end();
-  res.sendFile(path.join(UPLOAD_DIR, file.storedName));
+  try {
+    const file = await filesDB.findById(req.params.id);
+    if (!file) return res.status(404).end();
+
+    if (file.cloudinaryUrl) {
+      return res.redirect(file.cloudinaryUrl);
+    }
+
+    const fullPath = path.join(UPLOAD_DIR, file.storedName);
+    if (fs.existsSync(fullPath)) {
+      return res.sendFile(fullPath);
+    }
+
+    res.status(404).end();
+  } catch (err) {
+    res.status(500).end();
+  }
 });
 
 // PUT /api/files/:id/content - Edit file content directly in browser (Admin only)
@@ -414,13 +531,43 @@ router.put('/:id/content', requireAdmin, async (req, res) => {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found.' });
 
-    const fullPath = path.join(UPLOAD_DIR, file.storedName);
     const { content } = req.body;
     if (content === undefined) return res.status(400).json({ error: 'Content required.' });
 
-    fs.writeFileSync(fullPath, content, 'utf-8');
-    const newSize = Buffer.byteLength(content, 'utf-8');
-    await filesDB.findByIdAndUpdate(file._id || file.id, { size: newSize });
+    const buf = Buffer.from(content, 'utf-8');
+    const newSize = buf.byteLength;
+
+    let updatedCloudUrl = file.cloudinaryUrl;
+    let updatedCloudPublicId = file.cloudinaryPublicId;
+
+    if (isCloudinaryConfigured()) {
+      try {
+        const topFolder = file.folderName || null;
+        const uploadRes = await uploadToCloudinary(buf, {
+          folder: topFolder ? `zipshare_uploads/${topFolder}` : 'zipshare_uploads',
+          public_id: file.cloudinaryPublicId || undefined,
+          overwrite: true,
+          resource_type: 'raw'
+        });
+        updatedCloudUrl = uploadRes.secure_url;
+        updatedCloudPublicId = uploadRes.public_id;
+      } catch (e) {
+        console.error('Failed to upload content update to Cloudinary:', e.message);
+      }
+    }
+
+    const fullPath = path.join(UPLOAD_DIR, file.storedName);
+    if (fs.existsSync(fullPath)) {
+      try { fs.writeFileSync(fullPath, content, 'utf-8'); } catch (e) {}
+    }
+
+    await filesDB.findByIdAndUpdate(file._id || file.id, {
+      size: newSize,
+      content: content,
+      cloudinaryUrl: updatedCloudUrl,
+      cloudinaryPublicId: updatedCloudPublicId,
+      updatedAt: new Date()
+    });
 
     res.json({ message: 'File content updated successfully!' });
   } catch (err) {
@@ -433,11 +580,27 @@ router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found.' });
+
+    if (file.cloudinaryPublicId) {
+      try {
+        const ext = (file.extension || '').toLowerCase();
+        const resType = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(ext) ? 'image' : 'raw';
+        await deleteFromCloudinary(file.cloudinaryPublicId, resType);
+      } catch (cErr) {
+        console.error('Cloudinary delete failed:', cErr.message);
+        return res.status(500).json({ error: 'Cloudinary deletion failed. Document preserved for transactional safety.' });
+      }
+    }
+
     const fullPath = path.join(UPLOAD_DIR, file.storedName);
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    if (fs.existsSync(fullPath)) {
+      try { fs.unlinkSync(fullPath); } catch (e) {}
+    }
+
     await filesDB.findByIdAndDelete(file._id || file.id);
     res.json({ message: 'Deleted Successfully' });
   } catch (err) {
+    console.error('Delete error:', err.message);
     res.status(500).json({ error: 'Delete failed.' });
   }
 });

@@ -1038,17 +1038,371 @@ async function loadStats() {
   } catch { /* non-critical */ }
 }
 
+// ---------------- Playful Mascot Micro-Animations ----------------
+function initCinematicEyes() {
+  const overlay = $('cinematicEyesOverlay');
+  if (!overlay) return;
+
+  const leftPupil = $('giantPupilLeft');
+  const rightPupil = $('giantPupilRight');
+  const canvas = $('eyesParticleCanvas');
+
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w = canvas.width = window.innerWidth;
+  let h = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  });
+
+  // Ambient Particles around giant eyes
+  const stars = [];
+  for (let i = 0; i < 75; i++) {
+    stars.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      radius: Math.random() * 3.5 + 1,
+      vx: (Math.random() - 0.5) * 0.9,
+      vy: (Math.random() - 0.5) * 0.9,
+      alpha: Math.random() * 0.85 + 0.15,
+      color: Math.random() > 0.4 ? '#38bdf8' : (Math.random() > 0.5 ? '#818cf8' : '#22d3ee')
+    });
+  }
+
+  let isDissolving = false;
+  let explosionParticles = [];
+
+  function drawEyesCanvas() {
+    ctx.clearRect(0, 0, w, h);
+
+    if (!isDissolving) {
+      stars.forEach(s => {
+        s.x += s.vx;
+        s.y += s.vy;
+        if (s.x < 0 || s.x > w) s.vx *= -1;
+        if (s.y < 0 || s.y > h) s.vy *= -1;
+
+        ctx.save();
+        ctx.globalAlpha = s.alpha;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fillStyle = s.color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = s.color;
+        ctx.fill();
+        ctx.restore();
+      });
+    } else {
+      for (let i = explosionParticles.length - 1; i >= 0; i--) {
+        const p = explosionParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.018;
+        p.radius *= 0.985;
+
+        if (p.alpha <= 0 || p.radius <= 0.2) {
+          explosionParticles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = p.color;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    if (overlay.style.display !== 'none') {
+      requestAnimationFrame(drawEyesCanvas);
+    }
+  }
+
+  drawEyesCanvas();
+
+  // Smooth Mouse Pupil Tracking
+  document.addEventListener('mousemove', e => {
+    if (isDissolving) return;
+    const eyes = document.querySelectorAll('.giant-eye');
+    eyes.forEach((eye, index) => {
+      const rect = eye.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+      const maxOffset = rect.width * 0.25;
+      const offX = (dx / dist) * Math.min(dist * 0.2, maxOffset);
+      const offY = (dy / dist) * Math.min(dist * 0.2, maxOffset);
+
+      const pupil = index === 0 ? leftPupil : rightPupil;
+      if (pupil) {
+        pupil.style.transform = `translate(${offX}px, ${offY}px)`;
+      }
+    });
+  });
+
+  // Dissolve Eyes into Particle Burst
+  function dissolveEyes() {
+    if (isDissolving) return;
+    isDissolving = true;
+
+    const eyes = document.querySelectorAll('.giant-eye');
+    eyes.forEach(eye => {
+      const rect = eye.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      for (let i = 0; i < 140; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 14 + 4;
+        explosionParticles.push({
+          x: cx + (Math.random() - 0.5) * rect.width * 0.8,
+          y: cy + (Math.random() - 0.5) * rect.height * 0.8,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 1.5,
+          radius: Math.random() * 8 + 3,
+          alpha: 1,
+          color: Math.random() > 0.4 ? '#38bdf8' : (Math.random() > 0.5 ? '#818cf8' : '#34d399')
+        });
+      }
+    });
+
+    overlay.classList.add('dissolving');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+    }, 850);
+  }
+
+  // Auto dissolve after 3.2s or click anywhere
+  const timer = setTimeout(dissolveEyes, 3200);
+  overlay.addEventListener('click', () => {
+    clearTimeout(timer);
+    dissolveEyes();
+  });
+}
+
+// Click Counters for Easter Eggs
+let pythonClickCount = 0;
+let downloadClickCount = 0;
+let runClickCount = 0;
+
+function showLargePythonSnake(action = 'view', targetEl = null) {
+  try {
+    pythonClickCount++;
+    const isSunglasses = pythonClickCount >= 10 || downloadClickCount >= 20;
+
+    const pop = document.createElement('div');
+    pop.className = `python-snake-hero-overlay action-${action}`;
+
+    let posX = window.innerWidth / 2 - 160;
+    let posY = window.innerHeight / 2 - 130;
+
+    if (targetEl && targetEl.getBoundingClientRect) {
+      const rect = targetEl.getBoundingClientRect();
+      posX = Math.max(20, Math.min(window.innerWidth - 340, rect.left + rect.width / 2 - 160));
+      posY = Math.max(20, Math.min(window.innerHeight - 280, rect.top - 120));
+    }
+
+    pop.style.left = `${posX}px`;
+    pop.style.top = `${posY}px`;
+
+    const sunglassesSvg = isSunglasses ? `
+      <g transform="translate(160, 75)">
+        <path d="M 0 0 L 32 0 L 30 10 L 16 12 L 2 10 Z" fill="#0f172a" />
+        <path d="M -2 2 L 34 2" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+        <line x1="4" y1="3" x2="12" y2="8" stroke="#ffffff" stroke-width="1.5" opacity="0.8"/>
+        <line x1="20" y1="3" x2="28" y2="8" stroke="#ffffff" stroke-width="1.5" opacity="0.8"/>
+      </g>
+    ` : '';
+
+    pop.innerHTML = `
+      <svg class="python-snake-svg-hero" viewBox="0 0 200 160">
+        <defs>
+          <linearGradient id="snakeSkinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#06b6d4" />
+            <stop offset="50%" stop-color="#2dd4bf" />
+            <stop offset="100%" stop-color="#10b981" />
+          </linearGradient>
+          <filter id="glowSnake">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <circle cx="20" cy="30" r="3" fill="#67e8f9" opacity="0.8"/>
+        <circle cx="180" cy="40" r="4" fill="#a7f3d0" opacity="0.9"/>
+        <circle cx="160" cy="130" r="3" fill="#ffffff" opacity="0.7"/>
+
+        <path class="snake-body-path" d="M 30 130 C 50 80, 70 140, 100 100 C 130 60, 150 110, 175 90" fill="none" stroke="url(#snakeSkinGrad)" stroke-width="26" stroke-linecap="round" filter="url(#glowSnake)"/>
+        <path d="M 33 133 C 53 83, 73 143, 103 103 C 133 63, 153 113, 175 93" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+
+        <g transform="translate(155, 75)">
+          <ellipse cx="15" cy="10" rx="22" ry="18" fill="#10b981" />
+          <ellipse cx="10" cy="2" rx="6.5" ry="8" fill="#ffffff" />
+          <ellipse cx="24" cy="2" rx="6.5" ry="8" fill="#ffffff" />
+          <circle cx="10" cy="2" r="3.5" fill="#0f172a" />
+          <circle cx="24" cy="2" r="3.5" fill="#0f172a" />
+          <circle cx="8" cy="0" r="1.5" fill="#ffffff" />
+          <circle cx="22" cy="0" r="1.5" fill="#ffffff" />
+          <circle cx="2" cy="12" r="3.5" fill="#f43f5e" opacity="0.6"/>
+          <circle cx="28" cy="12" r="3.5" fill="#f43f5e" opacity="0.6"/>
+          <path d="M 8 13 Q 17 20 26 13" fill="none" stroke="#064e3b" stroke-width="2.5" stroke-linecap="round"/>
+          <path class="snake-tongue-flick" d="M 17 20 L 17 32 M 17 32 L 12 37 M 17 32 L 22 37" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
+        ${sunglassesSvg}
+      </svg>
+    `;
+
+    document.body.appendChild(pop);
+    setTimeout(() => {
+      if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+    }, 850);
+  } catch { /* silent fallback */ }
+}
+
+function getMascotType(fileOrExt) {
+  if (!fileOrExt) return 'python';
+  const str = (typeof fileOrExt === 'string' ? fileOrExt : (fileOrExt.category || fileOrExt.extension || fileOrExt.originalName || '')).toLowerCase();
+  if (str.includes('py')) return 'python';
+  if (str.includes('java')) return 'java';
+  if (str.includes('cpp') || str.includes('c++')) return 'cpp';
+  if (str.includes('adsa') || str.includes('tree') || str.includes('heap')) return 'adsa';
+  if (str.includes('dbms') || str.includes('sql')) return 'dbms';
+  if (str.includes('linux') || str.includes('sh')) return 'linux';
+  if (str.includes('cyber') || str.includes('security')) return 'cyber';
+  if (str.includes('c')) return 'c';
+  return 'python';
+}
+
+function triggerMascotAnim(type, targetEl) {
+  try {
+    if (type === 'python' || type.startsWith('python-')) {
+      const action = type.includes('-') ? type.split('-')[1] : 'view';
+      showLargePythonSnake(action, targetEl);
+      return;
+    }
+
+    const pop = document.createElement('div');
+    pop.className = `mascot-pop-overlay mascot-pop-${type}`;
+    
+    let rect = null;
+    if (targetEl && targetEl.getBoundingClientRect) {
+      rect = targetEl.getBoundingClientRect();
+    } else {
+      rect = { left: window.innerWidth / 2 - 40, top: window.innerHeight / 2 - 40, width: 80, height: 80 };
+    }
+
+    const posX = Math.max(10, Math.min(window.innerWidth - 100, rect.left + rect.width / 2 - 40));
+    const posY = Math.max(10, Math.min(window.innerHeight - 100, rect.top - 50));
+
+    pop.style.left = `${posX}px`;
+    pop.style.top = `${posY}px`;
+
+    if (type === 'java') {
+      pop.innerHTML = `
+        <div class="mascot-pop-emoji-wrap">
+          <span class="mascot-steam">♨️</span>
+          <span class="mascot-emoji">☕</span>
+        </div>
+      `;
+    } else if (type === 'c') {
+      pop.innerHTML = `
+        <div class="mascot-pop-emoji-wrap">
+          <span class="mascot-spark">⚡</span>
+          <span class="mascot-emoji gear-spin">⚙️</span>
+        </div>
+      `;
+    } else if (type === 'cpp') {
+      pop.innerHTML = `
+        <div class="mascot-pop-emoji-wrap">
+          <span class="mascot-emoji rocket-launch">🚀</span>
+          <span class="mascot-flame">🔥</span>
+        </div>
+      `;
+    } else if (type === 'adsa') {
+      pop.innerHTML = `
+        <div class="mascot-pop-emoji-wrap">
+          <span class="mascot-emoji tree-grow">🌳</span>
+          <span class="mascot-spark">✨</span>
+        </div>
+      `;
+    } else if (type === 'dbms') {
+      pop.innerHTML = `
+        <div class="mascot-pop-emoji-wrap">
+          <span class="mascot-emoji db-spin">🗄️</span>
+          <span class="mascot-spark">💫</span>
+        </div>
+      `;
+    } else if (type === 'linux') {
+      pop.innerHTML = `
+        <div class="mascot-pop-emoji-wrap">
+          <span class="mascot-emoji penguin-slide">🐧</span>
+        </div>
+      `;
+    } else if (type === 'cyber') {
+      pop.innerHTML = `
+        <div class="mascot-pop-emoji-wrap">
+          <span class="mascot-emoji shield-pulse">🔐</span>
+        </div>
+      `;
+    } else if (type === 'download') {
+      pop.innerHTML = `
+        <div class="confetti-burst">
+          <span style="--dx:-30px; --dy:-40px; color:#f43f5e;">🎉</span>
+          <span style="--dx:30px; --dy:-50px; color:#3b82f6;">🎊</span>
+          <span style="--dx:-40px; --dy:20px; color:#10b981;">✨</span>
+          <span style="--dx:40px; --dy:30px; color:#f59e0b;">📦</span>
+        </div>
+      `;
+    }
+
+    document.body.appendChild(pop);
+    setTimeout(() => {
+      if (pop && pop.parentNode) pop.parentNode.removeChild(pop);
+    }, 1000);
+  } catch (err) { /* silent fallback */ }
+}
+
 // ---------------- File Downloads & Previews ----------------
-function downloadFile(id) {
+function downloadFile(id, evt) {
+  const target = evt ? (evt.target || evt) : null;
+  triggerMascotAnim('download', target);
+  const file = lastFiles.find(f => (f._id || f.id) === id);
+  if (file) {
+    triggerMascotAnim(getMascotType(file), target);
+  }
   window.open(`/api/files/${id}/download`, '_blank');
 }
 
-function downloadFolder(batchId) {
+function downloadFolder(batchId, evt) {
+  const target = evt ? (evt.target || evt) : null;
+  triggerMascotAnim('download', target);
+  const file = lastFiles.find(f => f.batchId === batchId);
+  if (file) {
+    triggerMascotAnim(getMascotType(file), target);
+  }
   window.open(`/api/files/folder/${batchId}/download`, '_blank');
 }
 
 async function previewFile(id) {
   try {
+    const fileLoc = lastFiles.find(f => (f._id || f.id) === id);
+    if (fileLoc) {
+      triggerMascotAnim(getMascotType(fileLoc), document.activeElement);
+    }
+
     const res = await fetch(`/api/files/${id}/preview`);
     if (!res.ok) throw new Error('Preview error');
     const data = await res.json();
@@ -2308,8 +2662,56 @@ if (showAdminReqBtn) {
   });
 }
 
+// Easter Eggs & Interactive Card 3D Tilt
+function initEasterEggs() {
+  const searchInput = $('searchInput');
+  if (searchInput) {
+    let lastTypedKeyword = '';
+    searchInput.addEventListener('input', (e) => {
+      const val = (e.target.value || '').toLowerCase().trim();
+      if (val === lastTypedKeyword) return;
+      lastTypedKeyword = val;
+
+      if (val.includes('python')) {
+        showLargePythonSnake('view', searchInput);
+      } else if (val.includes('java')) {
+        triggerMascotAnim('java', searchInput);
+      } else if (val.includes('linux')) {
+        triggerMascotAnim('linux', searchInput);
+      } else if (val.includes('adsa')) {
+        triggerMascotAnim('adsa', searchInput);
+      } else if (val.includes('dbms')) {
+        triggerMascotAnim('dbms', searchInput);
+      }
+    });
+  }
+
+  // 3D Tilt for file cards & pinned cards
+  document.body.addEventListener('mousemove', (e) => {
+    const card = e.target.closest('.file-card, .pinned-item-card, .category-card');
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const rotateX = ((y - cy) / cy) * -6;
+    const rotateY = ((x - cx) / cx) * 6;
+    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+  });
+
+  document.body.addEventListener('mouseout', (e) => {
+    const card = e.target.closest('.file-card, .pinned-item-card, .category-card');
+    if (card) {
+      card.style.transform = '';
+    }
+  });
+}
+
 // Global Init
 window.addEventListener('DOMContentLoaded', () => {
+  initCinematicEyes();
+  initEasterEggs();
   initIntro();
   initParticles();
   setupUploads();

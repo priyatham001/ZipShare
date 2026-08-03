@@ -31,6 +31,9 @@ app.get('*', (req, res) => {
 
 // Connect Database & Start Server
 connectDB().then(() => {
+  const { migrateLocalFilesToCloudinary } = require('./services/migration');
+  migrateLocalFilesToCloudinary().catch(err => console.error('Migration error:', err.message));
+
   app.listen(PORT, () => {
     console.log(`ZipShare V3 server running on port ${PORT}`);
   });
