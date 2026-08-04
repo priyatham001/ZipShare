@@ -16,7 +16,7 @@ router.post('/login', (req, res) => {
     return res.status(429).json({
       error: 'locked',
       title: '😂 Nice Try!',
-      message: 'Protected by PSK.',
+      message: 'Protected by Admin.',
       emoji: '😂',
       retryAfter: lockedSeconds
     });
@@ -33,7 +33,7 @@ router.post('/login', (req, res) => {
       return res.status(429).json({
         error: 'locked',
         title: '😂 Nice Try!',
-        message: 'Protected by PSK.',
+        message: 'Protected by Admin.',
         emoji: '😂',
         retryAfter: 30
       });
@@ -41,7 +41,7 @@ router.post('/login', (req, res) => {
 
     return res.status(401).json({
       error: 'wrong_password',
-      message: '❌ Wrong Password\nProtected by PSK.',
+      message: '❌ Wrong Password\nProtected by Admin.',
       failedAttempts: state.count
     });
   }

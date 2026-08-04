@@ -992,12 +992,110 @@ async function deleteFolderBatch(batchId) {
 
     // Immediate local state update (BUG 11)
     lastFiles = lastFiles.filter(f => f.batchId !== batchId);
+    selectedFolderBatches.delete(batchId);
     renderFiles(lastFiles);
     renderPinnedSection(lastFiles);
+    if ($('folderManagementModalOverlay')?.classList.contains('active')) {
+      renderFolderManagementList();
+    }
     loadStats();
     loadFiles();
   } catch (err) {
     toast('Failed to delete folder.', 'error');
+  }
+}
+
+// ---------------- Folder Management & Batch Delete ----------------
+let selectedFolderBatches = new Set();
+
+function openFolderManagementModal() {
+  selectedFolderBatches.clear();
+  renderFolderManagementList();
+  openModal('folderManagementModalOverlay');
+}
+
+function renderFolderManagementList() {
+  const container = $('folderManagementList');
+  if (!container) return;
+
+  const folderBatches = new Map();
+  (lastFiles || []).forEach(file => {
+    if (file.batchId) {
+      if (!folderBatches.has(file.batchId)) {
+        folderBatches.set(file.batchId, []);
+      }
+      folderBatches.get(file.batchId).push(file);
+    }
+  });
+
+  if (folderBatches.size === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-secondary);">No folders found.</div>`;
+    updateFolderSelectionUI(0);
+    return;
+  }
+
+  let html = '';
+  folderBatches.forEach((batchFiles, batchId) => {
+    const topFolder = batchFiles[0].folderName || 'Uploaded Folder';
+    const totalSize = batchFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+    const uploadDate = batchFiles[0].uploadDate;
+    const isChecked = selectedFolderBatches.has(batchId) ? 'checked' : '';
+
+    html += `
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--card); border:1px solid var(--card-border); border-radius:12px; transition:all 0.2s ease;">
+        <div style="display:flex; align-items:center; gap:12px; overflow:hidden;">
+          <input type="checkbox" class="folder-batch-checkbox" data-batch-id="${escapeHtml(batchId)}" ${isChecked} style="width:18px; height:18px; cursor:pointer; flex-shrink:0;" />
+          <div style="font-size:1.5rem; flex-shrink:0;">📁</div>
+          <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            <div style="font-weight:600; font-size:0.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(topFolder)}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">${batchFiles.length} file(s) · ${fmtSize(totalSize)} · ${fmtDate(uploadDate)}</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0;">
+          <button class="card-btn" style="padding:4px 10px; font-size:0.8rem;" onclick="downloadFolder('${escapeHtml(batchId)}')">⬇ Download</button>
+          <button class="card-btn danger" style="padding:4px 10px; font-size:0.8rem;" onclick="deleteFolderBatch('${escapeHtml(batchId)}')">🗑 Delete</button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('.folder-batch-checkbox').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const bId = e.target.getAttribute('data-batch-id');
+      if (e.target.checked) {
+        selectedFolderBatches.add(bId);
+      } else {
+        selectedFolderBatches.delete(bId);
+      }
+      updateFolderSelectionUI(folderBatches.size);
+    });
+  });
+
+  updateFolderSelectionUI(folderBatches.size);
+}
+
+function updateFolderSelectionUI(totalFolders) {
+  const selectAllCb = $('selectAllFoldersCheckbox');
+  const deleteBtn = $('deleteSelectedFoldersBtn');
+  const countSpan = $('selectedFoldersCount');
+
+  const count = selectedFolderBatches.size;
+
+  if (countSpan) countSpan.textContent = count;
+
+  if (deleteBtn) {
+    if (count > 0) {
+      deleteBtn.style.display = 'inline-flex';
+      deleteBtn.textContent = `🗑 Delete Selected (${count})`;
+    } else {
+      deleteBtn.style.display = 'none';
+    }
+  }
+
+  if (selectAllCb) {
+    selectAllCb.checked = totalFolders > 0 && count === totalFolders;
   }
 }
 
@@ -1551,7 +1649,7 @@ async function togglePinFile(id, pinned) {
   }
 }
 
-// ---------------- Admin Auth & PPSK Lockout ----------------
+// ---------------- Admin Auth & Lockout ----------------
 function startLockoutTimer(seconds) {
   if (lockoutTimerInterval) clearInterval(lockoutTimerInterval);
   
@@ -1574,7 +1672,7 @@ function startLockoutTimer(seconds) {
   function updateDisplay() {
     if (submitBtn) submitBtn.textContent = `Locked (${remaining}s)`;
     if (msgEl) {
-      msgEl.textContent = `😂 Nice Try!\nProtected by PSK.\nTry again in ${remaining}s...`;
+      msgEl.textContent = `😂 Nice Try!\nProtected by Admin.\nTry again in ${remaining}s...`;
       msgEl.className = 'login-message error';
     }
   }
@@ -1664,7 +1762,7 @@ async function handleAdminLogin() {
   if (!password) {
     if (pwdInput) pwdInput.classList.add('input-error');
     if (msgEl) {
-      msgEl.textContent = "❌ Wrong Password\nProtected by PSK.";
+      msgEl.textContent = "❌ Wrong Password\nProtected by Admin.";
       msgEl.className = 'login-message error';
     }
     if (loginBox) {
@@ -1693,13 +1791,13 @@ async function handleAdminLogin() {
       if (res.status === 429 || data.error === 'locked') {
         const secs = data.retryAfter || 30;
         startLockoutTimer(secs);
-        toast('😂 Nice Try. Protected by PSK Lockout Active!', 'warning');
+        toast('😂 Nice Try. Protected by Admin Lockout Active!', 'warning');
       } else {
         if (msgEl) {
-          msgEl.textContent = "❌ Wrong Password\nProtected by PSK.";
+          msgEl.textContent = "❌ Wrong Password\nProtected by Admin.";
           msgEl.className = 'login-message error';
         }
-        toast('❌ Wrong Password. Protected by PSK.', 'error');
+        toast('❌ Wrong Password. Protected by Admin.', 'error');
       }
       return;
     }
@@ -1772,6 +1870,91 @@ function setupDashboardBindings() {
       const files = dashFolderInput.files;
       const paths = Array.from(files).map(f => f.webkitRelativePath || f.name);
       handleUpload(files, paths);
+    });
+  }
+
+  const dashDeleteFoldersBtn = $('dashDeleteFoldersBtn');
+  if (dashDeleteFoldersBtn) {
+    dashDeleteFoldersBtn.addEventListener('click', () => {
+      closeModal('dashboardModalOverlay');
+      openFolderManagementModal();
+    });
+  }
+
+  const selectAllFoldersCheckbox = $('selectAllFoldersCheckbox');
+  if (selectAllFoldersCheckbox) {
+    selectAllFoldersCheckbox.addEventListener('change', (e) => {
+      const isChecked = e.target.checked;
+      const folderBatches = new Map();
+      (lastFiles || []).forEach(file => {
+        if (file.batchId) {
+          folderBatches.set(file.batchId, true);
+        }
+      });
+
+      if (isChecked) {
+        folderBatches.forEach((_, batchId) => selectedFolderBatches.add(batchId));
+      } else {
+        selectedFolderBatches.clear();
+      }
+
+      renderFolderManagementList();
+    });
+  }
+
+  const deleteSelectedFoldersBtn = $('deleteSelectedFoldersBtn');
+  if (deleteSelectedFoldersBtn) {
+    deleteSelectedFoldersBtn.addEventListener('click', () => {
+      const count = selectedFolderBatches.size;
+      if (count === 0) return;
+
+      const msgEl = $('deleteConfirmMessage');
+      if (msgEl) {
+        msgEl.innerHTML = `Delete <strong>${count}</strong> selected folder${count > 1 ? 's' : ''} permanently?<br>This action cannot be undone.`;
+      }
+      openModal('deleteConfirmModalOverlay');
+    });
+  }
+
+  const confirmDeleteFoldersBtn = $('confirmDeleteFoldersBtn');
+  if (confirmDeleteFoldersBtn) {
+    confirmDeleteFoldersBtn.addEventListener('click', async () => {
+      const count = selectedFolderBatches.size;
+      if (count === 0) return;
+
+      const batchIds = Array.from(selectedFolderBatches);
+
+      try {
+        const res = await fetch('/api/files/folders/delete-batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          },
+          body: JSON.stringify({ batchIds })
+        });
+
+        if (!res.ok) {
+          throw new Error('Server returned error');
+        }
+
+        toast('Selected folders deleted successfully.');
+        closeModal('deleteConfirmModalOverlay');
+        closeModal('folderManagementModalOverlay');
+        selectedFolderBatches.clear();
+
+        await fetchFiles();
+      } catch (err) {
+        console.error('Batch delete error:', err);
+        toast('Failed to delete selected folders.', 'error');
+      }
+    });
+  }
+
+  const cancelDeleteFoldersBtn = $('cancelDeleteFoldersBtn');
+  if (cancelDeleteFoldersBtn) {
+    cancelDeleteFoldersBtn.addEventListener('click', () => {
+      closeModal('deleteConfirmModalOverlay');
     });
   }
 }

@@ -517,9 +517,15 @@
       </div>
 
       <div class="dashboard-card">
-        <h4>🔐 Security &amp; PPSK Authorization</h4>
-        <p>Status: <strong>Active JWT Session</strong> · Protected by PSK Security</p>
+        <h4>🔐 Security &amp; Owner Authorization</h4>
+        <p>Status: <strong>Active JWT Session</strong> · Protected by Owner</p>
         <button class="dash-btn danger" id="dashLogoutBtn">Logout Admin</button>
+      </div>
+
+      <div class="dashboard-card">
+        <h4>📁 Delete Folders</h4>
+        <p>Select multiple folders and delete them.</p>
+        <button class="dash-btn ghost" id="dashDeleteFoldersBtn">Select Multiple Folders</button>
       </div>
     </div>
   </div>
@@ -533,6 +539,48 @@
     <p class="modal-sub">Review and approve requests submitted by students.</p>
     <div class="requests-list" id="requestsListContainer">
       <!-- User requests list injected here -->
+    </div>
+  </div>
+</div>
+
+<!-- Admin Folder Management Modal -->
+<div class="modal-overlay" id="folderManagementModalOverlay">
+  <div class="modal glass large">
+    <button class="modal-close" data-close="folderManagementModalOverlay">✕</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+      <div>
+        <h3 style="margin:0;">📁 Folder Management</h3>
+        <p class="modal-sub" style="margin:4px 0 0 0;">Select multiple folders to batch manage or delete.</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; font-size:0.9rem; user-select:none;">
+          <input type="checkbox" id="selectAllFoldersCheckbox" style="width:18px; height:18px; cursor:pointer;" />
+          Select All
+        </label>
+        <button class="card-btn danger" id="deleteSelectedFoldersBtn" style="display:none; padding:8px 16px; font-weight:600;">
+          🗑 Delete Selected (<span id="selectedFoldersCount">0</span>)
+        </button>
+      </div>
+    </div>
+    
+    <div class="folder-management-list" id="folderManagementList" style="max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:4px;">
+      <!-- Folder list items with checkboxes rendered dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- Delete Selected Folders Confirmation Dialog Modal -->
+<div class="modal-overlay" id="deleteConfirmModalOverlay">
+  <div class="modal glass" style="max-width:440px; text-align:center;">
+    <button class="modal-close" data-close="deleteConfirmModalOverlay">✕</button>
+    <div style="font-size:2.5rem; margin-bottom:8px;">⚠️</div>
+    <h3 style="margin-bottom:8px;">Delete Selected Folders</h3>
+    <p id="deleteConfirmMessage" style="margin-bottom:20px; color:var(--text-secondary); font-size:0.95rem; line-height:1.4;">
+      Delete 1 selected folders permanently?<br>This action cannot be undone.
+    </p>
+    <div style="display:flex; justify-content:center; gap:12px;">
+      <button class="card-btn ghost" id="cancelDeleteFoldersBtn" style="padding:10px 20px;">Cancel</button>
+      <button class="card-btn danger" id="confirmDeleteFoldersBtn" style="padding:10px 20px; font-weight:600;">Delete Permanently</button>
     </div>
   </div>
 </div>
@@ -896,7 +944,7 @@ boolean: false</pre>
     </div>
     <div class="about-body">
       <p><strong>Mission:</strong> To make it effortless for students to browse, preview, and download programming solutions, lab records, notes, and full project folders without zipping hurdles.</p>
-      <p><strong>Features:</strong> Preserved folder uploads, in-browser syntax highlighting, real-time multi-keyword search, program requests system, PPSK protected admin engine, and interactive subject animations.</p>
+      <p><strong>Features:</strong> Preserved folder uploads, in-browser syntax highlighting, real-time multi-keyword search, program requests system, Admin protected engine, and interactive subject animations.</p>
       <p><strong>Developed By:</strong> NOMAD TEAM</p>
       <p><strong>Owner:</strong> Anonymous</p>
       <p><strong>Version:</strong> 3.0 Production Ready</p>

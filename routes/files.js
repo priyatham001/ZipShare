@@ -430,6 +430,64 @@ router.delete('/folder/:identifier', requireAdmin, async (req, res) => {
   }
 });
 
+// POST /api/files/folders/delete-batch - Admin only batch delete
+router.post('/folders/delete-batch', requireAdmin, async (req, res) => {
+  try {
+    const { batchIds } = req.body;
+    if (!Array.isArray(batchIds) || !batchIds.length) {
+      return res.status(400).json({ error: 'batchIds array required.' });
+    }
+
+    let totalDeletedFiles = 0;
+    let deletedFolderCount = 0;
+
+    for (const rawIdentifier of batchIds) {
+      if (!rawIdentifier) continue;
+      const identifier = decodeURIComponent(rawIdentifier);
+
+      let files = await filesDB.find({ batchId: identifier });
+      if (!files || !files.length) {
+        files = await filesDB.find({ folderName: identifier });
+      }
+      if (!files || !files.length) {
+        const safeReg = new RegExp('^' + identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        files = await filesDB.find({ folderName: safeReg });
+      }
+      if (!files || !files.length) {
+        files = await filesDB.find({ batchId: rawIdentifier });
+      }
+
+      if (files && files.length) {
+        for (const f of files) {
+          if (f.cloudinaryPublicId) {
+            try {
+              const ext = (f.extension || '').toLowerCase();
+              const resType = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(ext) ? 'image' : 'raw';
+              await deleteFromCloudinary(f.cloudinaryPublicId, resType);
+            } catch (cErr) {
+              console.error(`Cloudinary folder file destroy warning (${f.originalName}):`, cErr.message);
+            }
+          }
+
+          const fullPath = path.join(UPLOAD_DIR, f.storedName);
+          if (fs.existsSync(fullPath)) {
+            try { fs.unlinkSync(fullPath); } catch (e) { /* ignore */ }
+          }
+
+          await filesDB.findByIdAndDelete(f._id || f.id);
+          totalDeletedFiles++;
+        }
+        deletedFolderCount++;
+      }
+    }
+
+    res.json({ message: 'Selected folders deleted successfully.', deletedFolderCount, totalDeletedFiles });
+  } catch (err) {
+    console.error('Batch delete folders error:', err.message);
+    res.status(500).json({ error: 'Failed to delete selected folders.' });
+  }
+});
+
 // GET /api/files/:id/download
 router.get('/:id/download', async (req, res) => {
   try {

@@ -6,7 +6,7 @@ A student-friendly file & folder sharing platform. Node.js + Express + MongoDB b
 
 - **Folder uploads** — no more zipping. Click "Upload Folder" and pick a folder directly (`webkitdirectory`); the folder structure is preserved as metadata and files are grouped back into one card, downloadable as a zip.
 - **Anonymous / Admin badge** — bottom-right corner shows "Welcome Anonymous" until an admin logs in, then "Welcome Admin". Your name is never shown.
-- **Protected admin login** — wrong password shows "Access Denied. Incorrect password." After 3 failed attempts, login locks for 30 seconds with a warning that the platform is PPSK-protected, shown with a 😂 toast.
+- **Protected admin login** — wrong password shows "Access Denied. Incorrect password." After 3 failed attempts, login locks for 30 seconds with a warning that the platform is Admin-protected, shown with a 😂 toast.
 - **Admin-only management** — delete, rename, pin, edit description/tags are all gated behind `requireAdmin` on the backend (not just hidden in the UI), so it can't be bypassed by calling the API directly.
 - **Live search + admin-curated suggestions** — trending searches are fully editable by the admin (`/api/admin/suggestions`); "Recently Uploaded" auto-populates from the newest Java/Python/C/C++ files.
 - **Theme intro** — first visit asks Light or Dark, saves to localStorage, then shows an animated "Welcome to ZipShare" splash before the app.
