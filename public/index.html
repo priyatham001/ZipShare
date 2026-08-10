@@ -103,24 +103,18 @@
 
     <!-- Step 3: Select Favorite Subject -->
     <div class="onboard-step" id="onboardStep3" style="display:none;">
-      <h2 class="step-title">Select Favorite Lab Subject</h2>
-      <p class="step-sub">Filter your initial workspace automatically</p>
-      <div class="category-grid">
-        <button class="welcome-cat-btn active" data-cat="all">⭐ All Subjects</button>
+      <h2 class="step-title">Select Your Favorite Subject</h2>
+      <p class="step-sub">Choose a subject to personalize your ZipShare workspace</p>
+      <div class="category-grid favorite-subject-grid">
+        <button class="welcome-cat-btn active" data-cat="java">☕ Java</button>
         <button class="welcome-cat-btn" data-cat="python">🐍 Python</button>
-        <button class="welcome-cat-btn" data-cat="java">☕ Java</button>
-        <button class="welcome-cat-btn" data-cat="c">🔷 C Language</button>
-        <button class="welcome-cat-btn" data-cat="cpp">⚙️ C++</button>
-        <button class="welcome-cat-btn" data-cat="adsa">🌳 ADSA</button>
+        <button class="welcome-cat-btn" data-cat="c">💻 C Language</button>
         <button class="welcome-cat-btn" data-cat="dbms">🗄️ DBMS</button>
-        <button class="welcome-cat-btn" data-cat="os">🖥️ Operating Systems</button>
-        <button class="welcome-cat-btn" data-cat="cn">🌐 Networks</button>
-        <button class="welcome-cat-btn" data-cat="linux">🐧 Linux</button>
-        <button class="welcome-cat-btn" data-cat="cyber">🔐 Cyber Security</button>
+        <button class="welcome-cat-btn" data-cat="adsa">🌳 ADSA</button>
       </div>
       <div class="step-nav">
         <button class="btn-ghost" id="step3BackBtn">◀ Back</button>
-        <button class="enter-btn primary-btn" id="enterAppBtn">Enter ZipShare Workspace 🚀</button>
+        <button class="enter-btn primary-btn" id="enterAppBtn">Enter ZipShare Workspace ➔</button>
       </div>
     </div>
 
@@ -230,14 +224,9 @@
       <button class="chip active" data-category="all">⭐ All</button>
       <button class="chip" data-category="java">☕ Java</button>
       <button class="chip" data-category="python">🐍 Python</button>
-      <button class="chip" data-category="adsa">🌳 ADSA</button>
-      <button class="chip" data-category="c">🔷 C</button>
-      <button class="chip" data-category="cpp">⚙️ C++</button>
+      <button class="chip" data-category="c">💻 C Language</button>
       <button class="chip" data-category="dbms">🗄️ DBMS</button>
-      <button class="chip" data-category="os">🖥️ Operating Systems</button>
-      <button class="chip" data-category="cn">🌐 Networks</button>
-      <button class="chip" data-category="linux">🐧 Linux</button>
-      <button class="chip" data-category="cyber">🔐 Cyber Security</button>
+      <button class="chip" data-category="adsa">🌳 ADSA</button>
       <button class="chip" data-category="folders">📁 Folders Only</button>
       <button class="chip" data-category="pinned">📌 Pinned</button>
     </div>
@@ -596,7 +585,6 @@
         <h3 id="previewTitle">File Preview</h3>
       </div>
       <div class="viewer-actions">
-        <button class="btn-action primary" id="openInCompilerBtn" title="Run in Online Compiler">▶ Run Online</button>
         <button class="btn-action" id="copyCodeBtn" title="Copy Code">📋 Copy</button>
         <button class="btn-action" id="downloadPreviewBtn" title="Download File">⬇ Download</button>
         <button class="btn-action admin-only-inline" id="editContentBtn" title="Edit Code Directly" style="display:none;">✏️ Edit Code</button>

@@ -228,6 +228,7 @@ function initIntro() {
   if (enterBtn) {
     enterBtn.addEventListener('click', () => {
       localStorage.setItem('zipshare_visited', 'true');
+      localStorage.setItem('zipshare_favorite_subject', activeCategory);
       $('introScreen').classList.add('hidden');
       $('welcomeSplash').classList.add('show');
       
@@ -240,6 +241,10 @@ function initIntro() {
   }
 
   if (localStorage.getItem('zipshare_visited')) {
+    const savedSubject = localStorage.getItem('zipshare_favorite_subject');
+    if (savedSubject && ['java', 'python', 'c', 'dbms', 'adsa'].includes(savedSubject)) {
+      activeCategory = savedSubject;
+    }
     if ($('introScreen')) $('introScreen').classList.add('hidden');
     if ($('app')) $('app').classList.add('show');
   }
@@ -331,108 +336,198 @@ function renderSubjectAnimation(cat) {
     ctx.clearRect(0, 0, w, h);
 
     if (cat === 'python') {
-      ctx.beginPath();
-      ctx.lineWidth = 6;
-      ctx.strokeStyle = '#3776ab';
-      ctx.lineCap = 'round';
-      for (let x = 10; x < w - 10; x += 5) {
-        const y = h / 2 + Math.sin((x + frame * 3) * 0.05) * 18;
-        if (x === 10) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      // Animated Slithering Python Snake
+      const time = frame * 0.05;
+      const centerY = h / 2;
+      
+      const numSegments = 22;
+      const pathAmplitude = 14;
+
+      const headX = w / 2 + 40 + Math.sin(time * 0.5) * 10;
+      const headY = centerY + Math.sin(time * 1.5) * pathAmplitude;
+
+      for (let i = numSegments; i >= 1; i--) {
+        const segT = time - i * 0.12;
+        const px = headX - i * 4.5;
+        const py = centerY + Math.sin(segT * 1.5 + i * 0.1) * pathAmplitude;
+        const radius = Math.max(3, 8 - (i * 0.22));
+
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fillStyle = (i % 4 < 2) ? '#306998' : '#ffe873';
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.stroke();
       }
+
+      ctx.beginPath();
+      ctx.arc(headX, headY, 9, 0, Math.PI * 2);
+      ctx.fillStyle = '#306998';
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#204a6e';
       ctx.stroke();
 
-      const headX = w - 20;
-      const headY = h / 2 + Math.sin((headX + frame * 3) * 0.05) * 18;
       ctx.beginPath();
-      ctx.arc(headX, headY, 7, 0, Math.PI * 2);
-      ctx.fillStyle = '#f0db4f';
+      ctx.arc(headX + 3, headY - 3, 2.5, 0, Math.PI * 2);
+      ctx.arc(headX + 3, headY + 3, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
       ctx.fill();
 
+      ctx.beginPath();
+      ctx.arc(headX + 4, headY - 3, 1.2, 0, Math.PI * 2);
+      ctx.arc(headX + 4, headY + 3, 1.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#000000';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(headX - 2, headY - 4, 2, 0, Math.PI * 2);
+      ctx.arc(headX - 2, headY + 4, 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 182, 193, 0.6)';
+      ctx.fill();
+
+      if (Math.sin(time * 3) > 0.1) {
+        ctx.beginPath();
+        ctx.moveTo(headX + 8, headY);
+        ctx.lineTo(headX + 13, headY);
+        ctx.lineTo(headX + 16, headY - 3);
+        ctx.moveTo(headX + 13, headY);
+        ctx.lineTo(headX + 16, headY + 3);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
     } else if (cat === 'java') {
+      const cx = w / 2;
+      const cy = h / 2 + 6;
+
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 18, 22, 5, 0, 0, Math.PI * 2);
       ctx.fillStyle = '#f89820';
-      ctx.fillRect(w / 2 - 20, h / 2 - 10, 40, 35);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(cx - 16, cy - 12);
+      ctx.lineTo(cx + 16, cy - 12);
+      ctx.quadraticCurveTo(cx + 14, cy + 16, cx, cy + 16);
+      ctx.quadraticCurveTo(cx - 14, cy + 16, cx - 16, cy - 12);
+      ctx.fillStyle = '#f89820';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx + 17, cy, 7, -Math.PI / 2, Math.PI / 2);
       ctx.strokeStyle = '#f89820';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(w / 2 + 20, h / 2 - 5, 12, 20);
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - 10, 14, 4, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#4a2810';
+      ctx.fill();
 
       for (let i = 0; i < 3; i++) {
-        const sx = w / 2 - 12 + i * 12;
-        const sy = h / 2 - 18 - ((frame * 1.5 + i * 15) % 25);
+        const sx = cx - 8 + i * 8;
+        const progress = ((frame * 1.2 + i * 20) % 40) / 40;
+        const sy = cy - 14 - progress * 24;
+        const waveX = Math.sin(progress * Math.PI * 2 + i) * 4;
+        const alpha = (1 - progress) * 0.7;
+
         ctx.beginPath();
-        ctx.arc(sx + Math.sin(frame * 0.1 + i) * 4, sy, 3, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.arc(sx + waveX, sy, 2 + progress * 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
         ctx.fill();
       }
 
     } else if (cat === 'c') {
-      ctx.save();
-      ctx.translate(w / 2, h / 2);
-      ctx.rotate(frame * 0.02);
-      ctx.beginPath();
-      ctx.arc(0, 0, 28, 0.4, Math.PI * 1.6);
-      ctx.lineWidth = 10;
-      ctx.strokeStyle = '#5c6bc0';
-      ctx.stroke();
-      ctx.restore();
+      const boxW = 100, boxH = 50;
+      const boxX = w / 2 - boxW / 2;
+      const boxY = h / 2 - boxH / 2;
 
-    } else if (cat === 'cpp') {
-      ctx.save();
-      ctx.translate(w / 2, h / 2);
-      ctx.rotate(frame * 0.03);
-      ctx.beginPath();
-      ctx.arc(0, 0, 22, 0, Math.PI * 2);
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = '#00599c';
-      ctx.stroke();
+      ctx.fillStyle = '#1e1e2e';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
 
-      for (let i = 0; i < 8; i++) {
-        const ang = (i * Math.PI) / 4;
-        ctx.fillRect(Math.cos(ang) * 22 - 3, Math.sin(ang) * 22 - 3, 8, 8);
+      ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(boxX + 8, boxY + 7, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(boxX + 16, boxY + 7, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(boxX + 24, boxY + 7, 2.5, 0, Math.PI * 2); ctx.fill();
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('#include <stdio.h>', boxX + 8, boxY + 22);
+
+      ctx.fillStyle = '#a855f7';
+      ctx.fillText('int main() {', boxX + 8, boxY + 34);
+
+      if (Math.floor(frame / 15) % 2 === 0) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(boxX + 72, boxY + 26, 6, 9);
       }
-      ctx.restore();
+
+    } else if (cat === 'dbms') {
+      const cx = w / 2;
+      const cy = h / 2;
+
+      [cy - 12, cy + 12].forEach((y, idx) => {
+        ctx.fillStyle = idx === 0 ? '#0284c7' : '#0369a1';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+
+        ctx.fillRect(cx - 24, y - 6, 48, 12);
+        ctx.strokeRect(cx - 24, y - 6, 48, 12);
+
+        ctx.beginPath();
+        ctx.ellipse(cx, y - 6, 24, 6, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      const pktY = cy - 18 + ((frame * 1.5) % 36);
+      ctx.beginPath();
+      ctx.arc(cx, pktY, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fill();
 
     } else if (cat === 'adsa') {
-      ctx.strokeStyle = '#10b981';
+      const rootX = w / 2, rootY = h / 2 - 16;
+      const leftX = rootX - 28, leftY = rootY + 20;
+      const rightX = rootX + 28, rightY = rootY + 20;
+
+      ctx.strokeStyle = '#475569';
       ctx.lineWidth = 2;
-
-      const rootX = w / 2, rootY = 15;
-      const leftX = w / 2 - 35, leftY = 45;
-      const rightX = w / 2 + 35, rightY = 45;
-
       ctx.beginPath();
-      ctx.moveTo(rootX, rootY);
-      ctx.lineTo(leftX, leftY);
-      ctx.moveTo(rootX, rootY);
-      ctx.lineTo(rightX, rightY);
+      ctx.moveTo(rootX, rootY); ctx.lineTo(leftX, leftY);
+      ctx.moveTo(rootX, rootY); ctx.lineTo(rightX, rightY);
       ctx.stroke();
 
-      const pulse = Math.abs(Math.sin(frame * 0.05)) * 3;
-      [
+      const step = Math.floor(frame / 20) % 3;
+      const nodes = [
         { x: rootX, y: rootY },
         { x: leftX, y: leftY },
         { x: rightX, y: rightY }
-      ].forEach(node => {
+      ];
+
+      nodes.forEach((node, idx) => {
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 7 + pulse, 0, Math.PI * 2);
-        ctx.fillStyle = '#8b5cf6';
+        ctx.arc(node.x, node.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = idx === step ? '#10b981' : '#8b5cf6';
         ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
       });
 
-    } else if (cat === 'dbms') {
-      ctx.strokeStyle = '#06b6d4';
-      ctx.lineWidth = 4;
-
-      ctx.beginPath();
-      ctx.ellipse(w / 2, h / 2 - 15, 30, 10, 0, 0, Math.PI * 2);
-      ctx.ellipse(w / 2, h / 2 + 15, 30, 10, 0, 0, Math.PI * 2);
-      ctx.stroke();
-
-      const packetY = h / 2 - 15 + ((frame * 2) % 30);
-      ctx.beginPath();
-      ctx.arc(w / 2, packetY, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#f59e0b';
-      ctx.fill();
+      for (let i = 0; i < 5; i++) {
+        const barH = 6 + Math.abs(Math.sin(frame * 0.08 + i)) * 12;
+        const bx = w / 2 - 28 + i * 11;
+        const by = h - 6;
+        ctx.fillStyle = '#06b6d4';
+        ctx.fillRect(bx, by - barH, 7, barH);
+      }
 
     } else {
       for (let i = 0; i < 5; i++) {
@@ -462,14 +557,9 @@ function switchCategory(cat) {
     all: { icon: '⭐', title: 'All Files & Folders', desc: 'Browse all programming code, lab records, notes and project folders.' },
     java: { icon: '☕', title: 'Java Projects', desc: 'Object Oriented Programming, Multithreading, and Data Structures in Java.' },
     python: { icon: '🐍', title: 'Python Programs', desc: 'Lab programs, logic problems, algorithms, and scripts.' },
-    adsa: { icon: '🌳', title: 'Advanced Data Structures & Algorithms (ADSA)', desc: 'AVL Trees, Graphs, Hash Tables, and Red-Black Tree implementations.' },
-    c: { icon: '🔷', title: 'C Programming', desc: 'Core C lab exercises, pointers, matrix operations, and algorithms.' },
-    cpp: { icon: '⚙️', title: 'C++ Programs', desc: 'OOPs concepts, template classes, STL, and C++ algorithms.' },
+    c: { icon: '💻', title: 'C Language Programming', desc: 'Core C language lab exercises, pointers, matrix operations, and algorithms.' },
     dbms: { icon: '🗄️', title: 'Database Management Systems (DBMS)', desc: 'SQL DDL/DML queries, schema files, normalization, and joins.' },
-    os: { icon: '🖥️', title: 'Operating Systems (OS)', desc: 'CPU scheduling, Banker\'s Algorithm, deadlocks, and process synchronization.' },
-    cn: { icon: '🌐', title: 'Computer Networks (CN)', desc: 'Socket programming, distance vector routing, TCP/UDP protocols.' },
-    linux: { icon: '🐧', title: 'Linux Administration', desc: 'Shell scripting, bash utilities, process management, and system commands.' },
-    cyber: { icon: '🔐', title: 'Cyber Security', desc: 'Cryptography, Caesar cipher, AES encryption, and security protocols.' },
+    adsa: { icon: '🌳', title: 'Advanced Data Structures & Algorithms (ADSA)', desc: 'AVL Trees, Graphs, Hash Tables, and Red-Black Tree implementations.' },
     folders: { icon: '📁', title: 'Project Folders', desc: 'Multi-file student lab project directory structures.' },
     pinned: { icon: '📌', title: 'Pinned Highlights', desc: 'Important administrative releases and starred lab code.' }
   };
@@ -523,14 +613,9 @@ function renderBreadcrumbs() {
     all: 'All Categories',
     java: 'Java',
     python: 'Python',
-    adsa: 'ADSA',
-    c: 'C Programming',
-    cpp: 'C++',
+    c: 'C Language',
     dbms: 'DBMS',
-    os: 'Operating Systems',
-    cn: 'Computer Networks',
-    linux: 'Linux',
-    cyber: 'Cyber Security',
+    adsa: 'ADSA',
     folders: 'Folders',
     pinned: 'Pinned Items'
   };
@@ -646,18 +731,19 @@ function renderSidebar() {
   const filterText = ($('syllabusSearchInput')?.value || '').toLowerCase().trim();
   let html = '';
 
+  const allowedStudentSubjects = ['java', 'python', 'c', 'dbms', 'adsa'];
   const subjects = Object.keys(syllabusData).length > 0 
     ? syllabusData 
     : {
         java: { title: 'Java Programming', icon: '☕', exercises: [] },
         python: { title: 'Python Programs', icon: '🐍', exercises: [] },
-        adsa: { title: 'Advanced Data Structures (ADSA)', icon: '🌳', exercises: [] },
-        c: { title: 'C Programming', icon: '🔷', exercises: [] },
-        cpp: { title: 'C++ Programs', icon: '⚙️', exercises: [] },
-        dbms: { title: 'Database Systems (DBMS)', icon: '🗄️', exercises: [] }
+        c: { title: 'C Language', icon: '💻', exercises: [] },
+        dbms: { title: 'Database Systems (DBMS)', icon: '🗄️', exercises: [] },
+        adsa: { title: 'Advanced Data Structures (ADSA)', icon: '🌳', exercises: [] }
       };
 
   for (const [subKey, subObj] of Object.entries(subjects)) {
+    if (!allowedStudentSubjects.includes(subKey.toLowerCase())) continue;
     const subTitle = subObj.title || subKey.toUpperCase();
     const subIcon = subObj.icon || (ICONS[subKey] || ICONS.default).icon;
 
@@ -1590,6 +1676,14 @@ const downloadPreviewBtn = $('downloadPreviewBtn');
 if (downloadPreviewBtn) {
   downloadPreviewBtn.addEventListener('click', () => {
     if (previewingFile) downloadFile(previewingFile._id || previewingFile.id);
+  });
+}
+
+const fullscreenViewerBtn = $('fullscreenViewerBtn');
+if (fullscreenViewerBtn) {
+  fullscreenViewerBtn.addEventListener('click', () => {
+    const modalBox = document.querySelector('#previewModalOverlay .modal');
+    if (modalBox) modalBox.classList.toggle('fullscreen');
   });
 }
 
