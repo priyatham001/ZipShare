@@ -597,36 +597,42 @@
         <!-- Code content or media rendered here -->
       </div>
 
-      <!-- RIGHT SIDE: Solution Explorer Panel -->
+      <!-- RIGHT SIDE / BELOW ON MOBILE: Solution Explorer Panel -->
       <aside class="solution-explorer-panel" id="solutionExplorerPanel" style="display:none;">
-        <div class="sol-panel-header">
-          <span class="sol-panel-icon">💡</span>
-          <h4 class="sol-panel-title">Solution Explorer</h4>
+        <div class="sol-panel-header" id="solPanelHeader" title="Click to expand/collapse lab details">
+          <div class="sol-panel-header-left">
+            <span class="sol-panel-icon">💡</span>
+            <h4 class="sol-panel-title">Lab Details &amp; Solution</h4>
+          </div>
+          <button class="sol-panel-toggle-btn" id="solPanelToggleBtn" type="button" aria-label="Toggle details">
+            <span class="sol-toggle-icon" id="solToggleIcon">▾</span>
+          </button>
         </div>
 
-        <div class="sol-panel-group">
-          <label class="sol-label">SUBJECT</label>
-          <div id="solSubjectBadge" class="sol-value-badge">☕ Java</div>
-        </div>
+        <div class="sol-panel-content" id="solPanelContent">
+          <div class="sol-panel-group">
+            <label class="sol-label">SUBJECT</label>
+            <div id="solSubjectBadge" class="sol-value-badge">☕ Java</div>
+          </div>
 
-        <div class="sol-panel-group">
-          <label class="sol-label">EXERCISE / MODULE</label>
-          <div id="solExerciseText" class="sol-value-text">Exercise 1 - Basics</div>
-        </div>
+          <div class="sol-panel-group">
+            <label class="sol-label">EXERCISE / MODULE</label>
+            <div id="solExerciseText" class="sol-value-text">Exercise 1 - Basics</div>
+          </div>
 
-        <div class="sol-panel-group">
-          <label class="sol-label">QUESTION / TOPIC</label>
-          <div id="solQuestionText" class="sol-question-title">Default Values</div>
-        </div>
+          <div class="sol-panel-group">
+            <label class="sol-label">QUESTION / TOPIC</label>
+            <div id="solQuestionText" class="sol-question-title">Default Values</div>
+          </div>
 
-        <div class="sol-panel-group">
-          <label class="sol-label">DESCRIPTION</label>
-          <p id="solDescriptionText" class="sol-description-body">Write a Java program to display the default values of all primitive data types.</p>
-        </div>
+          <div class="sol-panel-group">
+            <label class="sol-label">DESCRIPTION</label>
+            <p id="solDescriptionText" class="sol-description-body">Write a Java program to display the default values of all primitive data types.</p>
+          </div>
 
-        <div class="sol-panel-group">
-          <label class="sol-label">EXPECTED OUTPUT</label>
-          <pre id="solExpectedOutputText" class="sol-output-box">Default Primitive Values in Java:
+          <div class="sol-panel-group">
+            <label class="sol-label">EXPECTED OUTPUT</label>
+            <pre id="solExpectedOutputText" class="sol-output-box">Default Primitive Values in Java:
 byte: 0
 short: 0
 int: 0
@@ -635,12 +641,13 @@ float: 0.0
 double: 0.0
 char: 0
 boolean: false</pre>
-        </div>
+          </div>
 
-        <div class="sol-panel-group">
-          <label class="sol-label">RELATED PROGRAMS</label>
-          <div id="solRelatedGrid" class="sol-related-chips">
-            <!-- Clickable program chips -->
+          <div class="sol-panel-group">
+            <label class="sol-label">RELATED PROGRAMS</label>
+            <div id="solRelatedGrid" class="sol-related-chips">
+              <!-- Clickable program chips -->
+            </div>
           </div>
         </div>
       </aside>

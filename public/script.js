@@ -1609,6 +1609,8 @@ async function previewFile(id) {
     if ($('adminEditorSection')) $('adminEditorSection').style.display = 'none';
 
     // Update solution explorer panel if exercise metadata exists
+    const solPanel = $('solutionExplorerPanel');
+    if (solPanel) solPanel.classList.remove('open');
     renderSolutionPanel(data.file);
 
     if (body) {
@@ -1663,11 +1665,27 @@ function renderSolutionPanel(file) {
 
 const copyCodeBtn = $('copyCodeBtn');
 if (copyCodeBtn) {
-  copyCodeBtn.addEventListener('click', () => {
+  copyCodeBtn.addEventListener('click', async () => {
     const codeEl = document.querySelector('#previewBody code') || document.querySelector('#previewBody');
     if (codeEl) {
-      navigator.clipboard.writeText(codeEl.textContent);
-      toast('Code copied to clipboard! 📋');
+      const text = codeEl.textContent;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        toast('Code copied to clipboard! 📋');
+      } catch (err) {
+        toast('Failed to copy code', 'error');
+      }
     }
   });
 }
@@ -1684,6 +1702,16 @@ if (fullscreenViewerBtn) {
   fullscreenViewerBtn.addEventListener('click', () => {
     const modalBox = document.querySelector('#previewModalOverlay .modal');
     if (modalBox) modalBox.classList.toggle('fullscreen');
+  });
+}
+
+const solPanelHeader = $('solPanelHeader');
+if (solPanelHeader) {
+  solPanelHeader.addEventListener('click', () => {
+    const panel = $('solutionExplorerPanel');
+    if (panel) {
+      panel.classList.toggle('open');
+    }
   });
 }
 

@@ -1090,16 +1090,27 @@ input.input-error {
   border-bottom: 1px solid var(--card-border);
   padding-bottom: 14px;
   margin-bottom: 16px;
+  position: relative;
 }
 .viewer-title-group {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
-.viewer-file-icon { font-size: 1.5rem; }
+.viewer-title-group h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  word-break: break-word;
+}
+.viewer-file-icon { font-size: 1.5rem; flex-shrink: 0; }
 .viewer-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .btn-action {
   padding: 6px 12px;
@@ -1108,33 +1119,58 @@ input.input-error {
   background: var(--card);
   color: var(--text);
   font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
 }
 .btn-action:hover {
   background: var(--accent);
   color: #fff;
+  border-color: var(--accent);
+}
+.btn-action:active {
+  transform: scale(0.97);
 }
 
 .viewer-body {
   max-height: 480px;
   overflow: auto;
   border-radius: 12px;
-  background: #1e1e2e;
+  background: #181825;
+  color: #cdd6f4;
   padding: 16px;
-  font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', 'Courier New', monospace;
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.55;
+  box-sizing: border-box;
 }
 .viewer-body pre {
   margin: 0;
   padding: 0;
-  white-space: pre;
-  word-wrap: normal;
+  white-space: pre !important;
+  word-wrap: normal !important;
+  word-break: normal !important;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.viewer-body pre::-webkit-scrollbar {
+  height: 6px;
+}
+.viewer-body pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 .viewer-body code {
   font-family: inherit;
-  white-space: pre;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: pre !important;
+  tab-size: 4;
+  -moz-tab-size: 4;
 }
 
 .admin-editor-section {
@@ -1877,20 +1913,23 @@ input.input-error {
 
 .viewer-split-container {
   display: flex;
+  flex-direction: row;
   gap: 20px;
   height: 520px;
   overflow: hidden;
+  width: 100%;
 }
 
 .viewer-modal .viewer-body {
   flex: 1;
   min-width: 0;
   height: 100%;
+  max-height: 100%;
 }
 
 .solution-explorer-panel {
-  width: 300px;
-  min-width: 300px;
+  width: 310px;
+  min-width: 310px;
   background: var(--bg-alt);
   border: 1px solid var(--card-border);
   border-radius: 12px;
@@ -1904,9 +1943,26 @@ input.input-error {
 .sol-panel-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--card-border);
+}
+
+.sol-panel-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sol-panel-toggle-btn {
+  display: none;
+}
+
+.sol-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .sol-panel-icon {
@@ -1915,7 +1971,7 @@ input.input-error {
 
 .sol-panel-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: var(--text);
 }
@@ -2023,15 +2079,209 @@ input.input-error {
   .mobile-sidebar-trigger {
     display: block;
   }
+}
 
-  .viewer-split-container {
-    flex-direction: column;
-    height: auto;
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 8px 6px;
+    align-items: flex-start;
   }
 
-  .solution-explorer-panel {
+  .modal.large.viewer-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 94vh !important;
+    padding: 12px 10px 16px 10px !important;
+    border-radius: 14px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .modal.large.viewer-modal .modal-close {
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    font-size: 1rem;
+    z-index: 25;
+  }
+
+  .viewer-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    padding-right: 36px;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .viewer-title-group {
     width: 100%;
-    min-width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .viewer-title-group h3 {
+    font-size: 1.02rem;
+    font-weight: 700;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .viewer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .btn-action {
+    flex: 1 1 auto;
+    min-width: 64px;
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  .viewer-split-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Code Viewer Body on Mobile: Primary Focus, full available width, comfortable font */
+  .viewer-modal .viewer-body {
+    order: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: 60vh !important;
+    min-height: 180px !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    background: #181825 !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 10px !important;
+    padding: 12px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  .viewer-body pre {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: max-content !important;
+    min-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: pre !important;
+    word-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  .viewer-body code {
+    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', 'Courier New', monospace !important;
+    font-size: 13.5px !important;
+    line-height: 1.55 !important;
+    tab-size: 4 !important;
+    -moz-tab-size: 4 !important;
+    white-space: pre !important;
+    display: block !important;
+  }
+
+  /* Solution Explorer Panel on Mobile: Below code, Collapsible by default */
+  .solution-explorer-panel {
+    order: 2 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    background: var(--bg) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+    margin-top: 4px !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  .sol-panel-header {
+    cursor: pointer !important;
+    user-select: none !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+
+  .solution-explorer-panel.open .sol-panel-header {
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid var(--card-border) !important;
+  }
+
+  .sol-panel-toggle-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+    background: var(--card) !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--text) !important;
+    font-size: 0.9rem !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease !important;
+  }
+
+  .sol-panel-content {
+    display: none !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding-top: 10px !important;
+  }
+
+  .solution-explorer-panel.open .sol-panel-content {
+    display: flex !important;
+  }
+
+  .solution-explorer-panel.open .sol-toggle-icon {
+    display: inline-block !important;
+    transform: rotate(180deg) !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .viewer-body code {
+    font-size: 13px !important;
+  }
+  .btn-action {
+    font-size: 0.74rem !important;
+    padding: 5px 6px !important;
+    min-width: 56px !important;
+  }
+  .modal.large.viewer-modal {
+    padding: 10px 8px !important;
   }
 }
 
