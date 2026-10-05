@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ZIPSHARE – Student-Friendly File Sharing Platform</title>
+<title>ZipShare - Student Hub</title>
+<meta name="description" content="ZipShare Student Hub - Production Online Coding Platform" />
+<meta property="og:title" content="ZipShare" />
+<meta property="og:description" content="ZipShare Student Hub - Production Online Coding Platform" />
 <link rel="stylesheet" href="style.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -304,6 +307,7 @@
           <div class="grid-controls">
             <label for="sortSelect" class="sort-label">Sort by:</label>
             <select id="sortSelect" class="sort-select">
+              <option value="sno" selected>S.No (Official 1..N)</option>
               <option value="recent">Newest Uploads</option>
               <option value="popular">Most Downloads</option>
               <option value="name">Alphabetical</option>
@@ -516,7 +520,60 @@
         <p>Select multiple folders and delete them.</p>
         <button class="dash-btn ghost" id="dashDeleteFoldersBtn">Select Multiple Folders</button>
       </div>
+
+      <div class="dashboard-card" style="border-color: rgba(99, 102, 241, 0.4);">
+        <h4>📚 Official Syllabus Matrix</h4>
+        <p>Track all 91 experiments across Java (35), Python (40), and DSA (16). Manage mappings.</p>
+        <button class="dash-btn primary" id="dashSyllabusBtn">Open Syllabus Matrix (91)</button>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- Admin Official Syllabus Matrix Modal -->
+<div class="modal-overlay" id="syllabusMatrixModalOverlay">
+  <div class="modal glass large" style="max-height:88vh; display:flex; flex-direction:column;">
+    <button class="modal-close" data-close="syllabusMatrixModalOverlay">✕</button>
+    <div style="flex-shrink:0;">
+      <h3>📚 Official Syllabus Matrix</h3>
+      <p class="modal-sub">Live checklist of all 91 official syllabus experiments across Java, Python, and DSA.</p>
+      <div style="display:flex; gap:10px; margin:12px 0 16px; flex-wrap:wrap;">
+        <button class="chip active" id="matrixTabJava" onclick="switchMatrixTab('java')">☕ Java (35)</button>
+        <button class="chip" id="matrixTabPython" onclick="switchMatrixTab('python')">🐍 Python (40)</button>
+        <button class="chip" id="matrixTabAdsa" onclick="switchMatrixTab('adsa')">🌳 DSA / ADSA (16)</button>
+      </div>
+    </div>
+    <div id="syllabusMatrixContainer" style="overflow-y:auto; flex:1; padding-right:6px;">
+      <!-- Table populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Admin Assign Official Experiment Modal -->
+<div class="modal-overlay" id="assignExperimentModalOverlay">
+  <div class="modal glass" style="max-width:540px;">
+    <button class="modal-close" data-close="assignExperimentModalOverlay">✕</button>
+    <h3>🎯 Assign to Official Experiment</h3>
+    <p class="modal-sub">Map file <strong id="assignFileOriginalName" style="color:var(--accent);"></strong> to an official syllabus experiment.</p>
+    <form id="assignExperimentForm">
+      <input type="hidden" id="assignFileId" />
+      <div class="form-group" style="margin-bottom:14px;">
+        <label for="assignCourseSelect">Select Lab / Course *</label>
+        <select id="assignCourseSelect" class="sort-select" style="width:100%; padding:10px;" required>
+          <option value="java">☕ Object Oriented Programming through Java Lab (35 Experiments)</option>
+          <option value="python">🐍 Python Programming Skill Enhancement Lab (40 Experiments)</option>
+          <option value="adsa">🌳 Advanced Data Structures and Algorithms using C Lab (16 Experiments)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label for="assignExpSelect">Select Official Experiment *</label>
+        <select id="assignExpSelect" class="sort-select" style="width:100%; padding:10px;" required></select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn-ghost" data-close="assignExperimentModalOverlay">Cancel</button>
+        <button type="submit" class="enter-btn primary-btn" style="margin-top:0;">Save Mapping</button>
+      </div>
+    </form>
   </div>
 </div>
 

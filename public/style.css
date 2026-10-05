@@ -3084,6 +3084,212 @@ input.input-error {
   transition: background-color 0.8s ease, color 0.8s ease, border-color 0.8s ease, box-shadow 0.8s ease !important;
 }
 
+/* ========================================================
+   OFFICIAL SYLLABUS & COMING SOON PRESENTATION SYSTEM
+   ======================================================== */
+.card-sno-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.16);
+  color: var(--accent);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  margin-bottom: 8px;
+  width: fit-content;
+}
+.card-sno-badge.coming-soon-sno {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-dim);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.experiment-title {
+  font-size: 1.06rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0 0 6px;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.card-course-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.card-filename-sub {
+  font-size: 0.82rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: var(--bg-alt);
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--accent-2);
+  border: 1px solid var(--card-border);
+  margin-bottom: 10px;
+  display: inline-block;
+  word-break: break-all;
+}
+
+.card-filename-sub .sub-label {
+  color: var(--text-dim);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.coming-soon-card {
+  opacity: 0.85;
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.45);
+}
+[data-theme="light"] .coming-soon-card {
+  background: rgba(248, 250, 252, 0.85);
+  border-color: rgba(203, 213, 225, 0.9);
+}
+
+.coming-soon-badge-wrap {
+  margin: 12px 0 6px;
+}
+
+.coming-soon-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.coming-soon-note {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 4px 0 0;
+  font-style: italic;
+}
+
+.course-section-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-left: 5px solid var(--accent);
+  border-radius: var(--radius);
+  margin: 24px 0 8px;
+}
+.course-section-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+}
+.course-section-badge {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--bg-alt);
+  color: var(--text-dim);
+  font-weight: 600;
+  border: 1px solid var(--card-border);
+}
+
+.status-tag-available {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  margin-left: auto;
+}
+.status-tag-coming-soon {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  margin-left: auto;
+}
+
+.needs-review-banner {
+  grid-column: 1 / -1;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 20px;
+}
+.needs-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.needs-review-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.needs-review-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--card-border);
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+.syllabus-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin-top: 14px;
+}
+.syllabus-admin-table th, .syllabus-admin-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--card-border);
+}
+.syllabus-admin-table th {
+  background: var(--bg-alt);
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+
 
 
 

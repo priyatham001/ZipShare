@@ -17,7 +17,15 @@
       "description": "Python program to find greatest of three numbers",
       "pinned": true,
       "downloads": 12,
-      "uploadDate": "2026-07-29T10:00:00.000Z"
+      "uploadDate": "2026-07-29T10:00:00.000Z",
+      "course": "Python Programming Skill Enhancement Lab",
+      "courseCode": "B23CS2106",
+      "experimentNumber": 1,
+      "experimentName": "Largest of Three Numbers",
+      "matchConfidence": "high",
+      "status": "available",
+      "reviewReason": null,
+      "content": "def greatest_of_three(a, b, c):\n    if a >= b and a >= c:\n        return a\n    elif b >= a and b >= c:\n        return b\n    else:\n        return c\n\nif __name__ == \"__main__\":\n    n1, n2, n3 = 14, 42, 28\n    print(\"Numbers:\", n1, n2, n3)\n    print(\"Largest of Three Numbers is:\", greatest_of_three(n1, n2, n3))\n"
     },
     {
       "_id": "6a69f6f543b8c52430bf13e5",
@@ -36,7 +44,15 @@
       "description": "Prime numbers generation in range",
       "pinned": false,
       "downloads": 8,
-      "uploadDate": "2026-07-29T10:05:00.000Z"
+      "uploadDate": "2026-07-29T10:05:00.000Z",
+      "course": "Python Programming Skill Enhancement Lab",
+      "courseCode": "B23CS2106",
+      "experimentNumber": 2,
+      "experimentName": "Prime Numbers in an Interval",
+      "matchConfidence": "high",
+      "status": "available",
+      "reviewReason": null,
+      "content": "def is_prime(n):\n    if n <= 1:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\ndef primes_in_interval(start, end):\n    return [num for num in range(start, end + 1) if is_prime(num)]\n\nif __name__ == \"__main__\":\n    start, end = 10, 50\n    print(f\"Prime numbers in interval [{start}, {end}]:\")\n    print(primes_in_interval(start, end))\n"
     },
     {
       "_id": "6a69f6f543b8c52430bf13e6",
@@ -55,7 +71,16 @@
       "description": "Demonstration of Python operators",
       "pinned": false,
       "downloads": 5,
-      "uploadDate": "2026-07-29T10:10:00.000Z"
+      "uploadDate": "2026-07-29T10:10:00.000Z",
+      "course": "Python Programming Skill Enhancement Lab",
+      "courseCode": "B23CS2106",
+      "experimentNumber": null,
+      "experimentName": null,
+      "matchConfidence": "medium",
+      "status": "needs_review",
+      "reviewReason": "File contains multiple operator demonstrations. Please select specific operator experiment.",
+      "content": "# Demonstration of various operators in Python\n# Note: Demonstrates multiple operator types (arithmetic, comparison, logical)\na = 15\nb = 4\n\nprint(\"Arithmetic Operators:\")\nprint(f\"{a} + {b} = {a + b}\")\nprint(f\"{a} - {b} = {a - b}\")\nprint(f\"{a} * {b} = {a * b}\")\nprint(f\"{a} / {b} = {a / b}\")\n\nprint(\"\nComparison Operators:\")\nprint(f\"{a} > {b}: {a > b}\")\nprint(f\"{a} == {b}: {a == b}\")\n\nprint(\"\nLogical Operators:\")\nprint(f\"({a} > 10 and {b} < 5): {a > 10 and b < 5}\")\n",
+      "updatedAt": "2026-10-05T13:05:27.098Z"
     },
     {
       "_id": "6a69f6f543b8c52430bf13e7",
@@ -73,7 +98,15 @@
       "description": "Roots of quadratic equation in Java",
       "pinned": true,
       "downloads": 15,
-      "uploadDate": "2026-07-29T10:15:00.000Z"
+      "uploadDate": "2026-07-29T10:15:00.000Z",
+      "course": "Object Oriented Programming through Java Lab",
+      "courseCode": "B23CS2105",
+      "experimentNumber": 2,
+      "experimentName": "Roots of Quadratic Equation",
+      "matchConfidence": "high",
+      "status": "available",
+      "reviewReason": null,
+      "content": "import java.util.Scanner;\n\npublic class QuadraticRoots {\n    public static void main(String[] args) {\n        double a = 1.0, b = -5.0, c = 6.0;\n        double discriminant = b * b - 4 * a * c;\n\n        System.out.println(\"Equation: \" + a + \"x^2 + \" + b + \"x + \" + c + \" = 0\");\n        if (discriminant > 0) {\n            double r1 = (-b + Math.sqrt(discriminant)) / (2 * a);\n            double r2 = (-b - Math.sqrt(discriminant)) / (2 * a);\n            System.out.println(\"Roots are real and distinct:\");\n            System.out.println(\"Root 1 = \" + r1);\n            System.out.println(\"Root 2 = \" + r2);\n        } else if (discriminant == 0) {\n            double r = -b / (2 * a);\n            System.out.println(\"Roots are real and equal: \" + r);\n        } else {\n            double real = -b / (2 * a);\n            double imag = Math.sqrt(-discriminant) / (2 * a);\n            System.out.println(\"Roots are complex: \" + real + \" +/- \" + imag + \"i\");\n        }\n    }\n}"
     },
     {
       "_id": "6a69f6f543b8c52430bf13e8",
@@ -90,8 +123,16 @@
       ],
       "description": "Default values of primitives in Java",
       "pinned": true,
-      "downloads": 20,
-      "uploadDate": "2026-07-29T10:20:00.000Z"
+      "downloads": 21,
+      "uploadDate": "2026-07-29T10:20:00.000Z",
+      "course": "Object Oriented Programming through Java Lab",
+      "courseCode": "B23CS2105",
+      "experimentNumber": 1,
+      "experimentName": "Default Values of Primitive Datatypes using Static Keyword",
+      "matchConfidence": "high",
+      "status": "available",
+      "reviewReason": null,
+      "content": "public class DefaultValues {\n    static byte defaultByte;\n    static short defaultShort;\n    static int defaultInt;\n    static long defaultLong;\n    static float defaultFloat;\n    static double defaultDouble;\n    static char defaultChar;\n    static boolean defaultBoolean;\n\n    public static void main(String[] args) {\n        System.out.println(\"Default Values of Primitive Datatypes in Java using Static Keyword:\");\n        System.out.println(\"byte: \" + defaultByte);\n        System.out.println(\"short: \" + defaultShort);\n        System.out.println(\"int: \" + defaultInt);\n        System.out.println(\"long: \" + defaultLong);\n        System.out.println(\"float: \" + defaultFloat);\n        System.out.println(\"double: \" + defaultDouble);\n        System.out.println(\"char: [\" + defaultChar + \"]\");\n        System.out.println(\"boolean: \" + defaultBoolean);\n    }\n}"
     }
   ],
   "suggestions": [

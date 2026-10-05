@@ -712,7 +712,9 @@ async function loadSuggestions() {
   } catch { /* non-critical */ }
 }
 
-// ---------------- Syllabus Sidebar Loading & Rendering ----------------
+// // ---------------- Syllabus Sidebar Loading & Rendering ----------------
+let currentSyllabusViewData = null;
+
 async function loadSyllabus() {
   try {
     const res = await fetch('/syllabus.json');
@@ -731,78 +733,80 @@ function renderSidebar() {
   const filterText = ($('syllabusSearchInput')?.value || '').toLowerCase().trim();
   let html = '';
 
-  const allowedStudentSubjects = ['java', 'python', 'c', 'dbms', 'adsa'];
-  const subjects = Object.keys(syllabusData).length > 0 
-    ? syllabusData 
-    : {
-        java: { title: 'Java Programming', icon: '☕', exercises: [] },
-        python: { title: 'Python Programs', icon: '🐍', exercises: [] },
-        c: { title: 'C Language', icon: '💻', exercises: [] },
-        dbms: { title: 'Database Systems (DBMS)', icon: '🗄️', exercises: [] },
-        adsa: { title: 'Advanced Data Structures (ADSA)', icon: '🌳', exercises: [] }
-      };
+  const officialCourses = [
+    { key: 'java', title: 'Java Programming', code: 'B23CS2105', icon: '☕' },
+    { key: 'python', title: 'Python Programming', code: 'B23CS2106', icon: '🐍' },
+    { key: 'adsa', title: 'Advanced Data Structures & Algorithms', code: 'B23CI2102', icon: '🌳' }
+  ];
 
-  for (const [subKey, subObj] of Object.entries(subjects)) {
-    if (!allowedStudentSubjects.includes(subKey.toLowerCase())) continue;
-    const subTitle = subObj.title || subKey.toUpperCase();
-    const subIcon = subObj.icon || (ICONS[subKey] || ICONS.default).icon;
+  // Map available experiments from current view data
+  const availableSet = new Map();
+  if (currentSyllabusViewData && currentSyllabusViewData.items) {
+    currentSyllabusViewData.items.forEach(it => {
+      if (it.status === 'available') {
+        availableSet.set(`${it.category}_${it.experimentNumber}`, true);
+      }
+    });
+  }
 
-    // Filter matching
-    const exercises = subObj.exercises || [];
-    let matchingExercises = exercises.filter(ex => {
+  officialCourses.forEach(c => {
+    const courseObj = syllabusData[c.key] || {};
+    const exercises = courseObj.exercises || [];
+    const questions = exercises[0]?.questions || [];
+
+    // Filter questions
+    const matchingQuestions = questions.filter(q => {
       if (!filterText) return true;
-      if (ex.title.toLowerCase().includes(filterText)) return true;
-      return (ex.questions || []).some(q => q.title.toLowerCase().includes(filterText) || q.description?.toLowerCase().includes(filterText));
+      return q.title.toLowerCase().includes(filterText) ||
+             (q.keywords || []).some(k => k.toLowerCase().includes(filterText));
     });
 
-    const isSubActive = activeSyllabusSubject === subKey;
+    if (filterText && matchingQuestions.length === 0) return;
+
+    const isSubActive = activeCategory === c.key || activeSyllabusSubject === c.key;
 
     html += `
       <div class="syllabus-subject-node ${isSubActive ? 'active' : ''}">
-        <div class="syllabus-subject-header" onclick="toggleSyllabusSubject('${subKey}')">
-          <span>${subIcon} ${escapeHtml(subTitle)}</span>
-          <span class="tree-arrow" id="arrow_${subKey}">▼</span>
+        <div class="syllabus-subject-header" onclick="toggleSyllabusSubject('${c.key}')">
+          <span>${c.icon} ${escapeHtml(c.title)} (${questions.length})</span>
+          <span class="tree-arrow" id="arrow_${c.key}">${isSubActive || filterText ? '▼' : '▶'}</span>
         </div>
-        <div class="syllabus-subject-body" id="body_${subKey}" style="display: ${isSubActive || filterText ? 'block' : 'none'};">
+        <div class="syllabus-subject-body" id="body_${c.key}" style="display: ${isSubActive || filterText ? 'block' : 'none'};">
     `;
 
-    if (matchingExercises.length === 0) {
-      html += `<div style="padding:6px 12px; font-size:0.8rem; color:var(--text-dim);">No exercises found</div>`;
-    } else {
-      matchingExercises.forEach(ex => {
-        const isExActive = isSubActive && activeSyllabusExercise === ex.title;
+    matchingQuestions.forEach(q => {
+      const isAvail = availableSet.get(`${c.key}_${q.number}`);
+      const isQActive = activeCategory === c.key && (searchSearchQuery === (q.rawTitle || q.title) || searchSearchQuery === String(q.number));
 
-        html += `
-          <div class="syllabus-exercise-node ${isExActive ? 'active' : ''}">
-            <div class="syllabus-exercise-title" onclick="setSyllabusFilter('${subKey}', '${escapeHtml(ex.title)}')">
-              📁 ${escapeHtml(ex.title)}
-            </div>
-            <div class="syllabus-questions-list">
-        `;
-
-        (ex.questions || []).forEach(q => {
-          const isQActive = isExActive && activeSyllabusQuestion === q.title;
-          html += `
-            <div class="syllabus-question-item ${isQActive ? 'active' : ''}" onclick="setSyllabusFilter('${subKey}', '${escapeHtml(ex.title)}', '${escapeHtml(q.title)}')">
-              📄 ${escapeHtml(q.title)}
-            </div>
-          `;
-        });
-
-        html += `
-            </div>
-          </div>
-        `;
-      });
-    }
+      html += `
+        <div class="syllabus-question-item ${isQActive ? 'active' : ''}" 
+             style="display:flex; justify-content:space-between; align-items:center; gap:6px;"
+             onclick="selectSyllabusExperiment('${c.key}', ${q.number}, '${escapeHtml(q.rawTitle || q.title)}')">
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:65%;" title="${escapeHtml(q.title)}">
+            ${escapeHtml(q.title)}
+          </span>
+          ${isAvail ? `<span class="status-tag-available">AVAILABLE</span>` : `<span class="status-tag-coming-soon">COMING SOON</span>`}
+        </div>
+      `;
+    });
 
     html += `
         </div>
       </div>
     `;
-  }
+  });
 
   treeContainer.innerHTML = html;
+}
+
+function selectSyllabusExperiment(cat, num, rawTitle) {
+  switchCategory(cat);
+  searchSearchQuery = rawTitle || '';
+  const searchInput = $('searchInput');
+  if (searchInput) searchInput.value = rawTitle || '';
+  const clearBtn = $('searchClearBtn');
+  if (clearBtn) clearBtn.style.display = searchSearchQuery ? 'block' : 'none';
+  loadFiles();
 }
 
 function toggleSyllabusSubject(subKey) {
@@ -857,18 +861,35 @@ async function loadFiles() {
     const sortEl = $('sortSelect');
     if (sortEl) params.set('sort', sortEl.value);
 
-    const res = await fetch(`/api/files?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to load files from server');
-    const files = await res.json();
-    lastFiles = files;
+    // Fetch pinned files for top pinned highlight section
+    fetch('/api/files?filter=pinned')
+      .then(r => r.json())
+      .then(pFiles => renderPinnedSection(pFiles))
+      .catch(() => {});
 
-    renderPinnedSection(files);
-    renderFiles(files);
+    const isSyllabusCat = ['all', 'java', 'python', 'adsa'].includes(activeCategory);
+
+    if (isSyllabusCat && !activeSyllabusExercise && !activeSyllabusQuestion) {
+      const res = await fetch(`/api/syllabus/view?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to load syllabus view');
+      const data = await res.json();
+      currentSyllabusViewData = data;
+      lastFiles = data.items.map(it => it.file).filter(Boolean);
+      renderSyllabusFiles(data);
+    } else {
+      const res = await fetch(`/api/files?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to load files from server');
+      const files = await res.json();
+      lastFiles = files;
+      renderFiles(files);
+    }
+
     renderBreadcrumbs();
     loadStats();
     loadSuggestions();
     renderSidebar();
   } catch (err) {
+    console.error('loadFiles error:', err);
     toast('Could not connect to server file index.', 'error');
   }
 }
@@ -876,7 +897,7 @@ async function loadFiles() {
 const sortSelect = $('sortSelect');
 if (sortSelect) sortSelect.addEventListener('change', loadFiles);
 
-// Render Pinned Highlight Section at the Top (BUG 12)
+// Render Pinned Highlight Section at the Top (Always real files)
 function renderPinnedSection(files) {
   const section = $('pinnedSection');
   const grid = $('pinnedGrid');
@@ -903,12 +924,16 @@ function renderPinnedSection(files) {
     const card = document.createElement('div');
     card.className = 'pinned-item-card';
 
+    const displayName = file.experimentName 
+      ? `${file.experimentNumber ? `#${file.experimentNumber} ` : ''}${file.experimentName}` 
+      : file.originalName;
+
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <span class="pinned-icon">${meta.icon}</span>
         ${isAdmin ? `<button class="card-btn danger" style="padding:2px 6px; font-size:0.7rem;" onclick="togglePinFile('${file._id || file.id}', false)">Unpin</button>` : ''}
       </div>
-      <h4 class="pinned-title" title="${escapeHtml(file.originalName)}">${escapeHtml(file.originalName)}</h4>
+      <h4 class="pinned-title" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</h4>
       <p class="pinned-meta">${file.category ? file.category.toUpperCase() : 'CODE'} · ${fmtSize(file.size)}</p>
       <div style="display:flex; gap:6px; margin-top:8px;">
         <button class="card-btn" style="flex:1; padding:4px; font-size:0.75rem;" onclick="previewFile('${file._id || file.id}')">👁 View</button>
@@ -918,6 +943,245 @@ function renderPinnedSection(files) {
 
     grid.appendChild(card);
   });
+}
+
+// Render Official Syllabus Experiments with Available + Coming Soon
+function renderSyllabusFiles(data) {
+  const grid = $('fileGrid');
+  const empty = $('emptyState');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const items = data.items || [];
+  const needsReview = data.needsReviewFiles || [];
+  const otherFiles = data.otherFiles || [];
+  const isAdmin = Boolean(adminToken);
+
+  if (items.length === 0 && needsReview.length === 0 && otherFiles.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  // 1. Needs Review / Unmapped Banner
+  if (needsReview.length > 0) {
+    const banner = document.createElement('div');
+    banner.className = 'needs-review-banner';
+    banner.innerHTML = `
+      <div class="needs-review-header">
+        <h4 class="needs-review-title">⚠️ Needs Review / Unmapped Lab Files (${needsReview.length})</h4>
+        <span style="font-size:0.8rem; color:var(--text-dim);">Files requiring official experiment assignment</span>
+      </div>
+      <div>
+        ${needsReview.map(f => `
+          <div class="needs-review-item">
+            <div>
+              <strong style="color:var(--text); font-family:monospace;">${escapeHtml(f.originalName)}</strong>
+              <span style="font-size:0.75rem; color:var(--text-dim); margin-left:8px;">${escapeHtml((f.category || 'other').toUpperCase())} · ${fmtSize(f.size)}</span>
+              ${f.reviewReason ? `<div style="font-size:0.78rem; color:#f59e0b; margin-top:2px;">ℹ️ ${escapeHtml(f.reviewReason)}</div>` : ''}
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="card-btn" onclick="previewFile('${f._id || f.id}')">👁 View</button>
+              ${isAdmin ? `<button class="card-btn primary" onclick="openAssignExperimentModal('${f._id || f.id}', '${escapeHtml(f.originalName)}', '${f.category || ''}')">🎯 Assign Experiment</button>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    grid.appendChild(banner);
+  }
+
+  // 2. Syllabus items: if 'all', group by course retaining each course's numbering
+  if (activeCategory === 'all') {
+    const courseGroups = [
+      { key: 'java', title: 'Java Programming', subtitle: 'Object Oriented Programming through Java Lab · B23CS2105', icon: '☕', total: 35 },
+      { key: 'python', title: 'Python Programming', subtitle: 'Python Programming Skill Enhancement Lab · B23CS2106', icon: '🐍', total: 40 },
+      { key: 'adsa', title: 'Advanced Data Structures & Algorithms (DSA)', subtitle: 'Advanced Data Structures and Algorithms using C Lab · B23CI2102', icon: '🌳', total: 16 }
+    ];
+
+    courseGroups.forEach(cg => {
+      const courseItems = items.filter(it => it.category === cg.key);
+      if (courseItems.length === 0) return;
+
+      const availCount = courseItems.filter(it => it.status === 'available').length;
+
+      const header = document.createElement('div');
+      header.className = 'course-section-header';
+      header.innerHTML = `
+        <h3>
+          <span>${cg.icon}</span>
+          <div>
+            <div>${cg.title}</div>
+            <div style="font-size:0.78rem; font-weight:normal; color:var(--text-dim);">${cg.subtitle}</div>
+          </div>
+        </h3>
+        <div class="course-section-badge">
+          <span style="color:#10b981; font-weight:700;">${availCount}</span> / ${cg.total} Available
+        </div>
+      `;
+      grid.appendChild(header);
+
+      courseItems.forEach(item => {
+        grid.appendChild(createExperimentCard(item, isAdmin));
+      });
+    });
+  } else {
+    // Single course view (e.g. Java 1..35, Python 1..40, DSA 1..16)
+    items.forEach(item => {
+      grid.appendChild(createExperimentCard(item, isAdmin));
+    });
+  }
+
+  // 3. Render any other custom files
+  if (activeCategory === 'all' && otherFiles.length > 0) {
+    const otherHeader = document.createElement('div');
+    otherHeader.className = 'course-section-header';
+    otherHeader.innerHTML = `
+      <h3><span>📁</span> Other Files &amp; Resources</h3>
+      <div class="course-section-badge">${otherFiles.length} item(s)</div>
+    `;
+    grid.appendChild(otherHeader);
+
+    otherFiles.forEach(file => {
+      grid.appendChild(createStandaloneFileCard(file, isAdmin));
+    });
+  }
+}
+
+// Create an Official Experiment Card (AVAILABLE or COMING SOON)
+function createExperimentCard(item, isAdmin) {
+  const card = document.createElement('div');
+  const isAvailable = item.status === 'available' && item.file;
+  const file = item.file;
+  const isPinned = Boolean(file?.pinned);
+  const snoStr = String(item.experimentNumber).padStart(2, '0');
+
+  card.className = `file-card ${isAvailable ? 'available-card' : 'coming-soon-card'} ${isPinned ? 'pinned-card' : ''}`;
+
+  if (isAvailable) {
+    const ext = (file.extension || 'default').toLowerCase();
+    const meta = ICONS[ext] || ICONS.default;
+    const runnable = isRunnableFile(file);
+
+    let actionBtns = `
+      <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
+      ${runnable ? `<button class="card-btn primary" onclick="runOnlineFile('${file._id || file.id}')">▶ Run Online</button>` : ''}
+      <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
+    `;
+
+    if (isAdmin) {
+      actionBtns += `
+        <button class="card-btn" onclick="openEditModal('${file._id || file.id}')">✏️ Edit</button>
+        ${file.pinned ? `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', false)">📌 Unpin</button>` : `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', true)">📌 Pin</button>`}
+        <button class="card-btn danger" onclick="confirmDeleteFile('${file._id || file.id}')">🗑️ Delete</button>
+      `;
+    }
+
+    card.innerHTML = `
+      ${isPinned ? '<span class="pin-badge">📌</span>' : ''}
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div class="card-sno-badge">#${snoStr}</div>
+          <span class="status-tag-available">AVAILABLE</span>
+        </div>
+        <h3 class="experiment-title">${item.experimentNumber}. ${escapeHtml(item.experimentName)}</h3>
+        <div class="card-course-tag">${escapeHtml(item.category.toUpperCase())} · ${escapeHtml(item.courseCode || '')}</div>
+        <div>
+          <span class="card-filename-sub" title="${escapeHtml(file.originalName)}">
+            <span class="sub-label">File:</span>${escapeHtml(file.originalName)}
+          </span>
+        </div>
+        <div class="file-meta">
+          <span>${fmtSize(file.size)}</span> · <span>${fmtDate(file.uploadDate)}</span>
+        </div>
+      </div>
+      <div class="card-actions" style="margin-top:14px;">
+        ${actionBtns}
+      </div>
+    `;
+  } else {
+    // Coming Soon Card - NO View, NO Download, NO Run Online, NO fake file size
+    let adminAction = '';
+    if (isAdmin) {
+      adminAction = `
+        <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+          <button class="card-btn primary" style="font-size:0.75rem; padding:4px 8px;" onclick="triggerUploadForExperiment('${item.category}', ${item.experimentNumber})">⬆ Upload File</button>
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div class="card-sno-badge coming-soon-sno">#${snoStr}</div>
+          <span class="status-tag-coming-soon">COMING SOON</span>
+        </div>
+        <h3 class="experiment-title" style="color:var(--text-dim);">${item.experimentNumber}. ${escapeHtml(item.experimentName)}</h3>
+        <div class="card-course-tag">${escapeHtml(item.category.toUpperCase())} · ${escapeHtml(item.courseCode || '')}</div>
+        <div class="coming-soon-badge-wrap">
+          <span class="coming-soon-pill">⏳ COMING SOON</span>
+        </div>
+        <p class="coming-soon-note">Experiment has not been uploaded yet</p>
+      </div>
+      ${adminAction}
+    `;
+  }
+
+  return card;
+}
+
+// Fallback card for custom non-syllabus files
+function createStandaloneFileCard(file, isAdmin) {
+  const ext = (file.extension || 'default').toLowerCase();
+  const meta = ICONS[ext] || ICONS.default;
+  const runnable = isRunnableFile(file);
+
+  const card = document.createElement('div');
+  card.className = `file-card ${file.pinned ? 'pinned-card' : ''}`;
+
+  let actionBtns = `
+    <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
+    ${runnable ? `<button class="card-btn primary" onclick="runOnlineFile('${file._id || file.id}')">▶ Run Online</button>` : ''}
+    <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
+  `;
+
+  if (isAdmin) {
+    actionBtns += `
+      <button class="card-btn" onclick="openEditModal('${file._id || file.id}')">✏️ Edit</button>
+      ${file.pinned ? `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', false)">📌 Unpin</button>` : `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', true)">📌 Pin</button>`}
+      <button class="card-btn danger" onclick="confirmDeleteFile('${file._id || file.id}')">🗑️ Delete</button>
+    `;
+  }
+
+  const tagsHtml = (file.tags || []).map(t => `<span class="tag-pill">#${escapeHtml(t)}</span>`).join('');
+
+  const displayTitle = file.experimentName 
+    ? `${file.experimentNumber ? `#${file.experimentNumber} ` : ''}${file.experimentName}` 
+    : file.originalName;
+
+  card.innerHTML = `
+    ${file.pinned ? '<span class="pin-badge">📌</span>' : ''}
+    <div>
+      <div class="card-top">
+        <div class="file-icon-box">${meta.icon}</div>
+        <div class="file-info">
+          ${file.experimentNumber ? `<div class="card-sno-badge">#${String(file.experimentNumber).padStart(2, '0')}</div>` : ''}
+          <h4 class="file-name">${escapeHtml(displayTitle)}</h4>
+          ${file.experimentName ? `<div style="font-size:0.8rem; font-family:monospace; color:var(--text-dim); margin-bottom:4px;">📄 ${escapeHtml(file.originalName)}</div>` : ''}
+          <div class="file-meta">
+            <span>${fmtSize(file.size)}</span> · <span>${fmtDate(file.uploadDate)}</span>
+          </div>
+        </div>
+      </div>
+      ${file.description ? `<p class="file-desc">${escapeHtml(file.description)}</p>` : ''}
+      ${tagsHtml ? `<div class="file-tags">${tagsHtml}</div>` : ''}
+    </div>
+    <div class="card-actions">
+      ${actionBtns}
+    </div>
+  `;
+
+  return card;
 }
 
 function renderFiles(files) {
@@ -1013,51 +1277,7 @@ function renderFiles(files) {
 
   // Render standalone files
   standaloneFiles.forEach(file => {
-    const ext = (file.extension || 'default').toLowerCase();
-    const meta = ICONS[ext] || ICONS.default;
-    const runnable = isRunnableFile(file);
-
-    const card = document.createElement('div');
-    card.className = `file-card ${file.pinned ? 'pinned-card' : ''}`;
-
-    let actionBtns = `
-      <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
-      ${runnable ? `<button class="card-btn primary" onclick="runOnlineFile('${file._id || file.id}')">▶ Run Online</button>` : ''}
-      <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
-    `;
-
-    if (isAdmin) {
-      actionBtns += `
-        <button class="card-btn" onclick="openEditModal('${file._id || file.id}')">✏️ Edit</button>
-        ${file.pinned ? `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', false)">📌 Unpin</button>` : `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', true)">📌 Pin</button>`}
-        <button class="card-btn danger" onclick="confirmDeleteFile('${file._id || file.id}')">🗑️ Delete</button>
-      `;
-    }
-
-    const tagsHtml = (file.tags || []).map(t => `<span class="tag-pill">#${escapeHtml(t)}</span>`).join('');
-
-    card.innerHTML = `
-      ${file.pinned ? '<span class="pin-badge">📌</span>' : ''}
-      <div>
-        <div class="card-top">
-          <div class="file-icon-box">${meta.icon}</div>
-          <div class="file-info">
-            ${file.relativePath && file.relativePath.includes('/') ? `<div style="font-size:0.75rem; color:var(--primary); margin-bottom:2px; font-weight:500;">📍 ${escapeHtml(file.relativePath.replace(/\//g, ' › '))}</div>` : ''}
-            <h4 class="file-name">${escapeHtml(file.originalName)}</h4>
-            <div class="file-meta">
-              <span>${fmtSize(file.size)}</span> · <span>${fmtDate(file.uploadDate)}</span>
-            </div>
-          </div>
-        </div>
-        ${file.description ? `<p class="file-desc">${escapeHtml(file.description)}</p>` : ''}
-        ${tagsHtml ? `<div class="file-tags">${tagsHtml}</div>` : ''}
-      </div>
-      <div class="card-actions">
-        ${actionBtns}
-      </div>
-    `;
-
-    grid.appendChild(card);
+    grid.appendChild(createStandaloneFileCard(file, isAdmin));
   });
 }
 
@@ -1207,16 +1427,31 @@ async function togglePinFolder(batchId, pinned) {
 // ---------------- Stats ----------------
 async function loadStats() {
   try {
-    const res = await fetch('/api/files/stats');
-    if (!res.ok) return;
-    const s = await res.json();
+    const [statsRes, sylRes] = await Promise.all([
+      fetch('/api/files/stats'),
+      fetch('/api/syllabus/stats')
+    ]);
+    const s = statsRes.ok ? await statsRes.json() : {};
+    const syl = sylRes.ok ? await sylRes.json() : null;
+
     const statsBar = $('statsBar');
-    if (statsBar) {
+    if (!statsBar) return;
+
+    if (syl) {
       statsBar.innerHTML = `
-        <div class="stat-card"><b>${s.totalFiles}</b><span>Total Files</span></div>
-        <div class="stat-card"><b>${s.pinned}</b><span>Pinned Items</span></div>
-        <div class="stat-card"><b>${s.totalDownloads}</b><span>Downloads</span></div>
-        <div class="stat-card"><b>${fmtSize(s.storageUsed)}</b><span>Storage Used</span></div>
+        <div class="stat-card"><b>91</b><span>Official Experiments</span></div>
+        <div class="stat-card" style="border-color: rgba(16,185,129,0.4);"><b>${syl.totalAvailable}</b><span style="color:#10b981;">Available Now</span></div>
+        <div class="stat-card" style="border-color: rgba(245,158,11,0.4);"><b>${syl.totalComingSoon}</b><span style="color:#f59e0b;">Coming Soon</span></div>
+        <div class="stat-card"><b>${syl.courses.java.available}/35</b><span>Java Lab</span></div>
+        <div class="stat-card"><b>${syl.courses.python.available}/40</b><span>Python Lab</span></div>
+        <div class="stat-card"><b>${syl.courses.adsa.available}/16</b><span>DSA Lab</span></div>
+      `;
+    } else {
+      statsBar.innerHTML = `
+        <div class="stat-card"><b>${s.totalFiles || 0}</b><span>Total Files</span></div>
+        <div class="stat-card"><b>${s.pinned || 0}</b><span>Pinned Items</span></div>
+        <div class="stat-card"><b>${s.totalDownloads || 0}</b><span>Downloads</span></div>
+        <div class="stat-card"><b>${fmtSize(s.storageUsed || 0)}</b><span>Storage Used</span></div>
       `;
     }
   } catch { /* non-critical */ }
@@ -2147,6 +2382,14 @@ function setupUploads() {
   });
 }
 
+let targetUploadExp = null;
+
+function triggerUploadForExperiment(cat, expNum) {
+  targetUploadExp = { category: cat, experimentNumber: expNum };
+  const fileInput = $('fileInput');
+  if (fileInput) fileInput.click();
+}
+
 async function handleUpload(fileList, pathsList = []) {
   if (!fileList || fileList.length === 0) return;
 
@@ -2162,6 +2405,12 @@ async function handleUpload(fileList, pathsList = []) {
     const relPath = (pathsList && pathsList[i]) ? pathsList[i] : (file.webkitRelativePath || file.name);
     formData.append('files', file);
     formData.append('paths', relPath);
+  }
+
+  if (targetUploadExp) {
+    formData.append('category', targetUploadExp.category);
+    formData.append('experimentNumber', targetUploadExp.experimentNumber);
+    targetUploadExp = null;
   }
 
   try {
@@ -3010,6 +3259,188 @@ function initEasterEggs() {
     if (card) {
       card.style.transform = '';
     }
+  });
+}
+
+// ---------------- Admin Official Experiment Assignment & Syllabus Matrix ----------------
+function openAssignExperimentModal(fileId, originalName, currentCat) {
+  const idInput = $('assignFileId');
+  const nameLabel = $('assignFileOriginalName');
+  const courseSelect = $('assignCourseSelect');
+
+  if (idInput) idInput.value = fileId;
+  if (nameLabel) nameLabel.textContent = originalName;
+
+  if (courseSelect) {
+    if (['java', 'python', 'adsa'].includes(currentCat)) {
+      courseSelect.value = currentCat;
+    }
+    populateAssignExpSelect(courseSelect.value);
+  }
+
+  openModal('assignExperimentModalOverlay');
+}
+
+function populateAssignExpSelect(courseKey) {
+  const expSelect = $('assignExpSelect');
+  if (!expSelect) return;
+  expSelect.innerHTML = '';
+
+  const courseObj = syllabusData[courseKey];
+  const questions = courseObj?.exercises[0]?.questions || [];
+
+  questions.forEach(q => {
+    const opt = document.createElement('option');
+    opt.value = q.number;
+    opt.textContent = `#${q.number} - ${q.rawTitle || q.title}`;
+    expSelect.appendChild(opt);
+  });
+}
+
+const assignCourseSelect = $('assignCourseSelect');
+if (assignCourseSelect) {
+  assignCourseSelect.addEventListener('change', () => {
+    populateAssignExpSelect(assignCourseSelect.value);
+  });
+}
+
+const assignExperimentForm = $('assignExperimentForm');
+if (assignExperimentForm) {
+  assignExperimentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fileId = $('assignFileId').value;
+    const category = $('assignCourseSelect').value;
+    const experimentNumber = $('assignExpSelect').value;
+
+    try {
+      const res = await fetch('/api/syllabus/assign', {
+        method: 'POST',
+        headers: jsonAuthHeaders(),
+        body: JSON.stringify({ fileId, category, experimentNumber })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.conflict) {
+          if (confirm(data.message)) {
+            const overrideRes = await fetch('/api/syllabus/assign', {
+              method: 'POST',
+              headers: jsonAuthHeaders(),
+              body: JSON.stringify({ fileId, category, experimentNumber, overrideDuplicate: true })
+            });
+            if (!overrideRes.ok) throw new Error('Override failed');
+            toast('Experiment mapping successfully updated! 🎯');
+            closeModal('assignExperimentModalOverlay');
+            loadFiles();
+            return;
+          }
+          return;
+        }
+        throw new Error(data.error || 'Failed to assign');
+      }
+
+      toast(data.message || 'Experiment assigned successfully! 🎯');
+      closeModal('assignExperimentModalOverlay');
+      loadFiles();
+    } catch (err) {
+      toast(err.message || 'Failed to assign experiment.', 'error');
+    }
+  });
+}
+
+// Syllabus Matrix Modal
+let currentMatrixTab = 'java';
+
+function switchMatrixTab(tab) {
+  currentMatrixTab = tab;
+  ['matrixTabJava', 'matrixTabPython', 'matrixTabAdsa'].forEach(id => {
+    const btn = $(id);
+    if (btn) btn.classList.toggle('active', id.toLowerCase().includes(tab));
+  });
+  renderSyllabusMatrix();
+}
+
+async function renderSyllabusMatrix() {
+  const container = $('syllabusMatrixContainer');
+  if (!container) return;
+
+  container.innerHTML = '<div style="padding:24px; text-align:center; color:var(--text-dim);">Loading syllabus checklist...</div>';
+
+  try {
+    const res = await fetch(`/api/syllabus/view?category=${currentMatrixTab}&sort=sno`);
+    if (!res.ok) throw new Error('Failed to load matrix');
+    const data = await res.json();
+    const items = data.items || [];
+
+    const courseObj = syllabusData[currentMatrixTab] || {};
+    const totalExp = items.length;
+    const availCount = items.filter(it => it.status === 'available').length;
+
+    let html = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding:12px 16px; background:var(--bg-alt); border-radius:10px; border:1px solid var(--card-border);">
+        <div>
+          <strong style="font-size:1.05rem;">${escapeHtml(courseObj.title || currentMatrixTab.toUpperCase())}</strong>
+          <span style="font-size:0.8rem; color:var(--text-dim); margin-left:8px;">(${courseObj.code || ''})</span>
+        </div>
+        <div>
+          <span style="color:#10b981; font-weight:700;">${availCount}</span> / ${totalExp} Available
+          <span style="color:#f59e0b; font-weight:700; margin-left:12px;">${totalExp - availCount}</span> Coming Soon
+        </div>
+      </div>
+      <table class="syllabus-admin-table">
+        <thead>
+          <tr>
+            <th style="width:60px;">#</th>
+            <th>Official Experiment Name</th>
+            <th style="width:115px;">Status</th>
+            <th>Uploaded File</th>
+            <th style="width:150px; text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    items.forEach(it => {
+      const isAvail = it.status === 'available' && it.file;
+      const file = it.file;
+
+      html += `
+        <tr>
+          <td><strong style="color:var(--accent);">#${String(it.experimentNumber).padStart(2, '0')}</strong></td>
+          <td><strong>${escapeHtml(it.experimentName)}</strong></td>
+          <td>
+            ${isAvail ? `<span class="status-tag-available">AVAILABLE</span>` : `<span class="status-tag-coming-soon">COMING SOON</span>`}
+          </td>
+          <td>
+            ${isAvail ? `<span style="font-family:monospace; font-size:0.82rem; color:var(--accent-2);">${escapeHtml(file.originalName)}</span> <span style="font-size:0.75rem; color:var(--text-dim);">(${fmtSize(file.size)})</span>` : `<span style="color:var(--text-dim); font-size:0.8rem;">—</span>`}
+          </td>
+          <td style="text-align:right;">
+            ${isAvail ? `
+              <button class="card-btn" style="padding:2px 8px; font-size:0.75rem;" onclick="previewFile('${file._id || file.id}')">👁 View</button>
+              <button class="card-btn" style="padding:2px 8px; font-size:0.75rem;" onclick="openAssignExperimentModal('${file._id || file.id}', '${escapeHtml(file.originalName)}', '${currentMatrixTab}')">Reassign</button>
+            ` : `
+              <button class="card-btn primary" style="padding:2px 8px; font-size:0.75rem;" onclick="triggerUploadForExperiment('${currentMatrixTab}', ${it.experimentNumber})">+ Upload</button>
+            `}
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `
+        </tbody>
+      </table>
+    `;
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="color:#ef4444; padding:20px;">Failed to load syllabus matrix: ${err.message}</div>`;
+  }
+}
+
+const dashSyllabusBtn = $('dashSyllabusBtn');
+if (dashSyllabusBtn) {
+  dashSyllabusBtn.addEventListener('click', () => {
+    switchMatrixTab('java');
+    openModal('syllabusMatrixModalOverlay');
   });
 }
 

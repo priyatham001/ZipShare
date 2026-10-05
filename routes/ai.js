@@ -36,7 +36,7 @@ STRICT RULES:
     const userPrompt = `Subject/Category: ${subject || 'General Programming'}\nStudent Request: ${prompt}`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
         systemInstruction,
@@ -110,7 +110,7 @@ Analyze the provided code and return a JSON object with:
     const userPrompt = `Language: ${language || 'Auto'}\nFile Name: ${fileName || 'Program'}\n\nSource Code:\n${code.slice(0, 4000)}`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
         systemInstruction,

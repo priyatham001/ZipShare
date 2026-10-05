@@ -8,6 +8,8 @@ const router = express.Router();
 const { filesDB, suggestionsDB } = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { isCloudinaryConfigured, uploadToCloudinary, deleteFromCloudinary, fetchRemoteContent } = require('../services/cloudinary');
+const { matchFileToSyllabus } = require('../services/syllabusMatcher');
+const { getCourseByKey } = require('../services/syllabusData');
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -157,6 +159,44 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         } catch (e) { /* ignore */ }
       }
 
+      // Multi-signal Official Syllabus Matcher
+      let syllabusMatch = matchFileToSyllabus({
+        originalName: file.originalname,
+        extension: ext,
+        relativePath: relPath,
+        content: fileContent,
+        category: bodySubject || cat
+      });
+
+      // Admin manual assignment override from upload form if specified
+      if (req.body.experimentNumber && req.body.category) {
+        const course = getCourseByKey(req.body.category);
+        if (course) {
+          const exp = course.experiments.find(e => e.number === parseInt(req.body.experimentNumber, 10));
+          if (exp) {
+            syllabusMatch = {
+              courseKey: course.key,
+              course: course.course,
+              courseCode: course.courseCode,
+              category: course.category,
+              experimentNumber: exp.number,
+              experimentName: exp.name,
+              matchConfidence: 'high',
+              status: 'available'
+            };
+          }
+        }
+      }
+
+      const assignedCategory = syllabusMatch.category || cat;
+      const fileCourse = syllabusMatch.course || null;
+      const fileCourseCode = syllabusMatch.courseCode || null;
+      const fileExpNumber = syllabusMatch.experimentNumber || null;
+      const fileExpName = syllabusMatch.experimentName || null;
+      const fileMatchConfidence = syllabusMatch.matchConfidence || 'low';
+      const fileStatus = syllabusMatch.status || 'available';
+      const fileReviewReason = syllabusMatch.reviewReason || null;
+
       if (isCloudinaryConfigured()) {
         try {
           const resType = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(ext) ? 'auto' : 'raw';
@@ -182,8 +222,15 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         folderName: topFolder,
         batchId: topFolder ? batchId : null,
         extension: ext,
-        category: cat,
-        subject: fileSubject,
+        category: assignedCategory,
+        course: fileCourse,
+        courseCode: fileCourseCode,
+        experimentNumber: fileExpNumber,
+        experimentName: fileExpName,
+        matchConfidence: fileMatchConfidence,
+        status: fileStatus,
+        reviewReason: fileReviewReason,
+        subject: fileCourse || fileSubject,
         exercise: fileExercise,
         question: fileQuestion,
         expectedOutput: fileExpectedOutput,
@@ -194,8 +241,8 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         cloudinaryPublicId: cloudPublicId,
         assetId: assetId,
         uploadedBy: 'admin',
-        tags: Array.from(new Set([ext, cat, fileSubject, topFolder].filter(Boolean))),
-        description: fileDesc,
+        tags: Array.from(new Set([ext, assignedCategory, fileSubject, topFolder].filter(Boolean))),
+        description: fileExpName ? `${fileExpNumber ? `#${fileExpNumber} ` : ''}${fileExpName}` : fileDesc,
         pinned: false,
         downloads: 0,
         uploadDate: new Date(),
@@ -220,21 +267,30 @@ router.get('/', async (req, res) => {
     const andConditions = [];
 
     if (q && q.trim()) {
-      const regex = new RegExp(q.trim(), 'i');
-      andConditions.push({
-        $or: [
-          { originalName: regex },
-          { relativePath: regex },
-          { folderName: regex },
-          { tags: regex },
-          { description: regex },
-          { extension: regex },
-          { category: regex },
-          { subject: regex },
-          { exercise: regex },
-          { question: regex }
-        ]
-      });
+      const qClean = q.trim();
+      const regex = new RegExp(qClean, 'i');
+      const orList = [
+        { experimentName: regex },
+        { course: regex },
+        { courseCode: regex },
+        { originalName: regex },
+        { relativePath: regex },
+        { folderName: regex },
+        { tags: regex },
+        { description: regex },
+        { extension: regex },
+        { category: regex },
+        { subject: regex },
+        { exercise: regex },
+        { question: regex }
+      ];
+
+      const numVal = parseInt(qClean.replace(/^#/, ''), 10);
+      if (!isNaN(numVal) && numVal > 0) {
+        orList.push({ experimentNumber: numVal });
+      }
+
+      andConditions.push({ $or: orList });
     }
 
     if (activeCategory && activeCategory !== 'all') {
@@ -254,6 +310,7 @@ router.get('/', async (req, res) => {
             { category: exactRegex },
             { category: matchRegex },
             { subject: matchRegex },
+            { course: matchRegex },
             { extension: exactRegex },
             { tags: matchRegex },
             { relativePath: matchRegex },
@@ -268,7 +325,8 @@ router.get('/', async (req, res) => {
       andConditions.push({
         $or: [
           { subject: new RegExp(subClean, 'i') },
-          { category: new RegExp(subClean, 'i') }
+          { category: new RegExp(subClean, 'i') },
+          { course: new RegExp(subClean, 'i') }
         ]
       });
     }
@@ -283,9 +341,10 @@ router.get('/', async (req, res) => {
 
     const query = andConditions.length > 0 ? { $and: andConditions } : {};
 
-    let sortSpec = { pinned: -1, uploadDate: -1 };
-    if (sort === 'popular') sortSpec = { pinned: -1, downloads: -1 };
-    if (sort === 'name') sortSpec = { pinned: -1, originalName: 1 };
+    let sortSpec = { pinned: -1, experimentNumber: 1, uploadDate: -1 };
+    if (sort === 'recent') sortSpec = { pinned: -1, uploadDate: -1 };
+    else if (sort === 'popular') sortSpec = { pinned: -1, downloads: -1 };
+    else if (sort === 'name') sortSpec = { pinned: -1, experimentName: 1, originalName: 1 };
 
     const files = await filesDB.find(query, sortSpec, 500);
     res.json(files);
@@ -514,6 +573,12 @@ router.get('/:id/download', async (req, res) => {
     const fullPath = path.join(UPLOAD_DIR, file.storedName);
     if (fs.existsSync(fullPath)) {
       return res.download(fullPath, file.originalName);
+    }
+
+    if (file.content) {
+      res.setHeader('Content-Type', file.mimeType || 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.originalName)}"`);
+      return res.send(Buffer.from(file.content, 'utf-8'));
     }
 
     return res.status(404).json({ error: 'File missing on cloud storage or server.' });

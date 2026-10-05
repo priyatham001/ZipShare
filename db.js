@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+mongoose.set('bufferCommands', false); // Fail fast, don't hang if MongoDB is offline
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -21,6 +22,13 @@ const fileSchema = new mongoose.Schema({
   batchId: { type: String, default: null },
   extension: { type: String, default: 'txt' },
   category: { type: String, default: 'all' },
+  course: { type: String, default: null },
+  courseCode: { type: String, default: null },
+  experimentNumber: { type: Number, default: null },
+  experimentName: { type: String, default: null },
+  matchConfidence: { type: String, default: 'high' },
+  status: { type: String, default: 'available' },
+  reviewReason: { type: String, default: null },
   subject: { type: String, default: null },
   exercise: { type: String, default: null },
   question: { type: String, default: null },
@@ -297,6 +305,11 @@ const filesDB = {
       if (sort.pinned) {
         if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
       }
+      if (sort.experimentNumber) {
+        const ea = a.experimentNumber != null ? a.experimentNumber : 99999;
+        const eb = b.experimentNumber != null ? b.experimentNumber : 99999;
+        if (ea !== eb) return sort.experimentNumber < 0 ? eb - ea : ea - eb;
+      }
       if (sort.uploadDate) {
         const da = new Date(a.uploadDate || 0);
         const dbTime = new Date(b.uploadDate || 0);
@@ -341,6 +354,13 @@ const filesDB = {
       batchId: d.batchId || null,
       extension: d.extension || 'txt',
       category: d.category || 'all',
+      course: d.course || null,
+      courseCode: d.courseCode || null,
+      experimentNumber: d.experimentNumber != null ? d.experimentNumber : null,
+      experimentName: d.experimentName || null,
+      matchConfidence: d.matchConfidence || 'high',
+      status: d.status || 'available',
+      reviewReason: d.reviewReason || null,
       subject: d.subject || null,
       exercise: d.exercise || null,
       question: d.question || null,
