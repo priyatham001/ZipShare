@@ -135,28 +135,32 @@
 <!-- Main App Container -->
 <div class="app" id="app">
 
+  <!-- Promotional Bar: REPLICA -->
+  <aside class="replica-promo-bar" id="replicaPromoBar" aria-label="Product Announcement">
+    <div class="replica-promo-container">
+      <div class="replica-promo-left">
+        <span class="replica-promo-badge">✨ TRY OUR NEW PRODUCT</span>
+        <div class="replica-promo-brand">
+          <span class="replica-promo-icon" aria-hidden="true">⌨️</span>
+          <strong class="replica-promo-name">REPLICA</strong>
+          <span class="replica-promo-sep">•</span>
+          <span class="replica-promo-tagline">I replicate keyboard.</span>
+        </div>
+      </div>
+      <div class="replica-promo-right">
+        <a href="https://replicakspp.vercel.app/" target="_blank" rel="noopener noreferrer" class="replica-promo-btn">
+          <span>Try REPLICA</span>
+          <span class="replica-promo-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
   <!-- Header Navigation -->
   <nav class="navbar">
     <div class="nav-left">
-      <div class="mascot-container nav-mascot" id="navMascot" title="ZipShare Nomad Mascot">
-        <svg class="mascot-svg" viewBox="0 0 100 100" width="34" height="34">
-          <defs>
-            <linearGradient id="mascotGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#6366f1" />
-              <stop offset="100%" stop-color="#a855f7" />
-            </linearGradient>
-          </defs>
-          <circle cx="50" cy="50" r="44" fill="url(#mascotGradNav)" class="mascot-body" />
-          <ellipse cx="34" cy="42" rx="11" ry="13" fill="#ffffff" />
-          <ellipse cx="66" cy="42" rx="11" ry="13" fill="#ffffff" />
-          <circle cx="34" cy="42" r="5.5" fill="#0f172a" class="pupil-left" />
-          <circle cx="66" cy="42" r="5.5" fill="#0f172a" class="pupil-right" />
-          <circle cx="32" cy="39" r="2" fill="#ffffff" />
-          <circle cx="64" cy="39" r="2" fill="#ffffff" />
-          <path class="mascot-mouth" d="M 36 60 Q 50 70 64 60" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
-          <circle cx="23" cy="55" r="5" fill="#f43f5e" opacity="0.4" />
-          <circle cx="77" cy="55" r="5" fill="#f43f5e" opacity="0.4" />
-        </svg>
+      <div class="mascot-container nav-mascot" id="navMascot" title="Optical Illusion Animated Sphere">
+        <canvas id="navMascotCanvas" class="nav-mascot-canvas" width="68" height="68" aria-label="Animated Optical Illusion Sphere"></canvas>
       </div>
       <a href="#" class="logo" id="brandLogo">ZIPSHARE</a>
     </div>

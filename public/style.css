@@ -291,6 +291,173 @@ body {
   opacity: 1;
 }
 
+/* Promotional Banner / Announcement Bar: REPLICA */
+.replica-promo-bar {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.16) 0%, rgba(6, 182, 212, 0.12) 50%, rgba(139, 92, 246, 0.16) 100%);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.28);
+  position: relative;
+  z-index: 45;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+body[data-theme="light"] .replica-promo-bar {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(2, 132, 199, 0.07) 50%, rgba(124, 58, 237, 0.08) 100%);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+.replica-promo-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+}
+
+.replica-promo-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.replica-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.32), rgba(6, 182, 212, 0.25));
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  color: #c4b5fd;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+  white-space: nowrap;
+}
+
+body[data-theme="light"] .replica-promo-badge {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(2, 132, 199, 0.15));
+  border-color: rgba(124, 58, 237, 0.35);
+  color: #6d28d9;
+}
+
+.replica-promo-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--text);
+  flex-wrap: wrap;
+}
+
+.replica-promo-icon {
+  font-size: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  filter: drop-shadow(0 2px 4px rgba(139, 92, 246, 0.3));
+}
+
+.replica-promo-name {
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  font-size: 0.96rem;
+  background: linear-gradient(90deg, #c4b5fd, #67e8f9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+body[data-theme="light"] .replica-promo-name {
+  background: linear-gradient(90deg, #6d28d9, #0284c7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.replica-promo-sep {
+  opacity: 0.4;
+  font-size: 0.75rem;
+}
+
+.replica-promo-tagline {
+  font-style: italic;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+}
+
+.replica-promo-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.replica-promo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 16px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--accent), #06b6d4);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 3px 12px rgba(139, 92, 246, 0.35);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+.replica-promo-btn:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.55), 0 0 16px rgba(6, 182, 212, 0.4);
+  color: #ffffff;
+}
+
+.replica-promo-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.replica-promo-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.replica-promo-btn:hover .replica-promo-arrow {
+  transform: translateX(3px);
+}
+
+@media (max-width: 768px) {
+  .replica-promo-container {
+    padding: 8px 14px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+  }
+  .replica-promo-left {
+    justify-content: center;
+    gap: 8px;
+  }
+  .replica-promo-brand {
+    justify-content: center;
+  }
+  .replica-promo-btn {
+    padding: 5px 14px;
+    font-size: 0.8rem;
+  }
+}
+
 /* Navbar */
 .navbar {
   position: sticky;
@@ -2295,6 +2462,38 @@ input.input-error {
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   filter: drop-shadow(0 4px 12px rgba(99, 102, 241, 0.3));
+}
+
+.nav-mascot {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+}
+
+.nav-mascot:hover {
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.4));
+}
+
+.nav-mascot-canvas {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: block;
+  background: #000000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-mascot:active .nav-mascot-canvas {
+  transform: scale(0.92);
 }
 
 .mascot-container:hover {

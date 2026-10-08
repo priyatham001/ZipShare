@@ -165,6 +165,127 @@ function initMascot() {
       setTimeout(() => eye.style.transform = 'scaleY(1)', 150);
     });
   }, 4500);
+
+  initOpArtSphere();
+}
+
+function initOpArtSphere() {
+  const canvas = document.getElementById('navMascotCanvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width; // 68
+  const R = (size / 2) - 0.5; // 33.5
+  const cx = size / 2;
+  const cy = size / 2;
+
+  let targetTiltX = 0;
+  let targetTiltY = 0;
+  let currentTiltX = 0;
+  let currentTiltY = 0;
+  let spinVelocity = 1.0;
+  let isHovered = false;
+
+  window.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const nx = (e.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2);
+    const ny = (e.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2);
+    targetTiltX = Math.max(-0.6, Math.min(0.6, nx * 0.5));
+    targetTiltY = Math.max(-0.6, Math.min(0.6, ny * 0.5));
+  });
+
+  canvas.addEventListener('mouseenter', () => {
+    isHovered = true;
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    isHovered = false;
+  });
+
+  canvas.addEventListener('click', () => {
+    spinVelocity = 3.8;
+  });
+
+  const imgData = ctx.createImageData(size, size);
+  const data = imgData.data;
+  let time = 0;
+
+  function renderSphere() {
+    const speed = (isHovered ? 1.6 : 1.0) * spinVelocity;
+    time += 0.038 * speed;
+
+    if (spinVelocity > 1.0) {
+      spinVelocity += (1.0 - spinVelocity) * 0.05;
+    }
+
+    currentTiltX += (targetTiltX - currentTiltX) * 0.08;
+    currentTiltY += (targetTiltY - currentTiltY) * 0.08;
+
+    // Pole on sphere matching the user image: upper-left vortex
+    const basePx = Math.max(-0.7, Math.min(-0.05, -0.32 + currentTiltX * 0.22));
+    const basePy = Math.max(-0.75, Math.min(-0.1, -0.42 + currentTiltY * 0.22));
+    const basePz = Math.sqrt(Math.max(0.04, 1 - basePx * basePx - basePy * basePy));
+
+    const rollAngle = time * 0.12;
+    const cosRoll = Math.cos(rollAngle);
+    const sinRoll = Math.sin(rollAngle);
+
+    let idx = 0;
+    for (let y = 0; y < size; y++) {
+      const dy = (y + 0.5 - cy) / R;
+      for (let x = 0; x < size; x++) {
+        const dx = (x + 0.5 - cx) / R;
+        const r2 = dx * dx + dy * dy;
+
+        if (r2 > 1.0) {
+          data[idx] = 0;
+          data[idx + 1] = 0;
+          data[idx + 2] = 0;
+          data[idx + 3] = 0;
+        } else {
+          const z = Math.sqrt(Math.max(0, 1.0 - r2));
+
+          // 3D rolling distortion
+          const rx = dx * cosRoll - z * sinRoll * 0.3;
+          const rz = z * cosRoll + dx * sinRoll * 0.3;
+          const ry = dy;
+
+          const dot = rx * basePx + ry * basePy + rz * basePz;
+          const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
+          const distToPole = Math.sqrt((rx - basePx) ** 2 + (ry - basePy) ** 2 + (rz - basePz) ** 2);
+
+          // Optical illusion zebra wavy harmonics
+          const wave = angle * 11.5
+            + Math.sin(ry * 4.2 + rx * 2.5 + time) * 1.6
+            + Math.cos(rx * 4.8 - ry * 1.8 - time * 0.8) * 0.95
+            + Math.sin(distToPole * 6.5 - time * 1.1) * 0.6;
+
+          const sinVal = Math.sin(wave);
+          // Antialiased transition between black and white
+          const edgeWidth = 0.22;
+          const factor = Math.max(0, Math.min(1, (sinVal + edgeWidth) / (2 * edgeWidth)));
+          const color = Math.round(factor * 255);
+
+          let alpha = 255;
+          if (r2 > 0.94) {
+            alpha = Math.round(Math.max(0, Math.min(1, (1.0 - r2) / 0.06)) * 255);
+          }
+
+          data[idx] = color;
+          data[idx + 1] = color;
+          data[idx + 2] = color;
+          data[idx + 3] = alpha;
+        }
+        idx += 4;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    requestAnimationFrame(renderSphere);
+  }
+
+  // Draw initial frame immediately
+  renderSphere();
 }
 
 function initIntro() {
