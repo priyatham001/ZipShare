@@ -1,11 +1,20 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { filesDB } = require('../db');
 const { matchFileToSyllabus } = require('./syllabusMatcher');
 
-const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const isVercel = Boolean(process.env.VERCEL);
+const UPLOAD_DIR = isVercel
+  ? path.join(os.tmpdir(), 'zipshare_uploads')
+  : path.join(__dirname, '..', 'uploads');
+
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+} catch (e) {
+  // Safe on read-only environments
 }
 
 // Sample contents for initial sample lab files
@@ -119,7 +128,9 @@ async function migrateExistingFilesToSyllabus() {
         if (!fs.existsSync(fullPath)) {
           const sample = SAMPLE_CODES[f.originalName];
           if (sample) {
-            fs.writeFileSync(fullPath, sample, 'utf-8');
+            try {
+              fs.writeFileSync(fullPath, sample, 'utf-8');
+            } catch (wErr) {}
           }
         }
       }

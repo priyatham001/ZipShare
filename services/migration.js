@@ -1,9 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { filesDB } = require('../db');
 const { isCloudinaryConfigured, uploadToCloudinary } = require('./cloudinary');
 
-const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
+const isVercel = Boolean(process.env.VERCEL);
+const UPLOAD_DIR = isVercel
+  ? path.join(os.tmpdir(), 'zipshare_uploads')
+  : path.join(__dirname, '..', 'uploads');
 const CODE_EXTENSIONS = ['java', 'py', 'c', 'cpp', 'js', 'ts', 'html', 'css', 'sql', 'txt', 'md', 'json'];
 
 async function migrateLocalFilesToCloudinary() {

@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const crypto = require('crypto');
 const archiver = require('archiver');
 const router = express.Router();
@@ -11,11 +12,29 @@ const { isCloudinaryConfigured, uploadToCloudinary, deleteFromCloudinary, fetchR
 const { matchFileToSyllabus } = require('../services/syllabusMatcher');
 const { getCourseByKey } = require('../services/syllabusData');
 
-const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const isVercel = Boolean(process.env.VERCEL);
+// Safe upload directory: on Vercel use /tmp to prevent read-only filesystem crash, on Render/local use ./uploads
+const UPLOAD_DIR = isVercel
+  ? path.join(os.tmpdir(), 'zipshare_uploads')
+  : path.join(__dirname, '..', 'uploads');
+
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.warn('Could not initialize local upload directory (read-only filesystem):', err.message);
+}
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  destination: (req, file, cb) => {
+    try {
+      if (!fs.existsSync(UPLOAD_DIR)) {
+        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      }
+    } catch (e) {}
+    cb(null, UPLOAD_DIR);
+  },
   filename: (req, file, cb) => {
     const safeExt = path.extname(file.originalname).slice(0, 10);
     cb(null, crypto.randomUUID() + safeExt);

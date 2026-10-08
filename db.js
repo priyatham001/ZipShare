@@ -7,8 +7,12 @@ const crypto = require('crypto');
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (e) {
+  // Read-only filesystem
 }
 
 let isMongo = false;
@@ -188,21 +192,22 @@ function loadJsonDB() {
       ]
     };
 
-    // Ensure sample upload files exist in UPLOAD_DIR
-    const uploadsDir = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    // Ensure sample upload files exist in UPLOAD_DIR (best effort)
+    try {
+      const isVercel = Boolean(process.env.VERCEL);
+      const os = require('os');
+      const uploadsDir = isVercel ? path.join(os.tmpdir(), 'zipshare_uploads') : path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-    fs.writeFileSync(path.join(uploadsDir, 'demo_py1.py'), `def greatest_of_three(a, b, c):\n    if a >= b and a >= c:\n        return a\n    elif b >= a and b >= c:\n        return b\n    else:\n        return c\n\nif __name__ == "__main__":\n    num1 = float(input("Enter first number: "))\n    num2 = float(input("Enter second number: "))\n    num3 = float(input("Enter third number: "))\n    print("Greatest number is:", greatest_of_three(num1, num2, num3))\n`);
-    
-    fs.writeFileSync(path.join(uploadsDir, 'demo_java1.java'), `class Node {\n    int key;\n    Node left, right;\n\n    public Node(int item) {\n        key = item;\n        left = right = null;\n    }\n}\n\npublic class BinarySearchTree {\n    Node root;\n\n    BinarySearchTree() {\n        root = null;\n    }\n\n    void insert(int key) {\n        root = insertRec(root, key);\n    }\n\n    Node insertRec(Node root, int key) {\n        if (root == null) {\n            root = new Node(key);\n            return root;\n        }\n        if (key < root.key)\n            root.left = insertRec(root.left, key);\n        else if (key > root.key)\n            root.right = insertRec(root.right, key);\n        return root;\n    }\n\n    public static void main(String[] args) {\n        BinarySearchTree tree = new BinarySearchTree();\n        tree.insert(50);\n        tree.insert(30);\n        tree.insert(20);\n        tree.insert(40);\n        System.out.println("BST Created successfully!");\n    }\n}\n`);
-
-    fs.writeFileSync(path.join(uploadsDir, 'demo_c1.c'), `#include <stdio.h>\n\nint main() {\n    int a[2][2] = {{1, 2}, {3, 4}};\n    int b[2][2] = {{5, 6}, {7, 8}};\n    int c[2][2] = {0};\n\n    for (int i = 0; i < 2; i++) {\n        for (int j = 0; j < 2; j++) {\n            for (int k = 0; k < 2; k++) {\n                c[i][j] += a[i][k] * b[k][j];\n            }\n        }\n    }\n\n    printf("Result matrix:\\n");\n    for (int i = 0; i < 2; i++) {\n        for (int j = 0; j < 2; j++) {\n            printf("%d ", c[i][j]);\n        }\n        printf("\\n");\n    }\n    return 0;\n}\n`);
-
-    fs.writeFileSync(path.join(uploadsDir, 'demo_cpp1.cpp'), `#include <iostream>\nusing namespace std;\n\nstruct Node {\n    int key;\n    Node *left, *right;\n    int height;\n};\n\nint height(Node *N) {\n    if (N == NULL) return 0;\n    return N->height;\n}\n\nint max(int a, int b) {\n    return (a > b) ? a : b;\n}\n\nint main() {\n    cout << "AVL Tree Module Ready" << endl;\n    return 0;\n}\n`);
-
-    fs.writeFileSync(path.join(uploadsDir, 'demo_sql1.sql'), `-- Student DBMS Schema\nCREATE TABLE Students (\n    student_id INT PRIMARY KEY,\n    name VARCHAR(100),\n    course VARCHAR(50),\n    gpa DECIMAL(3,2)\n);\n\nINSERT INTO Students VALUES (101, 'Alex Smith', 'Computer Science', 3.85);\nINSERT INTO Students VALUES (102, 'Priya Sharma', 'Data Science', 3.92);\n\nSELECT * FROM Students WHERE gpa > 3.5;\n`);
-
-    fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
+      fs.writeFileSync(path.join(uploadsDir, 'demo_py1.py'), `def greatest_of_three(a, b, c):\n    if a >= b and a >= c:\n        return a\n    elif b >= a and b >= c:\n        return b\n    else:\n        return c\n\nif __name__ == "__main__":\n    num1 = float(input("Enter first number: "))\n    num2 = float(input("Enter second number: "))\n    num3 = float(input("Enter third number: "))\n    print("Greatest number is:", greatest_of_three(num1, num2, num3))\n`);
+      fs.writeFileSync(path.join(uploadsDir, 'demo_java1.java'), `class Node {\n    int key;\n    Node left, right;\n\n    public Node(int item) {\n        key = item;\n        left = right = null;\n    }\n}\n\npublic class BinarySearchTree {\n    Node root;\n\n    BinarySearchTree() {\n        root = null;\n    }\n\n    void insert(int key) {\n        root = insertRec(root, key);\n    }\n\n    Node insertRec(Node root, int key) {\n        if (root == null) {\n            root = new Node(key);\n            return root;\n        }\n        if (key < root.key)\n            root.left = insertRec(root.left, key);\n        else if (key > root.key)\n            root.right = insertRec(root.right, key);\n        return root;\n    }\n\n    public static void main(String[] args) {\n        BinarySearchTree tree = new BinarySearchTree();\n        tree.insert(50);\n        tree.insert(30);\n        tree.insert(20);\n        tree.insert(40);\n        System.out.println("BST Created successfully!");\n    }\n}\n`);
+      fs.writeFileSync(path.join(uploadsDir, 'demo_c1.c'), `#include <stdio.h>\n\nint main() {\n    int a[2][2] = {{1, 2}, {3, 4}};\n    int b[2][2] = {{5, 6}, {7, 8}};\n    int c[2][2] = {0};\n\n    for (int i = 0; i < 2; i++) {\n        for (int j = 0; j < 2; j++) {\n            for (int k = 0; k < 2; k++) {\n                c[i][j] += a[i][k] * b[k][j];\n            }\n        }\n    }\n\n    printf("Result matrix:\\n");\n    for (int i = 0; i < 2; i++) {\n        for (int j = 0; j < 2; j++) {\n            printf("%d ", c[i][j]);\n        }\n        printf("\\n");\n    }\n    return 0;\n}\n`);
+      fs.writeFileSync(path.join(uploadsDir, 'demo_cpp1.cpp'), `#include <iostream>\nusing namespace std;\n\nstruct Node {\n    int key;\n    Node *left, *right;\n    int height;\n};\n\nint height(Node *N) {\n    if (N == NULL) return 0;\n    return N->height;\n}\n\nint max(int a, int b) {\n    return (a > b) ? a : b;\n}\n\nint main() {\n    cout << "AVL Tree Module Ready" << endl;\n    return 0;\n}\n`);
+      fs.writeFileSync(path.join(uploadsDir, 'demo_sql1.sql'), `-- Student DBMS Schema\nCREATE TABLE Students (\n    student_id INT PRIMARY KEY,\n    name VARCHAR(100),\n    course VARCHAR(50),\n    gpa DECIMAL(3,2)\n);\n\nINSERT INTO Students VALUES (101, 'Alex Smith', 'Computer Science', 3.85);\nINSERT INTO Students VALUES (102, 'Priya Sharma', 'Data Science', 3.92);\n\nSELECT * FROM Students WHERE gpa > 3.5;\n`);
+      fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
+    } catch (e) {
+      // Ignore write errors in read-only environments
+    }
     return initial;
   }
   try {
@@ -213,19 +218,48 @@ function loadJsonDB() {
 }
 
 function saveJsonDB(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    // Read-only filesystem safe
+  }
 }
 
+let cachedMongo = global.__zipshareMongoConn || null;
+
 async function connectDB() {
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
+    isMongo = true;
+    return mongoose.connection;
+  }
+
+  if (cachedMongo) {
+    try {
+      await cachedMongo;
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        isMongo = true;
+        return mongoose.connection;
+      }
+    } catch (e) {
+      cachedMongo = null;
+      global.__zipshareMongoConn = null;
+    }
+  }
+
   if (process.env.MONGODB_URI) {
     try {
-      await mongoose.connect(process.env.MONGODB_URI, {
-        serverSelectionTimeoutMS: 2500
+      cachedMongo = mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+        bufferCommands: false
       });
+      global.__zipshareMongoConn = cachedMongo;
+      await cachedMongo;
       isMongo = true;
       console.log('Connected to MongoDB successfully.');
-      return;
+      return mongoose.connection;
     } catch (err) {
+      cachedMongo = null;
+      global.__zipshareMongoConn = null;
       console.warn('MongoDB connection failed. Falling back to local JSON database store:', err.message);
     }
   } else {
