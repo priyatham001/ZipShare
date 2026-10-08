@@ -288,9 +288,87 @@ function initOpArtSphere() {
   renderSphere();
 }
 
+function initWelcomeIllusion() {
+  const canvas = document.getElementById('welcomeIllusionCanvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width; // 160
+  const R = (size / 2) - 1;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  let speed = 1.0;
+  canvas.addEventListener('click', () => {
+    speed = 3.2;
+  });
+
+  const imgData = ctx.createImageData(size, size);
+  const data = imgData.data;
+  let time = 0;
+
+  function renderTunnel() {
+    time += 0.038 * speed;
+    if (speed > 1.0) {
+      speed += (1.0 - speed) * 0.05;
+    }
+
+    // Tunnel center gently orbiting slightly to match perspective in Image 3
+    const offX = 0.12 * Math.cos(time * 0.25);
+    const offY = -0.08 + 0.06 * Math.sin(time * 0.25);
+
+    let idx = 0;
+    for (let y = 0; y < size; y++) {
+      const ny = (y + 0.5 - cy) / R;
+      for (let x = 0; x < size; x++) {
+        const nx = (x + 0.5 - cx) / R;
+        const r2 = nx * nx + ny * ny;
+
+        if (r2 > 1.0) {
+          data[idx] = 0;
+          data[idx + 1] = 0;
+          data[idx + 2] = 0;
+          data[idx + 3] = 0;
+        } else {
+          const dx = nx - offX;
+          const dy = ny - offY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const angle = Math.atan2(dy, dx);
+
+          // Deep perspective reciprocal tunnel coordinate matching Image 3
+          const z = 1.0 / (dist + 0.1);
+          // Concentric spiral tunnel stripes zooming inward
+          const wave = Math.sin(z * 7.5 - time * 2.2 + angle * 3.0);
+
+          const edgeWidth = 0.22;
+          const factor = Math.max(0, Math.min(1, (wave + edgeWidth) / (2 * edgeWidth)));
+          const color = Math.round(factor * 255);
+
+          let alpha = 255;
+          if (r2 > 0.94) {
+            alpha = Math.round(Math.max(0, Math.min(1, (1.0 - r2) / 0.06)) * 255);
+          }
+
+          data[idx] = color;
+          data[idx + 1] = color;
+          data[idx + 2] = color;
+          data[idx + 3] = alpha;
+        }
+        idx += 4;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    requestAnimationFrame(renderTunnel);
+  }
+
+  renderTunnel();
+}
+
 function initIntro() {
   applyTheme(activeTheme);
   initMascot();
+  initWelcomeIllusion();
 
   // Step 1 -> Step 2
   const step1Next = $('step1NextBtn');

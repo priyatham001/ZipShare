@@ -56,30 +56,30 @@
     
     <!-- Step 1: Welcome Greeting & Mascot -->
     <div class="onboard-step active" id="onboardStep1">
-      <div class="mascot-container hero-mascot" id="welcomeMascot">
-        <svg class="mascot-svg" viewBox="0 0 100 100" width="90" height="90">
-          <defs>
-            <linearGradient id="mascotGradStep" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#6366f1" />
-              <stop offset="100%" stop-color="#a855f7" />
-            </linearGradient>
-          </defs>
-          <circle cx="50" cy="50" r="44" fill="url(#mascotGradStep)" class="mascot-body" />
-          <ellipse cx="34" cy="42" rx="11" ry="13" fill="#ffffff" />
-          <ellipse cx="66" cy="42" rx="11" ry="13" fill="#ffffff" />
-          <circle cx="34" cy="42" r="5.5" fill="#0f172a" class="pupil-left" />
-          <circle cx="66" cy="42" r="5.5" fill="#0f172a" class="pupil-right" />
-          <circle cx="32" cy="39" r="2" fill="#ffffff" />
-          <circle cx="64" cy="39" r="2" fill="#ffffff" />
-          <path class="mascot-mouth" d="M 36 60 Q 50 70 64 60" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
-          <circle cx="23" cy="55" r="5" fill="#f43f5e" opacity="0.4" />
-          <circle cx="77" cy="55" r="5" fill="#f43f5e" opacity="0.4" />
-        </svg>
+      <div class="mascot-container hero-mascot" id="welcomeMascot" title="Optical Illusion Vortex">
+        <canvas id="welcomeIllusionCanvas" class="welcome-illusion-canvas" width="160" height="160" aria-label="Hypnotic Optical Tunnel Illusion"></canvas>
       </div>
       <h1 class="intro-title">Welcome to <span class="brand-text">ZipShare</span></h1>
       <p class="intro-tagline">Student-Friendly Online Coding Platform &amp; Lab Hub</p>
       <p class="intro-desc">Browse lab records, compile &amp; run code online, and download folder projects effortlessly.</p>
       <button class="enter-btn primary-btn" id="step1NextBtn">Get Started 🚀</button>
+
+      <!-- New Product Promotional Card: REPLICA (Yellow & Black High Contrast) -->
+      <div class="intro-replica-promo-tile">
+        <div class="intro-replica-top-badge">✨ TRY OUR NEW PRODUCT</div>
+        <div class="intro-replica-row">
+          <div class="intro-replica-left">
+            <span class="intro-replica-icon" aria-hidden="true">⌨️</span>
+            <strong class="intro-replica-title">REPLICA</strong>
+            <span class="intro-replica-dot">•</span>
+            <span class="intro-replica-slogan">I replicate keyboard.</span>
+          </div>
+          <a href="https://replicakspp.vercel.app/" target="_blank" rel="noopener noreferrer" class="intro-replica-action-btn">
+            <span>Try REPLICA</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
     </div>
 
     <!-- Step 2: Choose Theme -->
@@ -118,6 +118,23 @@
       <div class="step-nav">
         <button class="btn-ghost" id="step3BackBtn">◀ Back</button>
         <button class="enter-btn primary-btn" id="enterAppBtn">Enter ZipShare Workspace ➔</button>
+      </div>
+
+      <!-- New Product Promotional Card: REPLICA (Yellow & Black High Contrast) -->
+      <div class="intro-replica-promo-tile">
+        <div class="intro-replica-top-badge">✨ TRY OUR NEW PRODUCT</div>
+        <div class="intro-replica-row">
+          <div class="intro-replica-left">
+            <span class="intro-replica-icon" aria-hidden="true">⌨️</span>
+            <strong class="intro-replica-title">REPLICA</strong>
+            <span class="intro-replica-dot">•</span>
+            <span class="intro-replica-slogan">I replicate keyboard.</span>
+          </div>
+          <a href="https://replicakspp.vercel.app/" target="_blank" rel="noopener noreferrer" class="intro-replica-action-btn">
+            <span>Try REPLICA</span>
+            <span>→</span>
+          </a>
+        </div>
       </div>
     </div>
 

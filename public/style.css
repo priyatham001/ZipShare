@@ -291,32 +291,33 @@ body {
   opacity: 1;
 }
 
-/* Promotional Banner / Announcement Bar: REPLICA */
+/* Promotional Banner / Announcement Bar: REPLICA (High Contrast Yellow & Black Theme) */
 .replica-promo-bar {
-  background: linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.16) 50%, rgba(139, 92, 246, 0.2) 100%);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.35);
+  background: #000000;
+  border-top: 1px solid #1f1f1f;
+  border-bottom: 2px solid #facc15;
   position: relative;
   z-index: 45;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  animation: replicaGlow 4s ease-in-out infinite;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 16px rgba(250, 204, 21, 0.25);
+  animation: replicaYellowGlow 4s ease-in-out infinite;
+  transition: all 0.3s ease;
 }
 
-@keyframes replicaGlow {
+@keyframes replicaYellowGlow {
   0%, 100% {
-    border-color: rgba(139, 92, 246, 0.35);
-    box-shadow: 0 2px 14px rgba(139, 92, 246, 0.12);
+    border-bottom-color: #facc15;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.8), 0 0 16px rgba(250, 204, 21, 0.25);
   }
   50% {
-    border-color: rgba(6, 182, 212, 0.45);
-    box-shadow: 0 2px 20px rgba(6, 182, 212, 0.2);
+    border-bottom-color: #ffe033;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.9), 0 0 24px rgba(250, 204, 21, 0.45);
   }
 }
 
 body[data-theme="light"] .replica-promo-bar {
-  background: linear-gradient(90deg, rgba(124, 58, 237, 0.1) 0%, rgba(2, 132, 199, 0.09) 50%, rgba(124, 58, 237, 0.1) 100%);
-  border-bottom: 1px solid rgba(124, 58, 237, 0.25);
+  background: #000000;
+  border-bottom: 2px solid #eab308;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(234, 179, 8, 0.3);
 }
 
 .replica-promo-container {
@@ -343,14 +344,14 @@ body[data-theme="light"] .replica-promo-bar {
   gap: 6px;
   font-size: 0.74rem;
   font-weight: 800;
-  letter-spacing: 0.7px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  padding: 3px 11px;
+  padding: 3px 12px;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.38), rgba(6, 182, 212, 0.3));
-  border: 1px solid rgba(139, 92, 246, 0.5);
-  color: #c4b5fd;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+  background: #111111;
+  border: 1.5px solid #facc15;
+  color: #facc15;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.35);
   white-space: nowrap;
   animation: badgePulse 3s ease-in-out infinite;
 }
@@ -361,17 +362,17 @@ body[data-theme="light"] .replica-promo-bar {
 }
 
 body[data-theme="light"] .replica-promo-badge {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(2, 132, 199, 0.18));
-  border-color: rgba(124, 58, 237, 0.4);
-  color: #6d28d9;
+  background: #111111;
+  border-color: #facc15;
+  color: #facc15;
 }
 
 .replica-promo-brand {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.9rem;
-  color: var(--text);
+  font-size: 0.92rem;
+  color: #ffffff;
   flex-wrap: wrap;
 }
 
@@ -379,36 +380,32 @@ body[data-theme="light"] .replica-promo-badge {
   font-size: 1.15rem;
   display: inline-flex;
   align-items: center;
-  filter: drop-shadow(0 2px 6px rgba(139, 92, 246, 0.45));
+  filter: drop-shadow(0 2px 6px rgba(250, 204, 21, 0.5));
 }
 
 .replica-promo-name {
-  font-weight: 800;
-  letter-spacing: 1px;
-  font-size: 1rem;
-  background: linear-gradient(90deg, #c4b5fd, #67e8f9);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  font-size: 1.05rem;
+  color: #facc15;
+  text-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
 }
 
 body[data-theme="light"] .replica-promo-name {
-  background: linear-gradient(90deg, #6d28d9, #0284c7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #facc15;
 }
 
 .replica-promo-sep {
-  opacity: 0.45;
+  opacity: 0.5;
+  color: #facc15;
   font-size: 0.8rem;
 }
 
 .replica-promo-tagline {
   font-style: italic;
-  color: var(--text-dim);
-  font-size: 0.86rem;
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 500;
 }
 
 .replica-promo-right {
@@ -420,25 +417,26 @@ body[data-theme="light"] .replica-promo-name {
 .replica-promo-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 18px;
+  gap: 8px;
+  padding: 7px 20px;
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: 900;
   text-decoration: none;
   border-radius: 9999px;
-  background: linear-gradient(90deg, var(--accent), #06b6d4);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+  background: #facc15;
+  color: #000000;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 16px rgba(250, 204, 21, 0.55);
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   white-space: nowrap;
 }
 
 .replica-promo-btn:hover {
-  transform: translateY(-1px) scale(1.04);
-  box-shadow: 0 6px 22px rgba(139, 92, 246, 0.6), 0 0 16px rgba(6, 182, 212, 0.45);
-  color: #ffffff;
+  background: #ffe033;
+  color: #000000;
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 6px 24px rgba(250, 204, 21, 0.8);
 }
 
 .replica-promo-btn:active {
@@ -484,8 +482,8 @@ body[data-theme="light"] .replica-promo-name {
     justify-content: center;
   }
   .replica-promo-btn {
-    padding: 7px 22px;
-    font-size: 0.84rem;
+    padding: 7px 24px;
+    font-size: 0.85rem;
   }
 }
 
@@ -499,6 +497,139 @@ body[data-theme="light"] .replica-promo-name {
   }
   .replica-promo-tagline {
     font-size: 0.8rem;
+  }
+}
+
+/* Starting Tile / Onboarding Illusion Canvas */
+.welcome-illusion-canvas {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: block;
+  background: #000000;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.85), 0 0 25px rgba(255, 255, 255, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.welcome-illusion-canvas:hover {
+  transform: scale(1.1) rotate(6deg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.95), 0 0 35px rgba(255, 255, 255, 0.5);
+}
+
+/* Starting Tile: High-Contrast Yellow & Black REPLICA Card */
+.intro-replica-promo-tile {
+  margin-top: 18px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #000000;
+  border: 1.5px solid #facc15;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(250, 204, 21, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.intro-replica-promo-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.75), 0 0 24px rgba(250, 204, 21, 0.4);
+}
+
+.intro-replica-top-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #18181b;
+  border: 1px solid #facc15;
+  color: #facc15;
+}
+
+.intro-replica-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.intro-replica-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: #ffffff;
+}
+
+.intro-replica-icon {
+  font-size: 1.1rem;
+}
+
+.intro-replica-title {
+  color: #facc15;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.8px;
+}
+
+.intro-replica-dot {
+  color: #facc15;
+  opacity: 0.6;
+}
+
+.intro-replica-slogan {
+  color: #fef08a;
+  font-style: italic;
+  font-size: 0.84rem;
+}
+
+.intro-replica-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  background: #facc15;
+  color: #000000;
+  font-weight: 800;
+  font-size: 0.82rem;
+  text-decoration: none;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 2px 10px rgba(250, 204, 21, 0.45);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+.intro-replica-action-btn:hover {
+  background: #ffe033;
+  color: #000000;
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(250, 204, 21, 0.65);
+}
+
+@media (max-width: 480px) {
+  .intro-replica-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+  .intro-replica-left {
+    justify-content: center;
+  }
+  .intro-replica-top-badge {
+    align-self: center;
+  }
+  .intro-replica-action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 7px 16px;
   }
 }
 
