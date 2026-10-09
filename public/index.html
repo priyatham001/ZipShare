@@ -62,24 +62,30 @@
       <h1 class="intro-title">Welcome to <span class="brand-text">ZipShare</span></h1>
       <p class="intro-tagline">Student-Friendly Online Coding Platform &amp; Lab Hub</p>
       <p class="intro-desc">Browse lab records, compile &amp; run code online, and download folder projects effortlessly.</p>
-      <button class="enter-btn primary-btn" id="step1NextBtn">Get Started 🚀</button>
-
-      <!-- New Product Promotional Card: REPLICA (Yellow & Black High Contrast) -->
-      <div class="intro-replica-promo-tile">
-        <div class="intro-replica-top-badge">✨ TRY OUR NEW PRODUCT</div>
-        <div class="intro-replica-row">
-          <div class="intro-replica-left">
-            <span class="intro-replica-icon" aria-hidden="true">⌨️</span>
-            <strong class="intro-replica-title">REPLICA</strong>
-            <span class="intro-replica-dot">•</span>
-            <span class="intro-replica-slogan">I replicate keyboard.</span>
-          </div>
-          <a href="https://replicakspp.vercel.app/" target="_blank" rel="noopener noreferrer" class="intro-replica-action-btn">
-            <span>Try REPLICA</span>
-            <span>→</span>
-          </a>
+      <div class="intro-apk-promo" id="introApkPromo">
+        <div class="replica-app-icon intro-icon" title="REPLICA APK" aria-label="REPLICA App Icon">
+          <svg class="replica-icon-svg" viewBox="0 0 44 44" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="introReplicaIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="50%" stop-color="#00d2ff"/>
+                <stop offset="100%" stop-color="#2563eb"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="40" height="40" rx="10" fill="#040914" stroke="#00d2ff" stroke-width="2.2"/>
+            <rect x="4" y="4" width="36" height="36" rx="8" fill="rgba(0, 210, 255, 0.08)"/>
+            <text x="22" y="22.5" text-anchor="middle" dominant-baseline="central" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="12.5" letter-spacing="0.6" fill="url(#introReplicaIconGrad)">REP</text>
+            <circle cx="34" cy="10" r="2.5" fill="#00d2ff"/>
+          </svg>
         </div>
+        <div class="intro-apk-badge">✨ NEW APK</div>
+        <div class="intro-apk-info">
+          <strong>Try our new APK: REPLICA</strong>
+          <span>Tap to install directly on your device</span>
+        </div>
+        <a href="https://betadrop.app/i/XUgarY" target="_blank" rel="noopener noreferrer" class="intro-apk-btn" id="introReplicaInstallBtn">Install APK 📲</a>
       </div>
+      <button class="enter-btn primary-btn" id="step1NextBtn">Get Started 🚀</button>
     </div>
 
     <!-- Step 2: Choose Theme -->
@@ -119,23 +125,6 @@
         <button class="btn-ghost" id="step3BackBtn">◀ Back</button>
         <button class="enter-btn primary-btn" id="enterAppBtn">Enter ZipShare Workspace ➔</button>
       </div>
-
-      <!-- New Product Promotional Card: REPLICA (Yellow & Black High Contrast) -->
-      <div class="intro-replica-promo-tile">
-        <div class="intro-replica-top-badge">✨ TRY OUR NEW PRODUCT</div>
-        <div class="intro-replica-row">
-          <div class="intro-replica-left">
-            <span class="intro-replica-icon" aria-hidden="true">⌨️</span>
-            <strong class="intro-replica-title">REPLICA</strong>
-            <span class="intro-replica-dot">•</span>
-            <span class="intro-replica-slogan">I replicate keyboard.</span>
-          </div>
-          <a href="https://replicakspp.vercel.app/" target="_blank" rel="noopener noreferrer" class="intro-replica-action-btn">
-            <span>Try REPLICA</span>
-            <span>→</span>
-          </a>
-        </div>
-      </div>
     </div>
 
   </div>
@@ -152,22 +141,39 @@
 <!-- Main App Container -->
 <div class="app" id="app">
 
-  <!-- Promotional Bar: REPLICA -->
-  <aside class="replica-promo-bar" id="replicaPromoBar" aria-label="Product Announcement">
-    <div class="replica-promo-container">
-      <div class="replica-promo-left">
-        <span class="replica-promo-badge">✨ TRY OUR NEW PRODUCT</span>
-        <div class="replica-promo-brand">
-          <span class="replica-promo-icon" aria-hidden="true">⌨️</span>
-          <strong class="replica-promo-name">REPLICA</strong>
-          <span class="replica-promo-sep">•</span>
-          <span class="replica-promo-tagline">I replicate keyboard.</span>
+  <!-- Top Promotional Banner for REPLICA APK -->
+  <aside class="replica-promo-bar" id="replicaPromoBar" role="banner" aria-label="New APK Announcement">
+    <div class="promo-inner">
+      <div class="promo-left">
+        <div class="replica-app-icon" title="REPLICA APK Icon" aria-label="REPLICA App Icon">
+          <svg class="replica-icon-svg" viewBox="0 0 44 44" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="replicaIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="50%" stop-color="#00d2ff"/>
+                <stop offset="100%" stop-color="#2563eb"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="40" height="40" rx="10" fill="#040914" stroke="#00d2ff" stroke-width="2.2"/>
+            <rect x="4" y="4" width="36" height="36" rx="8" fill="rgba(0, 210, 255, 0.08)"/>
+            <text x="22" y="22.5" text-anchor="middle" dominant-baseline="central" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="12.5" letter-spacing="0.6" fill="url(#replicaIconGrad)">REP</text>
+            <circle cx="34" cy="10" r="2.5" fill="#00d2ff"/>
+          </svg>
+        </div>
+        <div class="promo-badge-tag">
+          <span class="promo-sparkle">✨</span>
+          <span class="promo-tag-text">TRY OUR NEW APK</span>
         </div>
       </div>
-      <div class="replica-promo-right">
-        <a href="https://replicakspp.vercel.app/" target="_blank" rel="noopener noreferrer" class="replica-promo-btn">
-          <span>Try REPLICA</span>
-          <span class="replica-promo-arrow">→</span>
+      <div class="promo-content">
+        <span class="promo-headline">REPLICA: <strong class="promo-name">Keyboard Companion</strong></span>
+        <span class="promo-subtext">Try our new APK — click to install REPLICA directly on your device</span>
+      </div>
+      <div class="promo-action">
+        <a href="https://betadrop.app/i/XUgarY" target="_blank" rel="noopener noreferrer" class="promo-cta-btn" id="replicaInstallBtn" title="Install REPLICA APK">
+          <span class="cta-icon">📲</span>
+          <span class="cta-text">Install REPLICA APK</span>
+          <span class="cta-arrow">→</span>
         </a>
       </div>
     </div>
@@ -547,7 +553,82 @@
         <p>Track all 91 experiments across Java (35), Python (40), and DSA (16). Manage mappings.</p>
         <button class="dash-btn primary" id="dashSyllabusBtn">Open Syllabus Matrix (91)</button>
       </div>
+
+      <div class="dashboard-card" style="border-color: rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.04);">
+        <h4>🔗 Manage Promo &amp; APK Links</h4>
+        <p>Update active REPLICA download link, promo banner text, and external app links.</p>
+        <button class="dash-btn primary" id="dashManageLinksBtn">Edit Promo Links 📲</button>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- Admin Promo & APK Links Modal -->
+<div class="modal-overlay" id="promoLinksModalOverlay">
+  <div class="modal glass" style="max-width:580px;">
+    <button class="modal-close" data-close="promoLinksModalOverlay">✕</button>
+    <div class="dashboard-header" style="margin-bottom: 16px;">
+      <span class="modal-icon">🔗</span>
+      <h3>Manage Promo &amp; APK Links</h3>
+      <p class="modal-sub">Update the official REPLICA APK download link, headlines, and banner visibility live for all users.</p>
+    </div>
+
+    <form id="adminPromoForm" onsubmit="return false;" style="display:flex; flex-direction:column; gap:14px;">
+      <div class="form-group">
+        <label for="adminPromoLinkInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+          📲 Active REPLICA APK Download Link (URL):
+        </label>
+        <input type="url" id="adminPromoLinkInput" class="admin-input" placeholder="https://betadrop.app/i/XUgarY" required style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); font-family:monospace;" />
+        <span style="font-size:0.75rem; color:var(--text-muted); margin-top:2px; display:block;">When users click Install or the REP icon, this link opens directly.</span>
+      </div>
+
+      <div class="form-group" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div>
+          <label for="adminPromoBadgeInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+            🏷️ Badge Text:
+          </label>
+          <input type="text" id="adminPromoBadgeInput" class="admin-input" placeholder="TRY OUR NEW APK" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+        </div>
+        <div>
+          <label for="adminPromoBtnTextInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+            🔘 Button CTA Label:
+          </label>
+          <input type="text" id="adminPromoBtnTextInput" class="admin-input" placeholder="Install REPLICA APK" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="adminPromoTitleInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+          📢 Promo Headline:
+        </label>
+        <input type="text" id="adminPromoTitleInput" class="admin-input" placeholder="REPLICA: Keyboard Companion" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+      </div>
+
+      <div class="form-group">
+        <label for="adminPromoSubtextInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+          📝 Promo Subtext:
+        </label>
+        <input type="text" id="adminPromoSubtextInput" class="admin-input" placeholder="Try our new APK — click to install REPLICA directly on your device" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+      </div>
+
+      <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:2px; padding:10px 14px; background:rgba(56, 189, 248, 0.08); border-radius:8px; border:1px solid rgba(56, 189, 248, 0.2);">
+        <input type="checkbox" id="adminPromoEnabledInput" checked style="width:18px; height:18px; cursor:pointer;" />
+        <label for="adminPromoEnabledInput" style="font-size:0.85rem; font-weight:600; color:var(--text); cursor:pointer;">
+          Show REPLICA Announcement Bar to visitors
+        </label>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="dash-btn ghost" id="adminResetPromoBtn" title="Reset to default BetaDrop link">🔄 Reset Default</button>
+          <button type="button" class="dash-btn ghost" id="adminTestPromoBtn" title="Test open link in new tab">↗️ Test Link</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="dash-btn ghost" data-close="promoLinksModalOverlay">Cancel</button>
+          <button type="button" class="dash-btn primary" id="adminSavePromoBtn">Save &amp; Update Links 🚀</button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 

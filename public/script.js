@@ -2437,6 +2437,49 @@ function setupDashboardBindings() {
     });
   }
 
+  const dashManageLinksBtn = $('dashManageLinksBtn');
+  if (dashManageLinksBtn) {
+    dashManageLinksBtn.addEventListener('click', () => {
+      if (!adminToken) {
+        toast('Admin login required to manage links.', 'warning');
+        openModal('loginModalOverlay');
+        return;
+      }
+      populatePromoSettingsForm();
+      openModal('promoLinksModalOverlay');
+    });
+  }
+
+  const adminSavePromoBtn = $('adminSavePromoBtn');
+  if (adminSavePromoBtn) {
+    adminSavePromoBtn.addEventListener('click', handleSavePromoSettings);
+  }
+
+  const adminResetPromoBtn = $('adminResetPromoBtn');
+  if (adminResetPromoBtn) {
+    adminResetPromoBtn.addEventListener('click', () => {
+      if ($('adminPromoLinkInput')) $('adminPromoLinkInput').value = 'https://betadrop.app/i/XUgarY';
+      if ($('adminPromoTitleInput')) $('adminPromoTitleInput').value = 'REPLICA: Keyboard Companion';
+      if ($('adminPromoSubtextInput')) $('adminPromoSubtextInput').value = 'Try our new APK — click to install REPLICA directly on your device';
+      if ($('adminPromoBadgeInput')) $('adminPromoBadgeInput').value = 'TRY OUR NEW APK';
+      if ($('adminPromoBtnTextInput')) $('adminPromoBtnTextInput').value = 'Install REPLICA APK 📲';
+      if ($('adminPromoEnabledInput')) $('adminPromoEnabledInput').checked = true;
+      toast('Reset to default BetaDrop link. Click Save to publish! 🔄', 'info');
+    });
+  }
+
+  const adminTestPromoBtn = $('adminTestPromoBtn');
+  if (adminTestPromoBtn) {
+    adminTestPromoBtn.addEventListener('click', () => {
+      const url = $('adminPromoLinkInput')?.value.trim();
+      if (!url) {
+        toast('Enter a link URL to test!', 'warning');
+        return;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    });
+  }
+
   const selectAllFoldersCheckbox = $('selectAllFoldersCheckbox');
   if (selectAllFoldersCheckbox) {
     selectAllFoldersCheckbox.addEventListener('change', (e) => {
@@ -3643,11 +3686,187 @@ if (dashSyllabusBtn) {
   });
 }
 
-// Global Init
+// Promo & App Settings (Synced with server & localStorage)
+let promoSettings = {
+  replicaLink: 'https://betadrop.app/i/XUgarY',
+  replicaTitle: 'REPLICA: Keyboard Companion',
+  replicaSubtext: 'Try our new APK — click to install REPLICA directly on your device',
+  replicaBadge: 'TRY OUR NEW APK',
+  replicaBtnText: 'Install REPLICA APK 📲',
+  promoEnabled: true
+};
+
+function applyPromoSettings(settings) {
+  if (!settings) return;
+  promoSettings = { ...promoSettings, ...settings };
+
+  // Update Top Banner
+  const promoBar = $('replicaPromoBar');
+  if (promoBar) {
+    promoBar.style.display = promoSettings.promoEnabled ? 'block' : 'none';
+  }
+  const topTag = document.querySelector('.replica-promo-bar .promo-tag-text');
+  if (topTag) topTag.textContent = promoSettings.replicaBadge;
+
+  const topHeadline = document.querySelector('.replica-promo-bar .promo-headline');
+  if (topHeadline) {
+    if (promoSettings.replicaTitle.includes(':')) {
+      const parts = promoSettings.replicaTitle.split(':');
+      topHeadline.innerHTML = `${escapeHtml(parts[0])}: <strong class="promo-name">${escapeHtml(parts.slice(1).join(':').trim())}</strong>`;
+    } else {
+      topHeadline.innerHTML = `<strong class="promo-name">${escapeHtml(promoSettings.replicaTitle)}</strong>`;
+    }
+  }
+  const topSub = document.querySelector('.replica-promo-bar .promo-subtext');
+  if (topSub) topSub.textContent = promoSettings.replicaSubtext;
+
+  const topBtn = $('replicaInstallBtn');
+  if (topBtn) {
+    topBtn.href = promoSettings.replicaLink;
+    const ctaText = topBtn.querySelector('.cta-text');
+    if (ctaText) ctaText.textContent = promoSettings.replicaBtnText;
+  }
+
+  // Update Intro Card
+  const introPromo = $('introApkPromo');
+  if (introPromo) {
+    introPromo.style.display = promoSettings.promoEnabled ? 'flex' : 'none';
+  }
+  const introBadge = document.querySelector('.intro-apk-promo .intro-apk-badge');
+  if (introBadge) introBadge.textContent = `✨ ${promoSettings.replicaBadge}`;
+
+  const introInfo = document.querySelector('.intro-apk-promo .intro-apk-info');
+  if (introInfo) {
+    const strongEl = introInfo.querySelector('strong');
+    const spanEl = introInfo.querySelector('span');
+    if (strongEl) strongEl.textContent = `Try our new APK: ${promoSettings.replicaTitle.split(':')[0]}`;
+    if (spanEl) spanEl.textContent = promoSettings.replicaSubtext;
+  }
+  const introBtn = $('introReplicaInstallBtn');
+  if (introBtn) {
+    introBtn.href = promoSettings.replicaLink;
+    introBtn.textContent = promoSettings.replicaBtnText;
+  }
+}
+
+async function loadPromoSettings() {
+  try {
+    const cached = localStorage.getItem('zipshare_promo_settings');
+    if (cached) {
+      applyPromoSettings(JSON.parse(cached));
+    }
+  } catch (e) {}
+
+  try {
+    const res = await fetch('/api/admin/settings');
+    if (res.ok) {
+      const data = await res.json();
+      applyPromoSettings(data);
+      try {
+        localStorage.setItem('zipshare_promo_settings', JSON.stringify(data));
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.warn('Using default promo settings:', err);
+  }
+}
+
+function populatePromoSettingsForm() {
+  if ($('adminPromoLinkInput')) $('adminPromoLinkInput').value = promoSettings.replicaLink || 'https://betadrop.app/i/XUgarY';
+  if ($('adminPromoTitleInput')) $('adminPromoTitleInput').value = promoSettings.replicaTitle || 'REPLICA: Keyboard Companion';
+  if ($('adminPromoSubtextInput')) $('adminPromoSubtextInput').value = promoSettings.replicaSubtext || 'Try our new APK — click to install REPLICA directly on your device';
+  if ($('adminPromoBadgeInput')) $('adminPromoBadgeInput').value = promoSettings.replicaBadge || 'TRY OUR NEW APK';
+  if ($('adminPromoBtnTextInput')) $('adminPromoBtnTextInput').value = promoSettings.replicaBtnText || 'Install REPLICA APK 📲';
+  if ($('adminPromoEnabledInput')) $('adminPromoEnabledInput').checked = promoSettings.promoEnabled !== false;
+}
+
+async function handleSavePromoSettings() {
+  if (!adminToken) {
+    toast('Admin authorization required to update links.', 'warning');
+    return;
+  }
+  const link = $('adminPromoLinkInput')?.value.trim();
+  if (!link) {
+    toast('Please enter a valid link URL.', 'error');
+    return;
+  }
+
+  const payload = {
+    replicaLink: link,
+    replicaTitle: $('adminPromoTitleInput')?.value.trim() || 'REPLICA: Keyboard Companion',
+    replicaSubtext: $('adminPromoSubtextInput')?.value.trim() || 'Try our new APK — click to install REPLICA directly on your device',
+    replicaBadge: $('adminPromoBadgeInput')?.value.trim() || 'TRY OUR NEW APK',
+    replicaBtnText: $('adminPromoBtnTextInput')?.value.trim() || 'Install REPLICA APK 📲',
+    promoEnabled: $('adminPromoEnabledInput') ? $('adminPromoEnabledInput').checked : true
+  };
+
+  try {
+    const res = await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast(err.message || 'Failed to update links on server.', 'error');
+      return;
+    }
+
+    const data = await res.json();
+    const newSettings = data.settings || payload;
+    applyPromoSettings(newSettings);
+    try {
+      localStorage.setItem('zipshare_promo_settings', JSON.stringify(newSettings));
+    } catch (e) {}
+    toast('Promo & APK links updated successfully! 🚀', 'success');
+    closeModal('promoLinksModalOverlay');
+  } catch (err) {
+    applyPromoSettings(payload);
+    try {
+      localStorage.setItem('zipshare_promo_settings', JSON.stringify(payload));
+    } catch (e) {}
+    toast('Promo links saved locally! 🚀', 'success');
+    closeModal('promoLinksModalOverlay');
+  }
+}
+
+// Global Init for Promo
+function initReplicaPromo() {
+  loadPromoSettings();
+
+  const installBtn = $('replicaInstallBtn');
+  const introBtn = $('introReplicaInstallBtn');
+  const icons = document.querySelectorAll('.replica-app-icon');
+  
+  [installBtn, introBtn].forEach(btn => {
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetUrl = promoSettings.replicaLink || 'https://betadrop.app/i/XUgarY';
+      toast('Opening REPLICA APK installation on BetaDrop... Tap Install to download! 📲', 'success');
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    });
+  });
+
+  icons.forEach(icon => {
+    icon.style.cursor = 'pointer';
+    icon.addEventListener('click', () => {
+      const targetUrl = promoSettings.replicaLink || 'https://betadrop.app/i/XUgarY';
+      toast('Opening REPLICA APK installation on BetaDrop... 📲', 'success');
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    });
+  });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initCinematicEyes();
   initEasterEggs();
   initIntro();
+  initReplicaPromo();
   initParticles();
   setupUploads();
   setupDashboardBindings();

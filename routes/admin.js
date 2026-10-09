@@ -82,5 +82,76 @@ router.delete('/suggestions/:id', requireAdmin, async (req, res) => {
   res.json({ message: 'Deleted' });
 });
 
+// ---- Promo & App Links Settings (Public read, Admin update) ----
+const fs = require('fs');
+const path = require('path');
+const SETTINGS_FILE = path.join(__dirname, '..', 'data', 'settings.json');
+
+const DEFAULT_SETTINGS = {
+  replicaLink: 'https://betadrop.app/i/XUgarY',
+  replicaTitle: 'REPLICA: Keyboard Companion',
+  replicaSubtext: 'Try our new APK — click to install REPLICA directly on your device',
+  replicaBadge: 'TRY OUR NEW APK',
+  replicaBtnText: 'Install REPLICA APK 📲',
+  promoEnabled: true,
+  updatedAt: new Date().toISOString()
+};
+
+function getSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const raw = fs.readFileSync(SETTINGS_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      return { ...DEFAULT_SETTINGS, ...data };
+    }
+  } catch (err) {
+    console.warn('Using default settings:', err.message);
+  }
+  return { ...DEFAULT_SETTINGS };
+}
+
+function saveSettings(data) {
+  try {
+    const dir = path.dirname(SETTINGS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to write settings.json:', err.message);
+  }
+}
+
+// GET /api/admin/settings (publicly accessible so all clients fetch latest links)
+router.get('/settings', (req, res) => {
+  res.json(getSettings());
+});
+
+// PUT /api/admin/settings (Admin only: update replica download link & promo details)
+router.put('/settings', requireAdmin, (req, res) => {
+  const current = getSettings();
+  const {
+    replicaLink,
+    replicaTitle,
+    replicaSubtext,
+    replicaBadge,
+    replicaBtnText,
+    promoEnabled
+  } = req.body;
+
+  const updated = {
+    ...current,
+    replicaLink: replicaLink !== undefined && String(replicaLink).trim() ? String(replicaLink).trim() : current.replicaLink,
+    replicaTitle: replicaTitle !== undefined && String(replicaTitle).trim() ? String(replicaTitle).trim() : current.replicaTitle,
+    replicaSubtext: replicaSubtext !== undefined ? String(replicaSubtext).trim() : current.replicaSubtext,
+    replicaBadge: replicaBadge !== undefined && String(replicaBadge).trim() ? String(replicaBadge).trim() : current.replicaBadge,
+    replicaBtnText: replicaBtnText !== undefined && String(replicaBtnText).trim() ? String(replicaBtnText).trim() : current.replicaBtnText,
+    promoEnabled: promoEnabled !== undefined ? Boolean(promoEnabled) : current.promoEnabled,
+    updatedAt: new Date().toISOString()
+  };
+
+  saveSettings(updated);
+  res.json({ success: true, message: 'Settings updated successfully', settings: updated });
+});
+
 module.exports = router;
+
 
