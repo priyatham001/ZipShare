@@ -2458,7 +2458,7 @@ function setupDashboardBindings() {
   const adminResetPromoBtn = $('adminResetPromoBtn');
   if (adminResetPromoBtn) {
     adminResetPromoBtn.addEventListener('click', () => {
-      if ($('adminPromoLinkInput')) $('adminPromoLinkInput').value = 'https://betadrop.app/i/WxHMDn';
+      if ($('adminPromoLinkInput')) $('adminPromoLinkInput').value = 'https://betadrop.app/i/csGXSh';
       if ($('adminPromoTitleInput')) $('adminPromoTitleInput').value = 'REPLICA: Keyboard Companion';
       if ($('adminPromoSubtextInput')) $('adminPromoSubtextInput').value = 'Try our new APK — click to install REPLICA directly on your device';
       if ($('adminPromoBadgeInput')) $('adminPromoBadgeInput').value = 'TRY OUR NEW APK';
@@ -3688,7 +3688,7 @@ if (dashSyllabusBtn) {
 
 // Promo & App Settings (Synced with server & localStorage)
 let promoSettings = {
-  replicaLink: 'https://betadrop.app/i/WxHMDn',
+  replicaLink: 'https://betadrop.app/i/csGXSh',
   replicaTitle: 'REPLICA: Keyboard Companion',
   replicaSubtext: 'Try our new APK — click to install REPLICA directly on your device',
   replicaBadge: 'TRY OUR NEW APK',
@@ -3772,7 +3772,7 @@ async function loadPromoSettings() {
 }
 
 function populatePromoSettingsForm() {
-  if ($('adminPromoLinkInput')) $('adminPromoLinkInput').value = promoSettings.replicaLink || 'https://betadrop.app/i/WxHMDn';
+  if ($('adminPromoLinkInput')) $('adminPromoLinkInput').value = promoSettings.replicaLink || 'https://betadrop.app/i/csGXSh';
   if ($('adminPromoTitleInput')) $('adminPromoTitleInput').value = promoSettings.replicaTitle || 'REPLICA: Keyboard Companion';
   if ($('adminPromoSubtextInput')) $('adminPromoSubtextInput').value = promoSettings.replicaSubtext || 'Try our new APK — click to install REPLICA directly on your device';
   if ($('adminPromoBadgeInput')) $('adminPromoBadgeInput').value = promoSettings.replicaBadge || 'TRY OUR NEW APK';
@@ -3846,7 +3846,7 @@ function initReplicaPromo() {
     if (!btn) return;
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      const targetUrl = promoSettings.replicaLink || 'https://betadrop.app/i/WxHMDn';
+      const targetUrl = promoSettings.replicaLink || 'https://betadrop.app/i/csGXSh';
       toast('Opening REPLICA APK installation on BetaDrop... Tap Install to download! 📲', 'success');
       window.open(targetUrl, '_blank', 'noopener,noreferrer');
     });
@@ -3855,7 +3855,7 @@ function initReplicaPromo() {
   icons.forEach(icon => {
     icon.style.cursor = 'pointer';
     icon.addEventListener('click', () => {
-      const targetUrl = promoSettings.replicaLink || 'https://betadrop.app/i/WxHMDn';
+      const targetUrl = promoSettings.replicaLink || 'https://betadrop.app/i/csGXSh';
       toast('Opening REPLICA APK installation on BetaDrop... 📲', 'success');
       window.open(targetUrl, '_blank', 'noopener,noreferrer');
     });

@@ -88,7 +88,7 @@ const path = require('path');
 const SETTINGS_FILE = path.join(__dirname, '..', 'data', 'settings.json');
 
 const DEFAULT_SETTINGS = {
-  replicaLink: 'https://betadrop.app/i/WxHMDn',
+  replicaLink: 'https://betadrop.app/i/csGXSh',
   replicaTitle: 'REPLICA: Keyboard Companion',
   replicaSubtext: 'Try our new APK — click to install REPLICA directly on your device',
   replicaBadge: 'TRY OUR NEW APK',
