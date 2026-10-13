@@ -2,14 +2,18 @@ const express = require('express');
 const router = express.Router();
 const { GoogleGenAI, Type } = require('@google/genai');
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build'
+function getAIClient() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build'
+      }
     }
-  }
-});
+  });
+}
 
 // POST /api/ai/generate-program
 router.post('/generate-program', async (req, res) => {
@@ -18,6 +22,14 @@ router.post('/generate-program', async (req, res) => {
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ error: 'Program topic or prompt is required.' });
+    }
+
+    const ai = getAIClient();
+    if (!ai) {
+      return res.json({
+        verified: false,
+        message: 'Gemini API key is not configured on the server. Please set GEMINI_API_KEY.'
+      });
     }
 
     const systemInstruction = `
@@ -94,6 +106,11 @@ router.post('/explain-code', async (req, res) => {
 
     if (!code || !code.trim()) {
       return res.status(400).json({ error: 'Code content is required for explanation.' });
+    }
+
+    const ai = getAIClient();
+    if (!ai) {
+      return res.status(503).json({ error: 'Gemini API key is not configured on the server. Please set GEMINI_API_KEY.' });
     }
 
     const systemInstruction = `
