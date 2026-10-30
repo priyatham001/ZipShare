@@ -1207,8 +1207,841 @@
     "exercises": []
   },
   "dbms": {
-    "title": "DBMS Lab",
+    "title": "Database Management Systems Lab ( CSE, AIML, CSIT & CSG)",
+    "code": "B23CS2104",
     "icon": "🗄️",
-    "exercises": []
+    "exercises": [
+      {
+        "id": "dbms-official",
+        "title": "Official DBMS Lab Experiments (1–54)",
+        "questions": [
+          {
+            "id": "dbms-exp-1",
+            "number": 1,
+            "title": "#1 TrafficViolations Table Creation and Data Insertion",
+            "rawTitle": "TrafficViolations Table Creation and Data Insertion",
+            "module": "Experiment - 1 / Programs",
+            "keywords": [
+              "trafficviolations table creation and data insertion",
+              "trafficviolations",
+              "traffic violations",
+              "table creation",
+              "data insertion",
+              "create table trafficviolations",
+              "insert trafficviolations",
+              "trafficviolations table"
+            ],
+            "description": "Official Experiment #1: TrafficViolations Table Creation and Data Insertion (Experiment - 1 / Programs)"
+          },
+          {
+            "id": "dbms-exp-2",
+            "number": 2,
+            "title": "#2 DDL - ALTER",
+            "rawTitle": "DDL - ALTER",
+            "module": "Experiment - 1 / Programs",
+            "keywords": [
+              "ddl alter",
+              "ddl - alter",
+              "alter table",
+              "alter table add",
+              "alter table modify",
+              "alter"
+            ],
+            "description": "Official Experiment #2: DDL - ALTER (Experiment - 1 / Programs)"
+          },
+          {
+            "id": "dbms-exp-3",
+            "number": 3,
+            "title": "#3 DDL - DROP",
+            "rawTitle": "DDL - DROP",
+            "module": "Experiment - 1 / Programs",
+            "keywords": [
+              "ddl drop",
+              "ddl - drop",
+              "drop table",
+              "drop table purge",
+              "drop"
+            ],
+            "description": "Official Experiment #3: DDL - DROP (Experiment - 1 / Programs)"
+          },
+          {
+            "id": "dbms-exp-4",
+            "number": 4,
+            "title": "#4 DML - SELECT * FROM TABLE - 1 - University Management System",
+            "rawTitle": "DML - SELECT * FROM TABLE - 1 - University Management System",
+            "module": "Experiment - 1 / Programs",
+            "keywords": [
+              "dml select from table",
+              "university management system",
+              "select * from table",
+              "dml - select",
+              "university management",
+              "select from table",
+              "student_database_schema"
+            ],
+            "description": "Official Experiment #4: DML - SELECT * FROM TABLE - 1 - University Management System (Experiment - 1 / Programs)"
+          },
+          {
+            "id": "dbms-exp-5",
+            "number": 5,
+            "title": "#5 ANY",
+            "rawTitle": "ANY",
+            "module": "Experiment - 2 / Programs",
+            "keywords": [
+              "any operator",
+              "subquery any",
+              "sql any",
+              "any clause",
+              "where any"
+            ],
+            "description": "Official Experiment #5: ANY (Experiment - 2 / Programs)"
+          },
+          {
+            "id": "dbms-exp-6",
+            "number": 6,
+            "title": "#6 ALL",
+            "rawTitle": "ALL",
+            "module": "Experiment - 2 / Programs",
+            "keywords": [
+              "all operator",
+              "subquery all",
+              "sql all",
+              "all clause",
+              "where all"
+            ],
+            "description": "Official Experiment #6: ALL (Experiment - 2 / Programs)"
+          },
+          {
+            "id": "dbms-exp-7",
+            "number": 7,
+            "title": "#7 EXISTS",
+            "rawTitle": "EXISTS",
+            "module": "Experiment - 2 / Programs",
+            "keywords": [
+              "exists operator",
+              "subquery exists",
+              "sql exists",
+              "exists clause",
+              "where exists",
+              "not exists"
+            ],
+            "description": "Official Experiment #7: EXISTS (Experiment - 2 / Programs)"
+          },
+          {
+            "id": "dbms-exp-8",
+            "number": 8,
+            "title": "#8 The Lost Scrolls of Time",
+            "rawTitle": "The Lost Scrolls of Time",
+            "module": "Experiment - 2 / Programs",
+            "keywords": [
+              "the lost scrolls of time",
+              "lost scrolls of time",
+              "scrolls of time",
+              "lost scrolls",
+              "scrolls"
+            ],
+            "description": "Official Experiment #8: The Lost Scrolls of Time (Experiment - 2 / Programs)"
+          },
+          {
+            "id": "dbms-exp-9",
+            "number": 9,
+            "title": "#9 Smart City Streetlight Monitoring",
+            "rawTitle": "Smart City Streetlight Monitoring",
+            "module": "Experiment - 2 / Programs",
+            "keywords": [
+              "smart city streetlight monitoring",
+              "streetlight monitoring",
+              "smart city streetlight",
+              "streetlight",
+              "streetlights"
+            ],
+            "description": "Official Experiment #9: Smart City Streetlight Monitoring (Experiment - 2 / Programs)"
+          },
+          {
+            "id": "dbms-exp-10",
+            "number": 10,
+            "title": "#10 City Waste Collection Report",
+            "rawTitle": "City Waste Collection Report",
+            "module": "Experiment - 2 / Programs",
+            "keywords": [
+              "city waste collection report",
+              "waste collection report",
+              "city waste collection",
+              "waste collection",
+              "waste report"
+            ],
+            "description": "Official Experiment #10: City Waste Collection Report (Experiment - 2 / Programs)"
+          },
+          {
+            "id": "dbms-exp-11",
+            "number": 11,
+            "title": "#11 Find Common Animal Records",
+            "rawTitle": "Find Common Animal Records",
+            "module": "Experiment - 2 / Programs",
+            "keywords": [
+              "find common animal records",
+              "common animal records",
+              "animal records",
+              "common animal",
+              "animals intersect"
+            ],
+            "description": "Official Experiment #11: Find Common Animal Records (Experiment - 2 / Programs)"
+          },
+          {
+            "id": "dbms-exp-12",
+            "number": 12,
+            "title": "#12 Aggregate function - COUNT",
+            "rawTitle": "Aggregate function - COUNT",
+            "module": "Experiment - 3 / Programs",
+            "keywords": [
+              "aggregate function count",
+              "count function",
+              "count(*)",
+              "count aggregate",
+              "sql count",
+              "count"
+            ],
+            "description": "Official Experiment #12: Aggregate function - COUNT (Experiment - 3 / Programs)"
+          },
+          {
+            "id": "dbms-exp-13",
+            "number": 13,
+            "title": "#13 Aggregate function - AVG",
+            "rawTitle": "Aggregate function - AVG",
+            "module": "Experiment - 3 / Programs",
+            "keywords": [
+              "aggregate function avg",
+              "avg function",
+              "avg()",
+              "average aggregate",
+              "sql avg",
+              "avg"
+            ],
+            "description": "Official Experiment #13: Aggregate function - AVG (Experiment - 3 / Programs)"
+          },
+          {
+            "id": "dbms-exp-14",
+            "number": 14,
+            "title": "#14 Aggregate function - MIN",
+            "rawTitle": "Aggregate function - MIN",
+            "module": "Experiment - 3 / Programs",
+            "keywords": [
+              "aggregate function min",
+              "min function",
+              "min()",
+              "minimum aggregate",
+              "sql min",
+              "min"
+            ],
+            "description": "Official Experiment #14: Aggregate function - MIN (Experiment - 3 / Programs)"
+          },
+          {
+            "id": "dbms-exp-15",
+            "number": 15,
+            "title": "#15 Aggregate function - MAX",
+            "rawTitle": "Aggregate function - MAX",
+            "module": "Experiment - 3 / Programs",
+            "keywords": [
+              "aggregate function max",
+              "max function",
+              "max()",
+              "maximum aggregate",
+              "sql max",
+              "max"
+            ],
+            "description": "Official Experiment #15: Aggregate function - MAX (Experiment - 3 / Programs)"
+          },
+          {
+            "id": "dbms-exp-16",
+            "number": 16,
+            "title": "#16 Aggregate function - SUM",
+            "rawTitle": "Aggregate function - SUM",
+            "module": "Experiment - 3 / Programs",
+            "keywords": [
+              "aggregate function sum",
+              "sum function",
+              "sum()",
+              "sum aggregate",
+              "sql sum",
+              "sum"
+            ],
+            "description": "Official Experiment #16: Aggregate function - SUM (Experiment - 3 / Programs)"
+          },
+          {
+            "id": "dbms-exp-17",
+            "number": 17,
+            "title": "#17 Simple Queries - Group By and Having Clause",
+            "rawTitle": "Simple Queries - Group By and Having Clause",
+            "module": "Experiment - 3 / Programs",
+            "keywords": [
+              "group by and having clause",
+              "group by having",
+              "group by",
+              "having clause",
+              "simple queries group by",
+              "group by having clause"
+            ],
+            "description": "Official Experiment #17: Simple Queries - Group By and Having Clause (Experiment - 3 / Programs)"
+          },
+          {
+            "id": "dbms-exp-18",
+            "number": 18,
+            "title": "#18 Managing and Updating Foreign Trip Information",
+            "rawTitle": "Managing and Updating Foreign Trip Information",
+            "module": "Experiment - 3 / Programs",
+            "keywords": [
+              "managing and updating foreign trip information",
+              "foreign trip information",
+              "foreign trip",
+              "updating foreign trip",
+              "foreign trips"
+            ],
+            "description": "Official Experiment #18: Managing and Updating Foreign Trip Information (Experiment - 3 / Programs)"
+          },
+          {
+            "id": "dbms-exp-19",
+            "number": 19,
+            "title": "#19 TO_CHAR",
+            "rawTitle": "TO_CHAR",
+            "module": "Experiment - 4 / Conversion Functions",
+            "keywords": [
+              "to_char",
+              "to char",
+              "conversion functions to_char",
+              "to_char conversion",
+              "to_char function"
+            ],
+            "description": "Official Experiment #19: TO_CHAR (Experiment - 4 / Conversion Functions)"
+          },
+          {
+            "id": "dbms-exp-20",
+            "number": 20,
+            "title": "#20 TO_NUMBER",
+            "rawTitle": "TO_NUMBER",
+            "module": "Experiment - 4 / Conversion Functions",
+            "keywords": [
+              "to_number",
+              "to number",
+              "conversion functions to_number",
+              "to_number conversion",
+              "to_number function"
+            ],
+            "description": "Official Experiment #20: TO_NUMBER (Experiment - 4 / Conversion Functions)"
+          },
+          {
+            "id": "dbms-exp-21",
+            "number": 21,
+            "title": "#21 TO_DATE",
+            "rawTitle": "TO_DATE",
+            "module": "Experiment - 4 / Conversion Functions",
+            "keywords": [
+              "to_date",
+              "to date",
+              "conversion functions to_date",
+              "to_date conversion",
+              "to_date function"
+            ],
+            "description": "Official Experiment #21: TO_DATE (Experiment - 4 / Conversion Functions)"
+          },
+          {
+            "id": "dbms-exp-22",
+            "number": 22,
+            "title": "#22 RTRIM",
+            "rawTitle": "RTRIM",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "rtrim",
+              "rtrim function",
+              "string functions rtrim",
+              "right trim"
+            ],
+            "description": "Official Experiment #22: RTRIM (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-23",
+            "number": 23,
+            "title": "#23 LPAD",
+            "rawTitle": "LPAD",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "lpad",
+              "lpad function",
+              "string functions lpad",
+              "left pad"
+            ],
+            "description": "Official Experiment #23: LPAD (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-24",
+            "number": 24,
+            "title": "#24 RPAD",
+            "rawTitle": "RPAD",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "rpad",
+              "rpad function",
+              "string functions rpad",
+              "right pad"
+            ],
+            "description": "Official Experiment #24: RPAD (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-25",
+            "number": 25,
+            "title": "#25 LTRIM",
+            "rawTitle": "LTRIM",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "ltrim",
+              "ltrim function",
+              "string functions ltrim",
+              "left trim"
+            ],
+            "description": "Official Experiment #25: LTRIM (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-26",
+            "number": 26,
+            "title": "#26 LOWER",
+            "rawTitle": "LOWER",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "lower function",
+              "string functions lower",
+              "sql lower",
+              "lower"
+            ],
+            "description": "Official Experiment #26: LOWER (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-27",
+            "number": 27,
+            "title": "#27 UPPER",
+            "rawTitle": "UPPER",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "upper function",
+              "string functions upper",
+              "sql upper",
+              "upper"
+            ],
+            "description": "Official Experiment #27: UPPER (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-28",
+            "number": 28,
+            "title": "#28 INITCAP",
+            "rawTitle": "INITCAP",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "initcap",
+              "initcap function",
+              "string functions initcap"
+            ],
+            "description": "Official Experiment #28: INITCAP (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-29",
+            "number": 29,
+            "title": "#29 LENGTH",
+            "rawTitle": "LENGTH",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "length function",
+              "string functions length",
+              "sql length",
+              "length"
+            ],
+            "description": "Official Experiment #29: LENGTH (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-30",
+            "number": 30,
+            "title": "#30 SUBSTR",
+            "rawTitle": "SUBSTR",
+            "module": "Experiment - 4 / String Functions",
+            "keywords": [
+              "substr",
+              "substr function",
+              "substring function",
+              "string functions substr"
+            ],
+            "description": "Official Experiment #30: SUBSTR (Experiment - 4 / String Functions)"
+          },
+          {
+            "id": "dbms-exp-31",
+            "number": 31,
+            "title": "#31 Employee Salary Lookup System",
+            "rawTitle": "Employee Salary Lookup System",
+            "module": "Experiment - 5 / Programs",
+            "keywords": [
+              "employee salary lookup system",
+              "employee salary lookup",
+              "salary lookup system",
+              "salary lookup",
+              "lookup system"
+            ],
+            "description": "Official Experiment #31: Employee Salary Lookup System (Experiment - 5 / Programs)"
+          },
+          {
+            "id": "dbms-exp-32",
+            "number": 32,
+            "title": "#32 COMMIT",
+            "rawTitle": "COMMIT",
+            "module": "Experiment - 5 / Programs",
+            "keywords": [
+              "commit",
+              "tcl commit",
+              "commit transaction",
+              "sql commit",
+              "commit work"
+            ],
+            "description": "Official Experiment #32: COMMIT (Experiment - 5 / Programs)"
+          },
+          {
+            "id": "dbms-exp-33",
+            "number": 33,
+            "title": "#33 SAVEPOINT",
+            "rawTitle": "SAVEPOINT",
+            "module": "Experiment - 5 / Programs",
+            "keywords": [
+              "savepoint",
+              "tcl savepoint",
+              "savepoint transaction",
+              "sql savepoint"
+            ],
+            "description": "Official Experiment #33: SAVEPOINT (Experiment - 5 / Programs)"
+          },
+          {
+            "id": "dbms-exp-34",
+            "number": 34,
+            "title": "#34 ROLLBACK",
+            "rawTitle": "ROLLBACK",
+            "module": "Experiment - 5 / Programs",
+            "keywords": [
+              "rollback",
+              "tcl rollback",
+              "rollback transaction",
+              "sql rollback",
+              "rollback to savepoint"
+            ],
+            "description": "Official Experiment #34: ROLLBACK (Experiment - 5 / Programs)"
+          },
+          {
+            "id": "dbms-exp-35",
+            "number": 35,
+            "title": "#35 Determine Scholarship Eligibility Using Nested IF",
+            "rawTitle": "Determine Scholarship Eligibility Using Nested IF",
+            "module": "Experiment - 6 / Programs",
+            "keywords": [
+              "determine scholarship eligibility using nested if",
+              "scholarship eligibility nested if",
+              "scholarship eligibility",
+              "nested if scholarship",
+              "plsql nested if",
+              "nested if"
+            ],
+            "description": "Official Experiment #35: Determine Scholarship Eligibility Using Nested IF (Experiment - 6 / Programs)"
+          },
+          {
+            "id": "dbms-exp-36",
+            "number": 36,
+            "title": "#36 Determine Employee Bonus Using CASE Statement",
+            "rawTitle": "Determine Employee Bonus Using CASE Statement",
+            "module": "Experiment - 6 / Programs",
+            "keywords": [
+              "determine employee bonus using case statement",
+              "employee bonus case statement",
+              "employee bonus",
+              "bonus case statement",
+              "case statement bonus",
+              "case statement"
+            ],
+            "description": "Official Experiment #36: Determine Employee Bonus Using CASE Statement (Experiment - 6 / Programs)"
+          },
+          {
+            "id": "dbms-exp-37",
+            "number": 37,
+            "title": "#37 Determine Shipping Category Using CASE Expression",
+            "rawTitle": "Determine Shipping Category Using CASE Expression",
+            "module": "Experiment - 6 / Programs",
+            "keywords": [
+              "determine shipping category using case expression",
+              "shipping category case expression",
+              "shipping category",
+              "case expression shipping",
+              "case expression"
+            ],
+            "description": "Official Experiment #37: Determine Shipping Category Using CASE Expression (Experiment - 6 / Programs)"
+          },
+          {
+            "id": "dbms-exp-38",
+            "number": 38,
+            "title": "#38 Determine Employee Contact Number Using NULLIF() and COALESCE()",
+            "rawTitle": "Determine Employee Contact Number Using NULLIF() and COALESCE()",
+            "module": "Experiment - 6 / Programs",
+            "keywords": [
+              "determine employee contact number using nullif() and coalesce()",
+              "nullif and coalesce",
+              "employee contact number nullif coalesce",
+              "nullif",
+              "coalesce",
+              "nullif()",
+              "coalesce()"
+            ],
+            "description": "Official Experiment #38: Determine Employee Contact Number Using NULLIF() and COALESCE() (Experiment - 6 / Programs)"
+          },
+          {
+            "id": "dbms-exp-39",
+            "number": 39,
+            "title": "#39 Countdown Sequence - Control Statement - While Loop",
+            "rawTitle": "Countdown Sequence - Control Statement - While Loop",
+            "module": "Experiment - 7 / Programs",
+            "keywords": [
+              "countdown sequence while loop",
+              "countdown sequence",
+              "control statement while loop",
+              "while loop countdown",
+              "plsql while loop",
+              "while loop"
+            ],
+            "description": "Official Experiment #39: Countdown Sequence - Control Statement - While Loop (Experiment - 7 / Programs)"
+          },
+          {
+            "id": "dbms-exp-40",
+            "number": 40,
+            "title": "#40 Sum of Integers - Control Statement - For Loop",
+            "rawTitle": "Sum of Integers - Control Statement - For Loop",
+            "module": "Experiment - 7 / Programs",
+            "keywords": [
+              "sum of integers for loop",
+              "sum of integers",
+              "control statement for loop",
+              "for loop sum",
+              "plsql for loop",
+              "for loop"
+            ],
+            "description": "Official Experiment #40: Sum of Integers - Control Statement - For Loop (Experiment - 7 / Programs)"
+          },
+          {
+            "id": "dbms-exp-41",
+            "number": 41,
+            "title": "#41 Process Student Marks Using Nested Loops and Exception Handling",
+            "rawTitle": "Process Student Marks Using Nested Loops and Exception Handling",
+            "module": "Experiment - 7 / Programs",
+            "keywords": [
+              "process student marks using nested loops and exception handling",
+              "process student marks",
+              "nested loops and exception handling",
+              "student marks nested loops",
+              "marks exception handling",
+              "nested loops exception"
+            ],
+            "description": "Official Experiment #41: Process Student Marks Using Nested Loops and Exception Handling (Experiment - 7 / Programs)"
+          },
+          {
+            "id": "dbms-exp-42",
+            "number": 42,
+            "title": "#42 Handle Duplicate Employee ID Using Built-in Exception",
+            "rawTitle": "Handle Duplicate Employee ID Using Built-in Exception",
+            "module": "Experiment - 7 / Programs",
+            "keywords": [
+              "handle duplicate employee id using built-in exception",
+              "handle duplicate employee id",
+              "duplicate employee id",
+              "built-in exception duplicate",
+              "dup_val_on_index",
+              "duplicate employee"
+            ],
+            "description": "Official Experiment #42: Handle Duplicate Employee ID Using Built-in Exception (Experiment - 7 / Programs)"
+          },
+          {
+            "id": "dbms-exp-43",
+            "number": 43,
+            "title": "#43 Space Mission Signal Validation System",
+            "rawTitle": "Space Mission Signal Validation System",
+            "module": "Experiment - 7 / Programs",
+            "keywords": [
+              "space mission signal validation system",
+              "space mission signal validation",
+              "signal validation system",
+              "space mission signal",
+              "space mission"
+            ],
+            "description": "Official Experiment #43: Space Mission Signal Validation System (Experiment - 7 / Programs)"
+          },
+          {
+            "id": "dbms-exp-44",
+            "number": 44,
+            "title": "#44 IN, OUT and INOUT Parameters",
+            "rawTitle": "IN, OUT and INOUT Parameters",
+            "module": "Experiment - 8 / Programs",
+            "keywords": [
+              "in, out and inout parameters",
+              "in out and inout parameters",
+              "in out inout parameters",
+              "in out inout",
+              "procedure parameters",
+              "plsql parameters",
+              "in out inout parameter"
+            ],
+            "description": "Official Experiment #44: IN, OUT and INOUT Parameters (Experiment - 8 / Programs)"
+          },
+          {
+            "id": "dbms-exp-45",
+            "number": 45,
+            "title": "#45 Hospital Staff Salary Update",
+            "rawTitle": "Hospital Staff Salary Update",
+            "module": "Experiment - 9 / Programs",
+            "keywords": [
+              "hospital staff salary update",
+              "hospital staff salary",
+              "staff salary update",
+              "hospital salary update",
+              "hospital staff"
+            ],
+            "description": "Official Experiment #45: Hospital Staff Salary Update (Experiment - 9 / Programs)"
+          },
+          {
+            "id": "dbms-exp-46",
+            "number": 46,
+            "title": "#46 Movie Review Rating Categorization System",
+            "rawTitle": "Movie Review Rating Categorization System",
+            "module": "Experiment - 10 / Programs",
+            "keywords": [
+              "movie review rating categorization system",
+              "movie review rating",
+              "movie review rating categorization",
+              "movie rating categorization",
+              "movie review rating system"
+            ],
+            "description": "Official Experiment #46: Movie Review Rating Categorization System (Experiment - 10 / Programs)"
+          },
+          {
+            "id": "dbms-exp-47",
+            "number": 47,
+            "title": "#47 Library Book Availability Update Using a FOR UPDATE Cursor",
+            "rawTitle": "Library Book Availability Update Using a FOR UPDATE Cursor",
+            "module": "Experiment - 10 / Programs",
+            "keywords": [
+              "library book availability update using a for update cursor",
+              "library book availability update",
+              "for update cursor",
+              "book availability for update",
+              "library book availability",
+              "cursor for update"
+            ],
+            "description": "Official Experiment #47: Library Book Availability Update Using a FOR UPDATE Cursor (Experiment - 10 / Programs)"
+          },
+          {
+            "id": "dbms-exp-48",
+            "number": 48,
+            "title": "#48 Student Marks Update Using WHERE CURRENT OF",
+            "rawTitle": "Student Marks Update Using WHERE CURRENT OF",
+            "module": "Experiment - 10 / Programs",
+            "keywords": [
+              "student marks update using where current of",
+              "where current of",
+              "student marks update where current of",
+              "cursor where current of",
+              "update where current of"
+            ],
+            "description": "Official Experiment #48: Student Marks Update Using WHERE CURRENT OF (Experiment - 10 / Programs)"
+          },
+          {
+            "id": "dbms-exp-49",
+            "number": 49,
+            "title": "#49 Customer Order Details Using a Cursor Variable",
+            "rawTitle": "Customer Order Details Using a Cursor Variable",
+            "module": "Experiment - 10 / Programs",
+            "keywords": [
+              "customer order details using a cursor variable",
+              "customer order details cursor variable",
+              "cursor variable",
+              "ref cursor customer order",
+              "customer order details",
+              "ref cursor"
+            ],
+            "description": "Official Experiment #49: Customer Order Details Using a Cursor Variable (Experiment - 10 / Programs)"
+          },
+          {
+            "id": "dbms-exp-50",
+            "number": 50,
+            "title": "#50 Library Book Borrowing System",
+            "rawTitle": "Library Book Borrowing System",
+            "module": "Experiment - 11 / Programs",
+            "keywords": [
+              "library book borrowing system",
+              "book borrowing system",
+              "library book borrowing",
+              "book borrowing trigger",
+              "library borrowing"
+            ],
+            "description": "Official Experiment #50: Library Book Borrowing System (Experiment - 11 / Programs)"
+          },
+          {
+            "id": "dbms-exp-51",
+            "number": 51,
+            "title": "#51 Delivery Date Correction System",
+            "rawTitle": "Delivery Date Correction System",
+            "module": "Experiment - 11 / Programs",
+            "keywords": [
+              "delivery date correction system",
+              "delivery date correction",
+              "delivery date trigger",
+              "delivery date"
+            ],
+            "description": "Official Experiment #51: Delivery Date Correction System (Experiment - 11 / Programs)"
+          },
+          {
+            "id": "dbms-exp-52",
+            "number": 52,
+            "title": "#52 Statement-Level Trigger – Update Audit Counter",
+            "rawTitle": "Statement-Level Trigger – Update Audit Counter",
+            "module": "Experiment - 11 / Programs",
+            "keywords": [
+              "statement-level trigger update audit counter",
+              "statement-level trigger",
+              "statement level trigger",
+              "update audit counter",
+              "audit counter trigger",
+              "statement level trigger audit"
+            ],
+            "description": "Official Experiment #52: Statement-Level Trigger – Update Audit Counter (Experiment - 11 / Programs)"
+          },
+          {
+            "id": "dbms-exp-53",
+            "number": 53,
+            "title": "#53 Log Product Deletion Operations Using a BEFORE Statement-Level Trigger",
+            "rawTitle": "Log Product Deletion Operations Using a BEFORE Statement-Level Trigger",
+            "module": "Experiment - 11 / Programs",
+            "keywords": [
+              "log product deletion operations using a before statement-level trigger",
+              "log product deletion operations",
+              "before statement-level trigger",
+              "product deletion trigger",
+              "product deletion",
+              "before statement level trigger"
+            ],
+            "description": "Official Experiment #53: Log Product Deletion Operations Using a BEFORE Statement-Level Trigger (Experiment - 11 / Programs)"
+          },
+          {
+            "id": "dbms-exp-54",
+            "number": 54,
+            "title": "#54 Movie Streaming Platform",
+            "rawTitle": "Movie Streaming Platform",
+            "module": "Experiment - 12 / Programs",
+            "keywords": [
+              "movie streaming platform",
+              "movie streaming",
+              "streaming platform",
+              "package movie streaming",
+              "plsql package movie streaming"
+            ],
+            "description": "Official Experiment #54: Movie Streaming Platform (Experiment - 12 / Programs)"
+          }
+        ]
+      }
+    ]
   }
 }

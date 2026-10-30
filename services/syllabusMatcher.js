@@ -36,13 +36,17 @@ function detectCourseKey(ext, filename = '', relPath = '', categoryHint = null) 
   const e = (ext || '').toLowerCase().replace('.', '');
   const pathLower = (relPath + ' ' + filename + ' ' + (categoryHint || '')).toLowerCase();
 
-  if (categoryHint && ['java', 'python', 'py', 'adsa', 'dsa'].includes(categoryHint.toLowerCase())) {
+  if (categoryHint && ['java', 'python', 'py', 'adsa', 'dsa', 'dbms', 'sql'].includes(categoryHint.toLowerCase())) {
     const k = categoryHint.toLowerCase();
     if (k === 'py') return 'python';
     if (k === 'dsa') return 'adsa';
+    if (k === 'sql') return 'dbms';
     return k;
   }
 
+  if (pathLower.includes('dbms') || pathLower.includes('sql') || e === 'sql') {
+    return 'dbms';
+  }
   if (pathLower.includes('adsa') || pathLower.includes('dsa') || pathLower.includes('tree') || pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('heap')) {
     return 'adsa';
   }

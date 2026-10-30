@@ -757,7 +757,7 @@ function switchCategory(cat) {
     java: { icon: '☕', title: 'Java Projects', desc: 'Object Oriented Programming, Multithreading, and Data Structures in Java.' },
     python: { icon: '🐍', title: 'Python Programs', desc: 'Lab programs, logic problems, algorithms, and scripts.' },
     c: { icon: '💻', title: 'C Language Programming', desc: 'Core C language lab exercises, pointers, matrix operations, and algorithms.' },
-    dbms: { icon: '🗄️', title: 'Database Management Systems (DBMS)', desc: 'SQL DDL/DML queries, schema files, normalization, and joins.' },
+    dbms: { icon: '🗄️', title: 'Database Management Systems (DBMS)', desc: 'Database Management Systems Lab ( CSE, AIML, CSIT & CSG) · B23CS2104: 54 Official Lab Experiments.' },
     adsa: { icon: '🌳', title: 'Advanced Data Structures & Algorithms (ADSA)', desc: 'AVL Trees, Graphs, Hash Tables, and Red-Black Tree implementations.' },
     folders: { icon: '📁', title: 'Project Folders', desc: 'Multi-file student lab project directory structures.' },
     pinned: { icon: '📌', title: 'Pinned Highlights', desc: 'Important administrative releases and starred lab code.' }
@@ -935,6 +935,7 @@ function renderSidebar() {
   const officialCourses = [
     { key: 'java', title: 'Java Programming', code: 'B23CS2105', icon: '☕' },
     { key: 'python', title: 'Python Programming', code: 'B23CS2106', icon: '🐍' },
+    { key: 'dbms', title: 'Database Management Systems', code: 'B23CS2104', icon: '🗄️' },
     { key: 'adsa', title: 'Advanced Data Structures & Algorithms', code: 'B23CI2102', icon: '🌳' }
   ];
 
@@ -1066,7 +1067,7 @@ async function loadFiles() {
       .then(pFiles => renderPinnedSection(pFiles))
       .catch(() => {});
 
-    const isSyllabusCat = ['all', 'java', 'python', 'adsa'].includes(activeCategory);
+    const isSyllabusCat = ['all', 'java', 'python', 'adsa', 'dbms'].includes(activeCategory);
 
     if (isSyllabusCat && !activeSyllabusExercise && !activeSyllabusQuestion) {
       const res = await fetch(`/api/syllabus/view?${params.toString()}`);
@@ -1195,6 +1196,7 @@ function renderSyllabusFiles(data) {
     const courseGroups = [
       { key: 'java', title: 'Java Programming', subtitle: 'Object Oriented Programming through Java Lab · B23CS2105', icon: '☕', total: 35 },
       { key: 'python', title: 'Python Programming', subtitle: 'Python Programming Skill Enhancement Lab · B23CS2106', icon: '🐍', total: 40 },
+      { key: 'dbms', title: 'Database Management Systems', subtitle: 'Database Management Systems Lab ( CSE, AIML, CSIT & CSG) · B23CS2104', icon: '🗄️', total: 54 },
       { key: 'adsa', title: 'Advanced Data Structures & Algorithms (DSA)', subtitle: 'Advanced Data Structures and Algorithms using C Lab · B23CI2102', icon: '🌳', total: 16 }
     ];
 
@@ -1638,11 +1640,12 @@ async function loadStats() {
 
     if (syl) {
       statsBar.innerHTML = `
-        <div class="stat-card"><b>91</b><span>Official Experiments</span></div>
+        <div class="stat-card"><b>${syl.totalOfficial || 145}</b><span>Official Experiments</span></div>
         <div class="stat-card" style="border-color: rgba(16,185,129,0.4);"><b>${syl.totalAvailable}</b><span style="color:#10b981;">Available Now</span></div>
         <div class="stat-card" style="border-color: rgba(245,158,11,0.4);"><b>${syl.totalComingSoon}</b><span style="color:#f59e0b;">Coming Soon</span></div>
         <div class="stat-card"><b>${syl.courses.java.available}/35</b><span>Java Lab</span></div>
         <div class="stat-card"><b>${syl.courses.python.available}/40</b><span>Python Lab</span></div>
+        <div class="stat-card"><b>${syl.courses.dbms ? syl.courses.dbms.available : 0}/54</b><span>DBMS Lab</span></div>
         <div class="stat-card"><b>${syl.courses.adsa.available}/16</b><span>DSA Lab</span></div>
       `;
     } else {
@@ -3514,7 +3517,7 @@ function openAssignExperimentModal(fileId, originalName, currentCat) {
   if (nameLabel) nameLabel.textContent = originalName;
 
   if (courseSelect) {
-    if (['java', 'python', 'adsa'].includes(currentCat)) {
+    if (['java', 'python', 'adsa', 'dbms'].includes(currentCat)) {
       courseSelect.value = currentCat;
     }
     populateAssignExpSelect(courseSelect.value);
@@ -3594,7 +3597,7 @@ let currentMatrixTab = 'java';
 
 function switchMatrixTab(tab) {
   currentMatrixTab = tab;
-  ['matrixTabJava', 'matrixTabPython', 'matrixTabAdsa'].forEach(id => {
+  ['matrixTabJava', 'matrixTabPython', 'matrixTabDbms', 'matrixTabAdsa'].forEach(id => {
     const btn = $(id);
     if (btn) btn.classList.toggle('active', id.toLowerCase().includes(tab));
   });

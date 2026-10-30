@@ -9,7 +9,7 @@ const { matchFileToSyllabus } = require('../services/syllabusMatcher');
 router.get('/', (req, res) => {
   res.json({
     courses: SYLLABUS_COURSES,
-    totalOfficialExperiments: 91
+    totalOfficialExperiments: 145
   });
 });
 
@@ -19,13 +19,14 @@ router.get('/stats', async (req, res) => {
     const files = await filesDB.find({}, {}, 10000);
 
     const stats = {
-      totalOfficial: 91,
+      totalOfficial: 145,
       totalAvailable: 0,
       totalComingSoon: 0,
       totalNeedsReview: 0,
       courses: {
         java: { total: 35, available: 0, comingSoon: 35, needsReview: 0, title: 'Java Programming', code: 'B23CS2105' },
         python: { total: 40, available: 0, comingSoon: 40, needsReview: 0, title: 'Python Programming', code: 'B23CS2106' },
+        dbms: { total: 54, available: 0, comingSoon: 54, needsReview: 0, title: 'Database Management Systems', code: 'B23CS2104' },
         adsa: { total: 16, available: 0, comingSoon: 16, needsReview: 0, title: 'DSA / ADSA', code: 'B23CI2102' }
       }
     };
@@ -34,12 +35,13 @@ router.get('/stats', async (req, res) => {
     const filledExp = {
       java: new Set(),
       python: new Set(),
+      dbms: new Set(),
       adsa: new Set()
     };
 
     files.forEach(f => {
       const cat = (f.category || '').toLowerCase();
-      const courseKey = cat === 'py' ? 'python' : (cat === 'dsa' ? 'adsa' : cat);
+      const courseKey = cat === 'py' ? 'python' : (cat === 'dsa' ? 'adsa' : (cat === 'sql' ? 'dbms' : cat));
 
       if (stats.courses[courseKey]) {
         if (f.status === 'available' && f.experimentNumber) {
@@ -84,9 +86,9 @@ router.get('/view', async (req, res) => {
 
     files.forEach(f => {
       const cat = (f.category || '').toLowerCase();
-      const courseKey = cat === 'py' ? 'python' : (cat === 'dsa' ? 'adsa' : cat);
+      const courseKey = cat === 'py' ? 'python' : (cat === 'dsa' ? 'adsa' : (cat === 'sql' ? 'dbms' : cat));
 
-      if (f.status === 'available' && f.experimentNumber && ['java', 'python', 'adsa'].includes(courseKey)) {
+      if (f.status === 'available' && f.experimentNumber && ['java', 'python', 'dbms', 'adsa'].includes(courseKey)) {
         const key = `${courseKey}_${f.experimentNumber}`;
         if (!availableMap.has(key)) {
           availableMap.set(key, f);
@@ -101,11 +103,13 @@ router.get('/view', async (req, res) => {
     // Courses to include
     let coursesToRender = [];
     if (catClean === 'all') {
-      coursesToRender = ['java', 'python', 'adsa'];
+      coursesToRender = ['java', 'python', 'dbms', 'adsa'];
     } else if (catClean === 'java') {
       coursesToRender = ['java'];
     } else if (catClean === 'python' || catClean === 'py') {
       coursesToRender = ['python'];
+    } else if (catClean === 'dbms' || catClean === 'sql') {
+      coursesToRender = ['dbms'];
     } else if (catClean === 'adsa' || catClean === 'dsa') {
       coursesToRender = ['adsa'];
     }
@@ -167,7 +171,7 @@ router.get('/view', async (req, res) => {
       items.sort((a, b) => a.experimentName.localeCompare(b.experimentName));
     } else {
       // Default: S.No ascending within each course!
-      const courseOrder = { java: 1, python: 2, adsa: 3 };
+      const courseOrder = { java: 1, python: 2, dbms: 3, adsa: 4 };
       items.sort((a, b) => {
         if (a.category !== b.category) {
           return (courseOrder[a.category] || 9) - (courseOrder[b.category] || 9);
@@ -199,7 +203,7 @@ router.post('/assign', requireAdmin, async (req, res) => {
 
     const course = getCourseByKey(category);
     if (!course) {
-      return res.status(400).json({ error: `Invalid category: ${category}. Expected java, python, or adsa.` });
+      return res.status(400).json({ error: `Invalid category: ${category}. Expected java, python, dbms, or adsa.` });
     }
 
     const expNum = parseInt(experimentNumber, 10);

@@ -100,6 +100,63 @@ const DSA_EXPERIMENTS = [
   { number: 16, name: "Travelling Salesman Problem", keywords: ["travelling salesman problem", "traveling salesman", "tsp", "tsp dynamic", "tsp branch and bound"] }
 ];
 
+const DBMS_EXPERIMENTS = [
+  { number: 1, name: "TrafficViolations Table Creation and Data Insertion", module: "Experiment - 1 / Programs", keywords: ["trafficviolations table creation and data insertion", "trafficviolations", "traffic violations", "table creation", "data insertion", "create table trafficviolations", "insert trafficviolations", "trafficviolations table"] },
+  { number: 2, name: "DDL - ALTER", module: "Experiment - 1 / Programs", keywords: ["ddl alter", "ddl - alter", "alter table", "alter table add", "alter table modify", "alter"] },
+  { number: 3, name: "DDL - DROP", module: "Experiment - 1 / Programs", keywords: ["ddl drop", "ddl - drop", "drop table", "drop table purge", "drop"] },
+  { number: 4, name: "DML - SELECT * FROM TABLE - 1 - University Management System", module: "Experiment - 1 / Programs", keywords: ["dml select from table", "university management system", "select * from table", "dml - select", "university management", "select from table", "student_database_schema"] },
+  { number: 5, name: "ANY", module: "Experiment - 2 / Programs", keywords: ["any operator", "subquery any", "sql any", "any clause", "where any"] },
+  { number: 6, name: "ALL", module: "Experiment - 2 / Programs", keywords: ["all operator", "subquery all", "sql all", "all clause", "where all"] },
+  { number: 7, name: "EXISTS", module: "Experiment - 2 / Programs", keywords: ["exists operator", "subquery exists", "sql exists", "exists clause", "where exists", "not exists"] },
+  { number: 8, name: "The Lost Scrolls of Time", module: "Experiment - 2 / Programs", keywords: ["the lost scrolls of time", "lost scrolls of time", "scrolls of time", "lost scrolls", "scrolls"] },
+  { number: 9, name: "Smart City Streetlight Monitoring", module: "Experiment - 2 / Programs", keywords: ["smart city streetlight monitoring", "streetlight monitoring", "smart city streetlight", "streetlight", "streetlights"] },
+  { number: 10, name: "City Waste Collection Report", module: "Experiment - 2 / Programs", keywords: ["city waste collection report", "waste collection report", "city waste collection", "waste collection", "waste report"] },
+  { number: 11, name: "Find Common Animal Records", module: "Experiment - 2 / Programs", keywords: ["find common animal records", "common animal records", "animal records", "common animal", "animals intersect"] },
+  { number: 12, name: "Aggregate function - COUNT", module: "Experiment - 3 / Programs", keywords: ["aggregate function count", "count function", "count(*)", "count aggregate", "sql count", "count"] },
+  { number: 13, name: "Aggregate function - AVG", module: "Experiment - 3 / Programs", keywords: ["aggregate function avg", "avg function", "avg()", "average aggregate", "sql avg", "avg"] },
+  { number: 14, name: "Aggregate function - MIN", module: "Experiment - 3 / Programs", keywords: ["aggregate function min", "min function", "min()", "minimum aggregate", "sql min", "min"] },
+  { number: 15, name: "Aggregate function - MAX", module: "Experiment - 3 / Programs", keywords: ["aggregate function max", "max function", "max()", "maximum aggregate", "sql max", "max"] },
+  { number: 16, name: "Aggregate function - SUM", module: "Experiment - 3 / Programs", keywords: ["aggregate function sum", "sum function", "sum()", "sum aggregate", "sql sum", "sum"] },
+  { number: 17, name: "Simple Queries - Group By and Having Clause", module: "Experiment - 3 / Programs", keywords: ["group by and having clause", "group by having", "group by", "having clause", "simple queries group by", "group by having clause"] },
+  { number: 18, name: "Managing and Updating Foreign Trip Information", module: "Experiment - 3 / Programs", keywords: ["managing and updating foreign trip information", "foreign trip information", "foreign trip", "updating foreign trip", "foreign trips"] },
+  { number: 19, name: "TO_CHAR", module: "Experiment - 4 / Conversion Functions", keywords: ["to_char", "to char", "conversion functions to_char", "to_char conversion", "to_char function"] },
+  { number: 20, name: "TO_NUMBER", module: "Experiment - 4 / Conversion Functions", keywords: ["to_number", "to number", "conversion functions to_number", "to_number conversion", "to_number function"] },
+  { number: 21, name: "TO_DATE", module: "Experiment - 4 / Conversion Functions", keywords: ["to_date", "to date", "conversion functions to_date", "to_date conversion", "to_date function"] },
+  { number: 22, name: "RTRIM", module: "Experiment - 4 / String Functions", keywords: ["rtrim", "rtrim function", "string functions rtrim", "right trim"] },
+  { number: 23, name: "LPAD", module: "Experiment - 4 / String Functions", keywords: ["lpad", "lpad function", "string functions lpad", "left pad"] },
+  { number: 24, name: "RPAD", module: "Experiment - 4 / String Functions", keywords: ["rpad", "rpad function", "string functions rpad", "right pad"] },
+  { number: 25, name: "LTRIM", module: "Experiment - 4 / String Functions", keywords: ["ltrim", "ltrim function", "string functions ltrim", "left trim"] },
+  { number: 26, name: "LOWER", module: "Experiment - 4 / String Functions", keywords: ["lower function", "string functions lower", "sql lower", "lower"] },
+  { number: 27, name: "UPPER", module: "Experiment - 4 / String Functions", keywords: ["upper function", "string functions upper", "sql upper", "upper"] },
+  { number: 28, name: "INITCAP", module: "Experiment - 4 / String Functions", keywords: ["initcap", "initcap function", "string functions initcap"] },
+  { number: 29, name: "LENGTH", module: "Experiment - 4 / String Functions", keywords: ["length function", "string functions length", "sql length", "length"] },
+  { number: 30, name: "SUBSTR", module: "Experiment - 4 / String Functions", keywords: ["substr", "substr function", "substring function", "string functions substr"] },
+  { number: 31, name: "Employee Salary Lookup System", module: "Experiment - 5 / Programs", keywords: ["employee salary lookup system", "employee salary lookup", "salary lookup system", "salary lookup", "lookup system"] },
+  { number: 32, name: "COMMIT", module: "Experiment - 5 / Programs", keywords: ["commit", "tcl commit", "commit transaction", "sql commit", "commit work"] },
+  { number: 33, name: "SAVEPOINT", module: "Experiment - 5 / Programs", keywords: ["savepoint", "tcl savepoint", "savepoint transaction", "sql savepoint"] },
+  { number: 34, name: "ROLLBACK", module: "Experiment - 5 / Programs", keywords: ["rollback", "tcl rollback", "rollback transaction", "sql rollback", "rollback to savepoint"] },
+  { number: 35, name: "Determine Scholarship Eligibility Using Nested IF", module: "Experiment - 6 / Programs", keywords: ["determine scholarship eligibility using nested if", "scholarship eligibility nested if", "scholarship eligibility", "nested if scholarship", "plsql nested if", "nested if"] },
+  { number: 36, name: "Determine Employee Bonus Using CASE Statement", module: "Experiment - 6 / Programs", keywords: ["determine employee bonus using case statement", "employee bonus case statement", "employee bonus", "bonus case statement", "case statement bonus", "case statement"] },
+  { number: 37, name: "Determine Shipping Category Using CASE Expression", module: "Experiment - 6 / Programs", keywords: ["determine shipping category using case expression", "shipping category case expression", "shipping category", "case expression shipping", "case expression"] },
+  { number: 38, name: "Determine Employee Contact Number Using NULLIF() and COALESCE()", module: "Experiment - 6 / Programs", keywords: ["determine employee contact number using nullif() and coalesce()", "nullif and coalesce", "employee contact number nullif coalesce", "nullif", "coalesce", "nullif()", "coalesce()"] },
+  { number: 39, name: "Countdown Sequence - Control Statement - While Loop", module: "Experiment - 7 / Programs", keywords: ["countdown sequence while loop", "countdown sequence", "control statement while loop", "while loop countdown", "plsql while loop", "while loop"] },
+  { number: 40, name: "Sum of Integers - Control Statement - For Loop", module: "Experiment - 7 / Programs", keywords: ["sum of integers for loop", "sum of integers", "control statement for loop", "for loop sum", "plsql for loop", "for loop"] },
+  { number: 41, name: "Process Student Marks Using Nested Loops and Exception Handling", module: "Experiment - 7 / Programs", keywords: ["process student marks using nested loops and exception handling", "process student marks", "nested loops and exception handling", "student marks nested loops", "marks exception handling", "nested loops exception"] },
+  { number: 42, name: "Handle Duplicate Employee ID Using Built-in Exception", module: "Experiment - 7 / Programs", keywords: ["handle duplicate employee id using built-in exception", "handle duplicate employee id", "duplicate employee id", "built-in exception duplicate", "dup_val_on_index", "duplicate employee"] },
+  { number: 43, name: "Space Mission Signal Validation System", module: "Experiment - 7 / Programs", keywords: ["space mission signal validation system", "space mission signal validation", "signal validation system", "space mission signal", "space mission"] },
+  { number: 44, name: "IN, OUT and INOUT Parameters", module: "Experiment - 8 / Programs", keywords: ["in, out and inout parameters", "in out and inout parameters", "in out inout parameters", "in out inout", "procedure parameters", "plsql parameters", "in out inout parameter"] },
+  { number: 45, name: "Hospital Staff Salary Update", module: "Experiment - 9 / Programs", keywords: ["hospital staff salary update", "hospital staff salary", "staff salary update", "hospital salary update", "hospital staff"] },
+  { number: 46, name: "Movie Review Rating Categorization System", module: "Experiment - 10 / Programs", keywords: ["movie review rating categorization system", "movie review rating", "movie review rating categorization", "movie rating categorization", "movie review rating system"] },
+  { number: 47, name: "Library Book Availability Update Using a FOR UPDATE Cursor", module: "Experiment - 10 / Programs", keywords: ["library book availability update using a for update cursor", "library book availability update", "for update cursor", "book availability for update", "library book availability", "cursor for update"] },
+  { number: 48, name: "Student Marks Update Using WHERE CURRENT OF", module: "Experiment - 10 / Programs", keywords: ["student marks update using where current of", "where current of", "student marks update where current of", "cursor where current of", "update where current of"] },
+  { number: 49, name: "Customer Order Details Using a Cursor Variable", module: "Experiment - 10 / Programs", keywords: ["customer order details using a cursor variable", "customer order details cursor variable", "cursor variable", "ref cursor customer order", "customer order details", "ref cursor"] },
+  { number: 50, name: "Library Book Borrowing System", module: "Experiment - 11 / Programs", keywords: ["library book borrowing system", "book borrowing system", "library book borrowing", "book borrowing trigger", "library borrowing"] },
+  { number: 51, name: "Delivery Date Correction System", module: "Experiment - 11 / Programs", keywords: ["delivery date correction system", "delivery date correction", "delivery date trigger", "delivery date"] },
+  { number: 52, name: "Statement-Level Trigger – Update Audit Counter", module: "Experiment - 11 / Programs", keywords: ["statement-level trigger update audit counter", "statement-level trigger", "statement level trigger", "update audit counter", "audit counter trigger", "statement level trigger audit"] },
+  { number: 53, name: "Log Product Deletion Operations Using a BEFORE Statement-Level Trigger", module: "Experiment - 11 / Programs", keywords: ["log product deletion operations using a before statement-level trigger", "log product deletion operations", "before statement-level trigger", "product deletion trigger", "product deletion", "before statement level trigger"] },
+  { number: 54, name: "Movie Streaming Platform", module: "Experiment - 12 / Programs", keywords: ["movie streaming platform", "movie streaming", "streaming platform", "package movie streaming", "plsql package movie streaming"] }
+];
+
 const SYLLABUS_COURSES = {
   java: {
     key: "java",
@@ -121,6 +178,16 @@ const SYLLABUS_COURSES = {
     totalExperiments: 40,
     experiments: PYTHON_EXPERIMENTS
   },
+  dbms: {
+    key: "dbms",
+    category: "dbms",
+    title: "Database Management Systems",
+    course: "Database Management Systems Lab ( CSE, AIML, CSIT & CSG)",
+    courseCode: "B23CS2104",
+    icon: "🗄️",
+    totalExperiments: 54,
+    experiments: DBMS_EXPERIMENTS
+  },
   adsa: {
     key: "adsa",
     category: "adsa",
@@ -139,6 +206,7 @@ function getCourseByKey(key) {
   if (clean === 'java') return SYLLABUS_COURSES.java;
   if (clean === 'python' || clean === 'py') return SYLLABUS_COURSES.python;
   if (clean === 'adsa' || clean === 'dsa') return SYLLABUS_COURSES.adsa;
+  if (clean === 'dbms' || clean === 'sql') return SYLLABUS_COURSES.dbms;
   return null;
 }
 
@@ -154,6 +222,7 @@ function getAllOfficialExperiments() {
         courseIcon: course.icon,
         experimentNumber: exp.number,
         experimentName: exp.name,
+        module: exp.module || null,
         keywords: exp.keywords
       });
     }
@@ -165,6 +234,7 @@ module.exports = {
   JAVA_EXPERIMENTS,
   PYTHON_EXPERIMENTS,
   DSA_EXPERIMENTS,
+  DBMS_EXPERIMENTS,
   SYLLABUS_COURSES,
   getCourseByKey,
   getAllOfficialExperiments
