@@ -5,5 +5,8 @@
   "replicaBadge": "TRY OUR NEW APK",
   "replicaBtnText": "Install REPLICA APK 📲",
   "promoEnabled": true,
-  "updatedAt": "2026-10-09T12:51:55.980Z"
+  "updatedAt": "2026-10-30T09:56:47.255Z",
+  "gitRepoLink": "https://github.com/",
+  "gitRepoTitle": "GitHub Repository",
+  "gitRepoEnabled": true
 }

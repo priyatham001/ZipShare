@@ -2017,6 +2017,98 @@ function downloadFolder(batchId, evt) {
   window.open(`/api/files/folder/${batchId}/download`, '_blank');
 }
 
+// Viewer reading state
+let viewerFontSize = parseInt(localStorage.getItem('zipshare_viewer_fontsize') || '13', 10);
+let viewerCodeWrapped = localStorage.getItem('zipshare_viewer_wrapped') === 'true';
+
+function applyViewerFontSize(size) {
+  viewerFontSize = Math.max(11, Math.min(22, size));
+  try { localStorage.setItem('zipshare_viewer_fontsize', String(viewerFontSize)); } catch (e) {}
+  const label = $('viewerFontSizeLabel');
+  if (label) label.textContent = `${viewerFontSize}px`;
+  document.documentElement.style.setProperty('--viewer-code-font-size', `${viewerFontSize}px`);
+  const codeEl = document.querySelector('#previewBody code');
+  if (codeEl) codeEl.style.fontSize = `${viewerFontSize}px`;
+}
+
+function applyViewerWrap(wrapped) {
+  viewerCodeWrapped = !!wrapped;
+  try { localStorage.setItem('zipshare_viewer_wrapped', String(viewerCodeWrapped)); } catch (e) {}
+  const body = $('previewBody');
+  const btn = $('viewerWrapToggleBtn');
+  const wrapIcon = $('viewerWrapIcon');
+  const wrapText = $('viewerWrapText');
+  if (body) {
+    if (viewerCodeWrapped) body.classList.add('code-wrapped');
+    else body.classList.remove('code-wrapped');
+  }
+  if (btn) btn.classList.toggle('active', viewerCodeWrapped);
+  if (wrapIcon) wrapIcon.textContent = viewerCodeWrapped ? '↔' : '↩';
+  if (wrapText) wrapText.textContent = viewerCodeWrapped ? 'Scroll' : 'Wrap';
+}
+
+async function copyPreviewCode() {
+  const codeEl = document.querySelector('#previewBody code') || document.querySelector('#previewBody');
+  if (!codeEl) return;
+  const text = codeEl.textContent;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    
+    // Animate copy indicators
+    const copyIcon = $('copyCodeIcon');
+    const copyText = $('copyCodeText');
+    const mobCopyIcon = $('mobileCopyIcon');
+    const mobCopyText = $('mobileCopyText');
+
+    if (copyIcon) copyIcon.textContent = '✅';
+    if (copyText) copyText.textContent = 'Copied!';
+    if (mobCopyIcon) mobCopyIcon.textContent = '✅';
+    if (mobCopyText) mobCopyText.textContent = 'Copied!';
+
+    setTimeout(() => {
+      if (copyIcon) copyIcon.textContent = '📋';
+      if (copyText) copyText.textContent = 'Copy';
+      if (mobCopyIcon) mobCopyIcon.textContent = '📋';
+      if (mobCopyText) mobCopyText.textContent = 'Copy';
+    }, 1800);
+
+    toast('Code copied to clipboard! 📋', 'success');
+  } catch (err) {
+    toast('Failed to copy code', 'error');
+  }
+}
+
+async function triggerPreviewRun() {
+  if (!previewingFile) return;
+  const targetId = previewingFile._id || previewingFile.id;
+  closeModal('previewModalOverlay');
+  await runOnlineFile(targetId);
+}
+
+async function triggerPreviewExplain() {
+  if (!previewingFile) return;
+  const targetId = previewingFile._id || previewingFile.id;
+  closeModal('previewModalOverlay');
+  await runOnlineFile(targetId);
+  setTimeout(() => {
+    const explainTab = $('tabBtnExplain');
+    if (explainTab) explainTab.click();
+    const triggerAi = $('aiExplainCodeBtn');
+    if (triggerAi) triggerAi.click();
+  }, 200);
+}
+
 async function previewFile(id) {
   try {
     const fileLoc = lastFiles.find(f => (f._id || f.id) === id);
@@ -2030,8 +2122,31 @@ async function previewFile(id) {
     previewingFile = data.file;
 
     if ($('previewTitle')) $('previewTitle').textContent = data.file.originalName;
-    const ext = data.file.extension || 'default';
+    const ext = (data.file.extension || 'default').toLowerCase();
     if ($('previewFileIcon')) $('previewFileIcon').textContent = (ICONS[ext] || ICONS.default).icon;
+
+    // Badges update
+    const langBadge = $('previewLangBadge');
+    if (langBadge) {
+      const subjectOrExt = (data.file.subject || data.file.category || ext).toUpperCase();
+      langBadge.textContent = subjectOrExt;
+    }
+
+    const linesBadge = $('previewLinesBadge');
+    if (linesBadge && data.type === 'text') {
+      const lineCount = (data.content || '').split('\n').length;
+      linesBadge.textContent = `${lineCount} line${lineCount === 1 ? '' : 's'}`;
+      linesBadge.style.display = 'inline-block';
+    } else if (linesBadge) {
+      linesBadge.style.display = 'none';
+    }
+
+    // Toggle solution button in mobile bottom bar
+    const mobileSolBtn = $('mobileToggleSolBtn');
+    if (mobileSolBtn) {
+      const hasSol = data.file && (data.file.subject || data.file.exercise || data.file.question);
+      mobileSolBtn.style.display = hasSol ? 'inline-flex' : 'none';
+    }
 
     const body = $('previewBody');
     const adminEditBtn = $('editContentBtn');
@@ -2062,6 +2177,10 @@ async function previewFile(id) {
         body.innerHTML = `<p style="text-align:center; padding:30px;">Binary / Unsupported format. Please download to view on your system.</p>`;
       }
     }
+
+    // Apply font size and soft wrapping
+    applyViewerFontSize(viewerFontSize);
+    applyViewerWrap(viewerCodeWrapped);
 
     openModal('previewModalOverlay');
   } catch (err) {
@@ -2100,28 +2219,42 @@ function renderSolutionPanel(file) {
   }
 }
 
+// Viewer Control Events
 const copyCodeBtn = $('copyCodeBtn');
-if (copyCodeBtn) {
-  copyCodeBtn.addEventListener('click', async () => {
-    const codeEl = document.querySelector('#previewBody code') || document.querySelector('#previewBody');
-    if (codeEl) {
-      const text = codeEl.textContent;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(text);
-        } else {
-          const ta = document.createElement('textarea');
-          ta.value = text;
-          ta.style.position = 'fixed';
-          ta.style.opacity = '0';
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-        }
-        toast('Code copied to clipboard! 📋');
-      } catch (err) {
-        toast('Failed to copy code', 'error');
+if (copyCodeBtn) copyCodeBtn.addEventListener('click', copyPreviewCode);
+
+const mobileCopyCodeBtn = $('mobileCopyCodeBtn');
+if (mobileCopyCodeBtn) mobileCopyCodeBtn.addEventListener('click', copyPreviewCode);
+
+const viewerRunDirectBtn = $('viewerRunDirectBtn');
+if (viewerRunDirectBtn) viewerRunDirectBtn.addEventListener('click', triggerPreviewRun);
+
+const mobileRunCodeBtn = $('mobileRunCodeBtn');
+if (mobileRunCodeBtn) mobileRunCodeBtn.addEventListener('click', triggerPreviewRun);
+
+const viewerExplainDirectBtn = $('viewerExplainDirectBtn');
+if (viewerExplainDirectBtn) viewerExplainDirectBtn.addEventListener('click', triggerPreviewExplain);
+
+const mobileExplainCodeBtn = $('mobileExplainCodeBtn');
+if (mobileExplainCodeBtn) mobileExplainCodeBtn.addEventListener('click', triggerPreviewExplain);
+
+const viewerFontDecBtn = $('viewerFontDecBtn');
+if (viewerFontDecBtn) viewerFontDecBtn.addEventListener('click', () => applyViewerFontSize(viewerFontSize - 1));
+
+const viewerFontIncBtn = $('viewerFontIncBtn');
+if (viewerFontIncBtn) viewerFontIncBtn.addEventListener('click', () => applyViewerFontSize(viewerFontSize + 1));
+
+const viewerWrapToggleBtn = $('viewerWrapToggleBtn');
+if (viewerWrapToggleBtn) viewerWrapToggleBtn.addEventListener('click', () => applyViewerWrap(!viewerCodeWrapped));
+
+const mobileToggleSolBtn = $('mobileToggleSolBtn');
+if (mobileToggleSolBtn) {
+  mobileToggleSolBtn.addEventListener('click', () => {
+    const panel = $('solutionExplorerPanel');
+    if (panel) {
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
   });
@@ -3696,7 +3829,10 @@ let promoSettings = {
   replicaSubtext: 'Try our new APK — click to install REPLICA directly on your device',
   replicaBadge: 'TRY OUR NEW APK',
   replicaBtnText: 'Install REPLICA APK 📲',
-  promoEnabled: true
+  promoEnabled: true,
+  gitRepoLink: 'https://github.com/',
+  gitRepoTitle: 'GitHub Repository',
+  gitRepoEnabled: true
 };
 
 function applyPromoSettings(settings) {
@@ -3750,6 +3886,50 @@ function applyPromoSettings(settings) {
     introBtn.href = promoSettings.replicaLink;
     introBtn.textContent = promoSettings.replicaBtnText;
   }
+
+  // Update Navbar Direct Buttons
+  const navGitBtn = $('navGitBtn');
+  if (navGitBtn) {
+    navGitBtn.href = promoSettings.gitRepoLink || 'https://github.com/';
+    navGitBtn.style.display = promoSettings.gitRepoEnabled !== false ? 'inline-flex' : 'none';
+  }
+  const navApkBtn = $('navApkBtn');
+  if (navApkBtn) {
+    navApkBtn.href = promoSettings.replicaLink || 'https://betadrop.app/i/eXW3zM';
+  }
+
+  // Update Site Footer Links
+  const footerGit = $('footerGitLink');
+  if (footerGit) {
+    footerGit.href = promoSettings.gitRepoLink || 'https://github.com/';
+    footerGit.style.display = promoSettings.gitRepoEnabled !== false ? 'inline-flex' : 'none';
+  }
+  const footerGitText = $('footerGitText');
+  if (footerGitText) {
+    footerGitText.textContent = promoSettings.gitRepoTitle || 'GitHub Repository';
+  }
+  const footerApk = $('footerApkLink');
+  if (footerApk) {
+    footerApk.href = promoSettings.replicaLink || 'https://betadrop.app/i/eXW3zM';
+  }
+  const footerApkText = $('footerApkText');
+  if (footerApkText) {
+    const apkShortName = promoSettings.replicaTitle ? promoSettings.replicaTitle.split(':')[0].trim() : 'REPLICA';
+    footerApkText.textContent = `${apkShortName} Companion APK`;
+  }
+
+  // Update About Modal Links
+  const aboutGitLink = $('aboutGitLink');
+  if (aboutGitLink) {
+    aboutGitLink.href = promoSettings.gitRepoLink || 'https://github.com/';
+    aboutGitLink.textContent = promoSettings.gitRepoLink || 'https://github.com/';
+  }
+  const aboutApkLink = $('aboutApkLink');
+  if (aboutApkLink) {
+    aboutApkLink.href = promoSettings.replicaLink || 'https://betadrop.app/i/eXW3zM';
+    const apkShortName = promoSettings.replicaTitle ? promoSettings.replicaTitle.split(':')[0].trim() : 'REPLICA';
+    aboutApkLink.textContent = `${apkShortName} APK (Live Download) 📲`;
+  }
 }
 
 async function loadPromoSettings() {
@@ -3781,6 +3961,10 @@ function populatePromoSettingsForm() {
   if ($('adminPromoBadgeInput')) $('adminPromoBadgeInput').value = promoSettings.replicaBadge || 'TRY OUR NEW APK';
   if ($('adminPromoBtnTextInput')) $('adminPromoBtnTextInput').value = promoSettings.replicaBtnText || 'Install REPLICA APK 📲';
   if ($('adminPromoEnabledInput')) $('adminPromoEnabledInput').checked = promoSettings.promoEnabled !== false;
+  
+  if ($('adminGitRepoLinkInput')) $('adminGitRepoLinkInput').value = promoSettings.gitRepoLink || 'https://github.com/';
+  if ($('adminGitRepoTitleInput')) $('adminGitRepoTitleInput').value = promoSettings.gitRepoTitle || 'GitHub Repository';
+  if ($('adminGitRepoEnabledInput')) $('adminGitRepoEnabledInput').checked = promoSettings.gitRepoEnabled !== false;
 }
 
 async function handleSavePromoSettings() {
@@ -3800,7 +3984,10 @@ async function handleSavePromoSettings() {
     replicaSubtext: $('adminPromoSubtextInput')?.value.trim() || 'Try our new APK — click to install REPLICA directly on your device',
     replicaBadge: $('adminPromoBadgeInput')?.value.trim() || 'TRY OUR NEW APK',
     replicaBtnText: $('adminPromoBtnTextInput')?.value.trim() || 'Install REPLICA APK 📲',
-    promoEnabled: $('adminPromoEnabledInput') ? $('adminPromoEnabledInput').checked : true
+    promoEnabled: $('adminPromoEnabledInput') ? $('adminPromoEnabledInput').checked : true,
+    gitRepoLink: $('adminGitRepoLinkInput')?.value.trim() || 'https://github.com/',
+    gitRepoTitle: $('adminGitRepoTitleInput')?.value.trim() || 'GitHub Repository',
+    gitRepoEnabled: $('adminGitRepoEnabledInput') ? $('adminGitRepoEnabledInput').checked : true
   };
 
   try {
@@ -3825,14 +4012,14 @@ async function handleSavePromoSettings() {
     try {
       localStorage.setItem('zipshare_promo_settings', JSON.stringify(newSettings));
     } catch (e) {}
-    toast('Promo & APK links updated successfully! 🚀', 'success');
+    toast('Links updated and committed to Git! 🚀', 'success');
     closeModal('promoLinksModalOverlay');
   } catch (err) {
     applyPromoSettings(payload);
     try {
       localStorage.setItem('zipshare_promo_settings', JSON.stringify(payload));
     } catch (e) {}
-    toast('Promo links saved locally! 🚀', 'success');
+    toast('Links saved locally! 🚀', 'success');
     closeModal('promoLinksModalOverlay');
   }
 }
