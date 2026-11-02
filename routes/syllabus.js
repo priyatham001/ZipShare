@@ -79,7 +79,7 @@ router.get('/view', async (req, res) => {
     // Fetch all files from database
     const files = await filesDB.find({}, {}, 10000);
 
-    // Map files by courseKey + experimentNumber for fast lookup
+    // Map files by courseKey + experimentNumber for fast multi-file lookup
     const availableMap = new Map();
     const needsReviewFiles = [];
     const otherFiles = [];
@@ -91,7 +91,12 @@ router.get('/view', async (req, res) => {
       if (f.status === 'available' && f.experimentNumber && ['java', 'python', 'dbms', 'adsa'].includes(courseKey)) {
         const key = `${courseKey}_${f.experimentNumber}`;
         if (!availableMap.has(key)) {
-          availableMap.set(key, f);
+          availableMap.set(key, [f]);
+        } else {
+          const list = availableMap.get(key);
+          if (!list.some(item => (item._id && item._id === f._id) || item.originalName === f.originalName)) {
+            list.push(f);
+          }
         }
       } else if (f.status === 'needs_review' || f.status === 'unmapped') {
         needsReviewFiles.push(f);
@@ -122,19 +127,20 @@ router.get('/view', async (req, res) => {
 
       for (const exp of course.experiments) {
         const key = `${cKey}_${exp.number}`;
-        const uploadedFile = availableMap.get(key) || null;
-        const isAvailable = Boolean(uploadedFile);
+        const uploadedFiles = availableMap.get(key) || [];
+        const uploadedFile = uploadedFiles[0] || null;
+        const isAvailable = uploadedFiles.length > 0;
 
         // Search matching: across official experiment name, filename, experiment number, keywords
         if (searchQuery) {
           const numMatch = String(exp.number) === searchQuery || searchQuery === `#${exp.number}`;
           const nameMatch = exp.name.toLowerCase().includes(searchQuery);
           const kwMatch = exp.keywords.some(kw => kw.toLowerCase().includes(searchQuery));
-          const fileMatch = uploadedFile && (
-            (uploadedFile.originalName && uploadedFile.originalName.toLowerCase().includes(searchQuery)) ||
-            (uploadedFile.relativePath && uploadedFile.relativePath.toLowerCase().includes(searchQuery)) ||
-            (uploadedFile.description && uploadedFile.description.toLowerCase().includes(searchQuery))
-          );
+          const fileMatch = uploadedFiles.some(f => (
+            (f.originalName && f.originalName.toLowerCase().includes(searchQuery)) ||
+            (f.relativePath && f.relativePath.toLowerCase().includes(searchQuery)) ||
+            (f.description && f.description.toLowerCase().includes(searchQuery))
+          ));
           const courseMatch = course.title.toLowerCase().includes(searchQuery) || cKey.includes(searchQuery);
 
           if (!numMatch && !nameMatch && !kwMatch && !fileMatch && !courseMatch) {
@@ -153,6 +159,7 @@ router.get('/view', async (req, res) => {
           experimentName: exp.name,
           status: isAvailable ? 'available' : 'coming_soon',
           file: uploadedFile,
+          files: uploadedFiles,
           keywords: exp.keywords
         });
       }

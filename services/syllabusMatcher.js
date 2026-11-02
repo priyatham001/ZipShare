@@ -34,7 +34,27 @@ function extractNumber(filename) {
 
 function detectCourseKey(ext, filename = '', relPath = '', categoryHint = null) {
   const e = (ext || '').toLowerCase().replace('.', '');
+
+  // Strict rule: .java to Java, .py to Python, .sql to DBMS, .c/.cpp to ADSA. A .sql file must never go to ADSA.
+  if (e === 'sql') return 'dbms';
+  if (e === 'java') return 'java';
+  if (e === 'py') return 'python';
+  if (e === 'c' || e === 'cpp') return 'adsa';
+
   const pathLower = (relPath + ' ' + filename + ' ' + (categoryHint || '')).toLowerCase();
+
+  if (pathLower.includes('dbms') || pathLower.includes('sql')) {
+    return 'dbms';
+  }
+  if (pathLower.includes('adsa') || pathLower.includes('dsa') || pathLower.includes('tree') || pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('heap')) {
+    return 'adsa';
+  }
+  if (pathLower.includes('java')) {
+    return 'java';
+  }
+  if (pathLower.includes('python')) {
+    return 'python';
+  }
 
   if (categoryHint && ['java', 'python', 'py', 'adsa', 'dsa', 'dbms', 'sql'].includes(categoryHint.toLowerCase())) {
     const k = categoryHint.toLowerCase();
@@ -44,21 +64,6 @@ function detectCourseKey(ext, filename = '', relPath = '', categoryHint = null) 
     return k;
   }
 
-  if (pathLower.includes('dbms') || pathLower.includes('sql') || e === 'sql') {
-    return 'dbms';
-  }
-  if (pathLower.includes('adsa') || pathLower.includes('dsa') || pathLower.includes('tree') || pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('heap')) {
-    return 'adsa';
-  }
-  if (pathLower.includes('java') || e === 'java') {
-    return 'java';
-  }
-  if (pathLower.includes('python') || e === 'py') {
-    return 'python';
-  }
-  if (e === 'c' || e === 'cpp') {
-    return 'adsa';
-  }
   return null;
 }
 

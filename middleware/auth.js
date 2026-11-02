@@ -47,8 +47,21 @@ function requireAdmin(req, res, next) {
     if (payload.role !== 'admin') throw new Error('bad role');
     next();
   } catch {
-    return res.status(401).json({ error: 'Session expired. Please log in again.' });
+    return res.status(401).json({ error: 'Invalid or expired session. Please login again.' });
   }
 }
 
-module.exports = { requireAdmin, isLocked, registerFailedAttempt, registerSuccess, issueToken };
+// Helper to inspect if request has valid admin credentials
+function verifyAdminToken(req) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return false;
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    return payload.role === 'admin';
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { requireAdmin, isLocked, registerFailedAttempt, registerSuccess, issueToken, verifyAdminToken };

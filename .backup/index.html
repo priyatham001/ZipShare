@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZipShare</title>
+<meta name="description" content="ZipShare Student Hub - Production Online Coding Platform" />
+<meta property="og:title" content="ZipShare" />
+<meta property="og:description" content="ZipShare Student Hub - Production Online Coding Platform" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+</head>
+<body data-theme="dark">
+
+<!-- Cinematic Giant Eyes Splash Screen -->
+<div id="cinematicEyesOverlay" class="cinematic-eyes-overlay">
+  <canvas id="eyesParticleCanvas" class="eyes-particle-canvas"></canvas>
+  <div class="giant-eyes-container" id="giantEyesContainer">
+    <!-- Left Eye -->
+    <div class="giant-eye left-eye">
+      <div class="eye-glow-ring"></div>
+      <div class="giant-pupil" id="giantPupilLeft">
+        <div class="pupil-sparkle-1"></div>
+        <div class="pupil-sparkle-2"></div>
+      </div>
+    </div>
+    <!-- Right Eye -->
+    <div class="giant-eye right-eye">
+      <div class="eye-glow-ring"></div>
+      <div class="giant-pupil" id="giantPupilRight">
+        <div class="pupil-sparkle-1"></div>
+        <div class="pupil-sparkle-2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="splash-tagline-wrap">
+    <p class="splash-brand-text">ZIPSHARE</p>
+    <p class="splash-sub-text">Student Coding &amp; Lab Hub</p>
+  </div>
+</div>
+
+<!-- Animated Background Canvas & Floating Particles -->
+<div class="bg-layer">
+  <div class="blob blob-a"></div>
+  <div class="blob blob-b"></div>
+  <div class="blob blob-c"></div>
+  <div class="glow-cursor" id="glowCursor"></div>
+  <canvas id="particleCanvas" class="particle-canvas"></canvas>
+</div>
+
+<!-- Welcome Intro Screen (Initial Setup & Multi-Step Onboarding) -->
+<div class="intro-screen" id="introScreen">
+  <div class="intro-content glass-card">
+    
+    <!-- Step 1: Welcome Greeting & Mascot -->
+    <div class="onboard-step active" id="onboardStep1">
+      <div class="mascot-container hero-mascot" id="welcomeMascot" title="Optical Illusion Vortex">
+        <canvas id="welcomeIllusionCanvas" class="welcome-illusion-canvas" width="160" height="160" aria-label="Hypnotic Optical Tunnel Illusion"></canvas>
+      </div>
+      <h1 class="intro-title">Welcome to <span class="brand-text">ZipShare</span></h1>
+      <p class="intro-tagline">Student-Friendly Online Coding Platform &amp; Lab Hub</p>
+      <p class="intro-desc">Browse lab records, compile &amp; run code online, and download folder projects effortlessly.</p>
+      <div class="intro-apk-promo" id="introApkPromo">
+        <div class="replica-app-icon intro-icon" title="REPLICA APK" aria-label="REPLICA App Icon">
+          <svg class="replica-icon-svg" viewBox="0 0 44 44" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="introReplicaIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="50%" stop-color="#00d2ff"/>
+                <stop offset="100%" stop-color="#2563eb"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="40" height="40" rx="10" fill="#040914" stroke="#00d2ff" stroke-width="2.2"/>
+            <rect x="4" y="4" width="36" height="36" rx="8" fill="rgba(0, 210, 255, 0.08)"/>
+            <text x="22" y="22.5" text-anchor="middle" dominant-baseline="central" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="12.5" letter-spacing="0.6" fill="url(#introReplicaIconGrad)">REP</text>
+            <circle cx="34" cy="10" r="2.5" fill="#00d2ff"/>
+          </svg>
+        </div>
+        <div class="intro-apk-badge">✨ NEW APK</div>
+        <div class="intro-apk-info">
+          <strong>Try our new APK: REPLICA</strong>
+          <span>Tap to install directly on your device</span>
+        </div>
+        <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="intro-apk-btn" id="introReplicaInstallBtn">Install APK 📲</a>
+      </div>
+      <button class="enter-btn primary-btn" id="step1NextBtn">Get Started 🚀</button>
+    </div>
+
+    <!-- Step 2: Choose Theme -->
+    <div class="onboard-step" id="onboardStep2" style="display:none;">
+      <h2 class="step-title">Choose Your Atmosphere</h2>
+      <p class="step-sub">Select your preferred color scheme for coding</p>
+      <div class="theme-choice-cards">
+        <button class="theme-card active" data-theme="dark">
+          <span class="theme-icon">🌙</span>
+          <span class="theme-name">Dark Mode</span>
+          <span class="theme-desc">Deep twilight IDE canvas</span>
+        </button>
+        <button class="theme-card" data-theme="light">
+          <span class="theme-icon">☀️</span>
+          <span class="theme-name">Light Mode</span>
+          <span class="theme-desc">Clean high-contrast layout</span>
+        </button>
+      </div>
+      <div class="step-nav">
+        <button class="btn-ghost" id="step2BackBtn">◀ Back</button>
+        <button class="enter-btn primary-btn" id="step2NextBtn">Continue ➔</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Select Favorite Subject -->
+    <div class="onboard-step" id="onboardStep3" style="display:none;">
+      <h2 class="step-title">Select Your Favorite Subject</h2>
+      <p class="step-sub">Choose a subject to personalize your ZipShare workspace</p>
+      <div class="category-grid favorite-subject-grid">
+        <button class="welcome-cat-btn active" data-cat="java">☕ Java</button>
+        <button class="welcome-cat-btn" data-cat="python">🐍 Python</button>
+        <button class="welcome-cat-btn" data-cat="c">💻 C Language</button>
+        <button class="welcome-cat-btn" data-cat="dbms">🗄️ DBMS</button>
+        <button class="welcome-cat-btn" data-cat="adsa">🌳 ADSA</button>
+      </div>
+      <div class="step-nav">
+        <button class="btn-ghost" id="step3BackBtn">◀ Back</button>
+        <button class="enter-btn primary-btn" id="enterAppBtn">Enter ZipShare Workspace ➔</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Welcome Splash Animation -->
+<div class="welcome-splash" id="welcomeSplash">
+  <div class="splash-box">
+    <h2>Welcome to <span class="brand">ZipShare</span></h2>
+    <p>Student-Friendly Online Coding Platform</p>
+  </div>
+</div>
+
+<!-- Main App Container -->
+<div class="app" id="app">
+
+  <!-- Top Promotional Banner for REPLICA APK -->
+  <aside class="replica-promo-bar" id="replicaPromoBar" role="banner" aria-label="New APK Announcement">
+    <div class="promo-inner">
+      <div class="promo-left">
+        <div class="replica-app-icon" title="REPLICA APK Icon" aria-label="REPLICA App Icon">
+          <svg class="replica-icon-svg" viewBox="0 0 44 44" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="replicaIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="50%" stop-color="#00d2ff"/>
+                <stop offset="100%" stop-color="#2563eb"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="40" height="40" rx="10" fill="#040914" stroke="#00d2ff" stroke-width="2.2"/>
+            <rect x="4" y="4" width="36" height="36" rx="8" fill="rgba(0, 210, 255, 0.08)"/>
+            <text x="22" y="22.5" text-anchor="middle" dominant-baseline="central" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="12.5" letter-spacing="0.6" fill="url(#replicaIconGrad)">REP</text>
+            <circle cx="34" cy="10" r="2.5" fill="#00d2ff"/>
+          </svg>
+        </div>
+        <div class="promo-badge-tag">
+          <span class="promo-sparkle">✨</span>
+          <span class="promo-tag-text">TRY OUR NEW APK</span>
+        </div>
+      </div>
+      <div class="promo-content">
+        <span class="promo-headline">REPLICA: <strong class="promo-name">Keyboard Companion</strong></span>
+        <span class="promo-subtext">Try our new APK — click to install REPLICA directly on your device</span>
+      </div>
+      <div class="promo-action">
+        <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="promo-cta-btn" id="replicaInstallBtn" title="Install REPLICA APK">
+          <span class="cta-icon">📲</span>
+          <span class="cta-text">Install REPLICA APK</span>
+          <span class="cta-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Header Navigation -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="mascot-container nav-mascot" id="navMascot" title="Optical Illusion Animated Sphere">
+        <canvas id="navMascotCanvas" class="nav-mascot-canvas" width="68" height="68" aria-label="Animated Optical Illusion Sphere"></canvas>
+      </div>
+      <a href="#" class="logo" id="brandLogo">ZIPSHARE</a>
+    </div>
+    
+    <div class="nav-center">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search Python, Java, C, AVL, DBMS, Notes..." autocomplete="off" />
+        <button class="search-clear-btn" id="searchClearBtn" style="display:none;">✕</button>
+        <div class="suggestions-panel" id="suggestionsPanel"></div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <button class="nav-link-btn" id="navHomeBtn">Home</button>
+      <button class="nav-link-btn" id="navRecentBtn">Recent</button>
+      <button class="nav-link-btn" id="navPinnedBtn">Pinned</button>
+      <a href="https://github.com/" target="_blank" rel="noopener noreferrer" class="nav-link-btn ext-link" id="navGitBtn" title="GitHub Repository">🐙 Git</a>
+      <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="nav-link-btn ext-link" id="navApkBtn" title="Download REPLICA APK">📲 APK</a>
+      <button class="nav-link-btn admin-only-inline" id="navDashboardBtn" style="display:none;">⚡ Admin Dashboard</button>
+      <button class="nav-link-btn admin-only-inline" id="navRequestsBtn" style="display:none;">Requests <span class="badge-count" id="requestBadgeCount" style="display:none;">0</span></button>
+      <button class="nav-link-btn" id="navAboutBtn">About</button>
+      <button class="icon-btn" id="themeToggle" title="Toggle Light/Dark Theme">🌙</button>
+      <button class="text-btn primary" id="adminLoginBtn">Admin Login</button>
+    </div>
+  </nav>
+
+  <!-- Homepage Hero Section -->
+  <header class="hero">
+    <div class="hero-badge">🚀 ZipShare V3</div>
+    <h1 class="hero-title">ZIPSHARE</h1>
+    <p class="hero-subtitle">Student-Friendly File Sharing Platform</p>
+    <p class="hero-desc">
+      Browse, preview and download programming files, lab records, notes, assignments and folders shared by administrators.
+    </p>
+
+    <!-- Upload Controls (Admin only) -->
+    <div class="hero-actions admin-only-flex" id="heroActions" style="display:none;">
+      <label class="upload-btn primary-btn" id="uploadBtn">
+        <span>⬆ Upload Files</span>
+        <input type="file" id="fileInput" multiple hidden />
+      </label>
+      <label class="upload-btn ghost-btn" id="uploadFolderBtn">
+        <span>📁 Upload Folder</span>
+        <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
+      </label>
+    </div>
+  </header>
+
+  <!-- Stats Dashboard Bar -->
+  <section class="stats-bar" id="statsBar"></section>
+
+  <!-- Subject Animation Canvas Stage -->
+  <section class="subject-animation-stage" id="subjectStage">
+    <div class="stage-info">
+      <span class="stage-icon" id="stageIcon">⭐</span>
+      <div>
+        <h3 class="stage-title" id="stageTitle">All Categories</h3>
+        <p class="stage-desc" id="stageDesc">Showing all uploaded code files, notes, and project folders.</p>
+      </div>
+    </div>
+    <div class="stage-canvas-wrap">
+      <canvas id="subjectCanvas" width="220" height="90"></canvas>
+    </div>
+  </section>
+
+  <!-- Category Interactive Tabs -->
+  <section class="filters-section">
+    <div class="filters" id="filters">
+      <button class="chip active" data-category="all">⭐ All</button>
+      <button class="chip" data-category="java">☕ Java</button>
+      <button class="chip" data-category="python">🐍 Python</button>
+      <button class="chip" data-category="c">💻 C Language</button>
+      <button class="chip" data-category="dbms">🗄️ DBMS</button>
+      <button class="chip" data-category="adsa">🌳 ADSA</button>
+      <button class="chip" data-category="folders">📁 Folders Only</button>
+      <button class="chip" data-category="pinned">📌 Pinned</button>
+    </div>
+  </section>
+
+  <!-- Dynamic Breadcrumb Navigation Bar -->
+  <section class="breadcrumb-section" style="max-width:1200px; margin:0 auto 16px; padding:0 20px;">
+    <div class="breadcrumb-bar" id="breadcrumbBar" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; background:var(--card); padding:10px 16px; border-radius:12px; border:1px solid var(--card-border); font-size:0.9rem; color:var(--text-dim);">
+      <!-- Breadcrumb elements dynamically populated in JS -->
+    </div>
+  </section>
+
+  <!-- Main Lab Layout with Left Collapsible Sidebar -->
+  <div class="lab-layout-wrapper" id="labLayoutWrapper">
+    
+    <!-- LEFT SIDEBAR: SRKR Lab Explorer -->
+    <aside class="lab-sidebar" id="labSidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title-group">
+          <span class="sidebar-subject-icon" id="sidebarSubjectIcon">📚</span>
+          <div>
+            <h3 class="sidebar-title" id="sidebarTitle">Lab Explorer</h3>
+            <span class="sidebar-subtitle" id="sidebarSubtitle">ZipShare Syllabus</span>
+          </div>
+        </div>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar">◀</button>
+      </div>
+
+      <div class="sidebar-search">
+        <span class="sidebar-search-icon">🔍</span>
+        <input type="text" id="syllabusSearchInput" placeholder="Search syllabus..." autocomplete="off" />
+      </div>
+
+      <!-- Syllabus Hierarchy Tree -->
+      <div class="sidebar-tree" id="syllabusTreeContainer">
+        <!-- Collapsible Exercise tree injected by JS -->
+      </div>
+
+      <div class="sidebar-admin-footer admin-only-block" style="display:none; padding:12px; border-top:1px solid var(--card-border);">
+        <button class="btn-ghost-sm full-btn" id="adminManageSyllabusBtn">⚙️ Manage Syllabus</button>
+      </div>
+    </aside>
+
+    <!-- Mobile Drawer Sidebar Toggle Button -->
+    <button class="mobile-sidebar-trigger" id="mobileSidebarTrigger">
+      📑 Open Syllabus Explorer
+    </button>
+
+    <!-- RIGHT MAIN CONTENT AREA -->
+    <main class="lab-main-content">
+
+      <!-- PINNED SECTION (Appears at TOP on EVERY subject page) -->
+      <section class="pinned-section" id="pinnedSection">
+        <div class="pinned-header">
+          <span class="pinned-badge-icon">📌</span>
+          <h3 class="pinned-title">Pinned Programs</h3>
+          <span class="pinned-subtitle">Always visible reference solutions</span>
+        </div>
+        <div class="pinned-grid" id="pinnedGrid">
+          <!-- Pinned program cards injected by JS -->
+        </div>
+      </section>
+
+      <!-- File Grid Container -->
+      <section class="file-grid-container">
+        <div class="section-header">
+          <div class="grid-title-group">
+            <h2 class="section-title" id="gridSectionTitle">Files &amp; Folders</h2>
+            <div id="activeSyllabusFilterBadge" class="filter-pill" style="display:none;">
+              <span id="filterBadgeText">Exercise 1</span>
+              <button id="clearSyllabusFilterBtn" title="Clear filter">✕</button>
+            </div>
+          </div>
+
+          <div class="grid-controls">
+            <label for="sortSelect" class="sort-label">Sort by:</label>
+            <select id="sortSelect" class="sort-select">
+              <option value="sno" selected>S.No (Official 1..N)</option>
+              <option value="recent">Newest Uploads</option>
+              <option value="popular">Most Downloads</option>
+              <option value="name">Alphabetical</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="file-grid" id="fileGrid">
+          <!-- File cards injected via JavaScript -->
+        </div>
+
+        <div class="empty-state" id="emptyState" style="display:none;">
+          <div class="empty-illustration">🗂️</div>
+          <h3>No files found</h3>
+          <p>Try searching for another keyword or select a topic from the Left Syllabus Explorer.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Program Request AI & Admin Assistant Section -->
+  <section class="request-section" id="requestSection">
+    <div class="request-card glass">
+      <div class="request-header">
+        <span class="request-icon">🤖</span>
+        <h2>AI Programming Assistant</h2>
+        <p>Ask for instant code solutions (e.g., AVL Tree in C, Stack in Java, Quick Sort, Banker's Algorithm, BFS, DBMS Normalization).</p>
+      </div>
+
+      <!-- AI Assistant Query Form -->
+      <form id="aiAssistantForm" class="request-form">
+        <div class="form-row">
+          <div class="form-group" style="flex:2;">
+            <label for="aiPromptInput">Program / Question *</label>
+            <input type="text" id="aiPromptInput" placeholder="e.g. Quick Sort in Python, AVL Tree in C, Banker's Algorithm..." required />
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label for="aiSubjectSelect">Subject / Category</label>
+            <select id="aiSubjectSelect">
+              <option value="Python">🐍 Python</option>
+              <option value="Java">☕ Java</option>
+              <option value="C">🔷 C</option>
+              <option value="C++">⚙️ C++</option>
+              <option value="ADSA">🌳 ADSA</option>
+              <option value="DBMS">🗄️ DBMS</option>
+              <option value="JavaScript">⚡ JavaScript</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="upload-btn primary-btn full-btn" id="aiSubmitBtn">✨ Ask AI Assistant for Instant Solution</button>
+      </form>
+
+      <!-- AI Generated Result Box -->
+      <div id="aiResultCard" style="display:none; margin-top:20px; background:var(--bg-alt); padding:20px; border-radius:16px; border:1px solid var(--card-border);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+          <h3 id="aiResultTitle" style="margin:0; font-size:1.2rem; color:var(--text);">Program Solution</h3>
+          <div style="display:flex; gap:8px; align-items:center;" id="aiBadges">
+            <span class="tag-pill" id="aiLangTag">python</span>
+            <span class="tag-pill" id="aiTimeTag">Time: O(N)</span>
+            <span class="tag-pill" id="aiSpaceTag">Space: O(1)</span>
+          </div>
+        </div>
+        
+        <p id="aiExplanation" style="color:var(--text-dim); font-size:0.9rem; margin-bottom:12px;"></p>
+
+        <!-- Monaco Code Viewer Preview Container -->
+        <div style="margin-bottom:12px; position:relative;">
+          <pre id="aiCodeBlock" style="background:#1e1e1e; color:#d4d4d4; padding:14px; border-radius:10px; font-family:monospace; font-size:0.88rem; overflow-x:auto; max-height:280px;"></pre>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div style="background:var(--bg); padding:10px; border-radius:10px; border:1px solid var(--card-border);">
+            <strong style="font-size:0.8rem; color:var(--text-dim);">Sample Input:</strong>
+            <pre id="aiSampleInput" style="margin:4px 0 0 0; font-size:0.82rem; white-space:pre-wrap; color:var(--text);"></pre>
+          </div>
+          <div style="background:var(--bg); padding:10px; border-radius:10px; border:1px solid var(--card-border);">
+            <strong style="font-size:0.8rem; color:var(--text-dim);">Sample Output:</strong>
+            <pre id="aiSampleOutput" style="margin:4px 0 0 0; font-size:0.82rem; white-space:pre-wrap; color:var(--text);"></pre>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="upload-btn primary-btn" id="aiRunOnlineBtn">▶ Run Online in Compiler</button>
+          <button class="card-btn" id="aiCopyBtn">📋 Copy Code</button>
+          <button class="card-btn" id="aiDownloadBtn">⬇ Download Code</button>
+        </div>
+      </div>
+
+      <!-- AI Unverified Fallback Box -->
+      <div id="aiFallbackCard" style="display:none; margin-top:20px; background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); padding:20px; border-radius:16px; text-align:center;">
+        <p style="font-weight:700; color:#ef4444; margin-bottom:10px;" id="aiFallbackText">I couldn't generate a verified solution.</p>
+        <p style="font-size:0.9rem; color:var(--text-dim); margin-bottom:16px;">You can request this program directly from the administrator, and it will be reviewed and uploaded.</p>
+        <button class="upload-btn primary-btn" id="showAdminReqFormBtn">📩 Request Program from Admin</button>
+      </div>
+
+      <!-- Admin Program Request Form (Shown on demand or fallback) -->
+      <div id="adminReqFormWrap" style="display:none; margin-top:20px; border-top:1px solid var(--card-border); padding-top:20px;">
+        <h3 style="font-size:1.1rem; margin-bottom:12px;">📩 Request Program from Admin</h3>
+        <form id="programRequestForm" class="request-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reqProgramName">Program Name *</label>
+              <input type="text" id="reqProgramName" placeholder="e.g. Dijkstra Shortest Path in C++" required />
+            </div>
+            <div class="form-group">
+              <label for="reqSubject">Subject / Category *</label>
+              <select id="reqSubject" required>
+                <option value="Python">🐍 Python</option>
+                <option value="Java">☕ Java</option>
+                <option value="C">🔷 C</option>
+                <option value="C++">⚙️ C++</option>
+                <option value="ADSA">🌳 Advanced Data Structures (ADSA)</option>
+                <option value="DBMS">🗄️ Database Management Systems (DBMS)</option>
+                <option value="Other">📄 Other Notes / Lab</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reqDescription">Description / Lab Question Details</label>
+            <textarea id="reqDescription" rows="3" placeholder="Paste problem statement or details so the admin can upload the exact solution..."></textarea>
+          </div>
+          <button type="submit" class="upload-btn primary-btn full-btn">Submit Program Request to Admin 🚀</button>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <h3 class="footer-title">💠 ZIPSHARE</h3>
+      <p class="footer-tagline">Student-Friendly File Sharing Platform</p>
+      <div class="footer-credits">
+        <p>Developed by <strong>NOMAD TEAM</strong></p>
+        <p>Owner: <strong>Anonymous</strong></p>
+      </div>
+      <p class="footer-copy">&copy; 2026 ZipShare V3 · Powered by Node.js, Express &amp; MongoDB</p>
+    </div>
+  </footer>
+
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Admin Login Modal -->
+<div class="modal-overlay" id="loginModalOverlay">
+  <div class="modal glass">
+    <button class="modal-close" data-close="loginModalOverlay">✕</button>
+    <div class="modal-icon" id="loginModalIcon">🔐</div>
+    <h3 id="loginModalHeading">Admin Login</h3>
+    <p class="modal-sub">Only administrators are allowed to log in.</p>
+    
+    <div class="login-box" id="loginBox">
+      <input type="password" id="adminPasswordInput" placeholder="Enter Admin Password" autocomplete="off" />
+      <div id="loginMessage" class="login-message"></div>
+      <button class="upload-btn primary-btn full-btn" id="loginSubmitBtn">Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Dashboard Modal -->
+<div class="modal-overlay" id="dashboardModalOverlay">
+  <div class="modal glass large">
+    <button class="modal-close" data-close="dashboardModalOverlay">✕</button>
+    <div class="dashboard-header">
+      <span class="modal-icon">⚡</span>
+      <h3>Admin Dashboard</h3>
+      <p class="modal-sub">Welcome Administrator! Complete control panel for ZipShare.</p>
+    </div>
+    
+    <div class="dashboard-grid">
+      <div class="dashboard-card">
+        <h4>⬆️ Upload &amp; Manage Files</h4>
+        <p>Upload new code files or full project directory folders.</p>
+        <div class="dashboard-actions">
+          <label class="dash-btn primary">
+            <span>Upload Files</span>
+            <input type="file" id="dashFileInput" multiple hidden />
+          </label>
+          <label class="dash-btn ghost">
+            <span>Upload Folder</span>
+            <input type="file" id="dashFolderInput" webkitdirectory directory multiple hidden />
+          </label>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <h4>📌 Featured &amp; Pinned Items</h4>
+        <p>Pin critical code or lab solutions to the top for students.</p>
+        <button class="dash-btn ghost" id="dashManagePinnedBtn">View Pinned Items</button>
+      </div>
+
+      <div class="dashboard-card">
+        <h4>📋 Student Program Requests</h4>
+        <p>Review, approve, or fulfill program requests from students.</p>
+        <button class="dash-btn primary" id="dashOpenRequestsBtn">Manage Requests (<span id="dashRequestCount">0</span>)</button>
+      </div>
+
+      <div class="dashboard-card">
+        <h4>🔐 Security &amp; Owner Authorization</h4>
+        <p>Status: <strong>Active JWT Session</strong> · Protected by Owner</p>
+        <button class="dash-btn danger" id="dashLogoutBtn">Logout Admin</button>
+      </div>
+
+      <div class="dashboard-card">
+        <h4>📁 Delete Folders</h4>
+        <p>Select multiple folders and delete them.</p>
+        <button class="dash-btn ghost" id="dashDeleteFoldersBtn">Select Multiple Folders</button>
+      </div>
+
+      <div class="dashboard-card" style="border-color: rgba(99, 102, 241, 0.4);">
+        <h4>📚 Official Syllabus Matrix</h4>
+        <p>Track all 91 experiments across Java (35), Python (40), and DSA (16). Manage mappings.</p>
+        <button class="dash-btn primary" id="dashSyllabusBtn">Open Syllabus Matrix (91)</button>
+      </div>
+
+      <div class="dashboard-card" style="border-color: rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.04);">
+        <h4>🔗 Manage Promo &amp; APK Links</h4>
+        <p>Update active REPLICA download link, promo banner text, and external app links.</p>
+        <button class="dash-btn primary" id="dashManageLinksBtn">Edit Promo Links 📲</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Promo & APK Links Modal -->
+<div class="modal-overlay" id="promoLinksModalOverlay">
+  <div class="modal glass" style="max-width:580px;">
+    <button class="modal-close" data-close="promoLinksModalOverlay">✕</button>
+    <div class="dashboard-header" style="margin-bottom: 16px;">
+      <span class="modal-icon">🔗</span>
+      <h3>Manage Promo &amp; APK Links</h3>
+      <p class="modal-sub">Update the official REPLICA APK download link, headlines, and banner visibility live for all users.</p>
+    </div>
+
+    <form id="adminPromoForm" onsubmit="return false;" style="display:flex; flex-direction:column; gap:14px;">
+      <div class="form-group">
+        <label for="adminPromoLinkInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+          📲 Active REPLICA APK Download Link (URL):
+        </label>
+        <input type="url" id="adminPromoLinkInput" class="admin-input" placeholder="https://betadrop.app/i/eXW3zM" required style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); font-family:monospace;" />
+        <span style="font-size:0.75rem; color:var(--text-muted); margin-top:2px; display:block;">When users click Install or the REP icon, this link opens directly.</span>
+      </div>
+
+      <div class="form-group" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div>
+          <label for="adminPromoBadgeInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+            🏷️ Badge Text:
+          </label>
+          <input type="text" id="adminPromoBadgeInput" class="admin-input" placeholder="TRY OUR NEW APK" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+        </div>
+        <div>
+          <label for="adminPromoBtnTextInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+            🔘 Button CTA Label:
+          </label>
+          <input type="text" id="adminPromoBtnTextInput" class="admin-input" placeholder="Install REPLICA APK" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="adminPromoTitleInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+          📢 Promo Headline:
+        </label>
+        <input type="text" id="adminPromoTitleInput" class="admin-input" placeholder="REPLICA: Keyboard Companion" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+      </div>
+
+      <div class="form-group">
+        <label for="adminPromoSubtextInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+          📝 Promo Subtext:
+        </label>
+        <input type="text" id="adminPromoSubtextInput" class="admin-input" placeholder="Try our new APK — click to install REPLICA directly on your device" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+      </div>
+
+      <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:2px; padding:10px 14px; background:rgba(56, 189, 248, 0.08); border-radius:8px; border:1px solid rgba(56, 189, 248, 0.2);">
+        <input type="checkbox" id="adminPromoEnabledInput" checked style="width:18px; height:18px; cursor:pointer;" />
+        <label for="adminPromoEnabledInput" style="font-size:0.85rem; font-weight:600; color:var(--text); cursor:pointer;">
+          Show REPLICA Announcement Bar to visitors
+        </label>
+      </div>
+
+      <!-- Git / GitHub Repository Link Configuration -->
+      <div class="form-group" style="border-top:1px dashed var(--border); padding-top:14px; margin-top:4px;">
+        <label for="adminGitRepoLinkInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+          🐙 Git / GitHub Repository Link (URL):
+        </label>
+        <input type="url" id="adminGitRepoLinkInput" class="admin-input" placeholder="https://github.com/your-username/zipshare" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); font-family:monospace;" />
+        <span style="font-size:0.75rem; color:var(--text-muted); margin-top:2px; display:block;">Reflects across Navbar, Footer, and About modal. All changes auto-commit to local Git.</span>
+      </div>
+
+      <div class="form-group" style="display:grid; grid-template-columns: 2fr 1fr; gap:12px;">
+        <div>
+          <label for="adminGitRepoTitleInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+            🏷️ Git Button / Label Title:
+          </label>
+          <input type="text" id="adminGitRepoTitleInput" class="admin-input" placeholder="GitHub Repository" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; font-weight:600; color:var(--text); cursor:pointer; padding-bottom:10px;">
+            <input type="checkbox" id="adminGitRepoEnabledInput" checked style="width:18px; height:18px; cursor:pointer;" />
+            Show Git in Nav
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="dash-btn ghost" id="adminResetPromoBtn" title="Reset to default BetaDrop link">🔄 Reset Default</button>
+          <button type="button" class="dash-btn ghost" id="adminTestPromoBtn" title="Test open link in new tab">↗️ Test Link</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="dash-btn ghost" data-close="promoLinksModalOverlay">Cancel</button>
+          <button type="button" class="dash-btn primary" id="adminSavePromoBtn">Save &amp; Update Links 🚀</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Admin Official Syllabus Matrix Modal -->
+<div class="modal-overlay" id="syllabusMatrixModalOverlay">
+  <div class="modal glass large" style="max-height:88vh; display:flex; flex-direction:column;">
+    <button class="modal-close" data-close="syllabusMatrixModalOverlay">✕</button>
+    <div style="flex-shrink:0;">
+      <h3>📚 Official Syllabus Matrix</h3>
+      <p class="modal-sub">Live checklist of all 145 official syllabus experiments across Java, Python, DBMS, and DSA.</p>
+      <div style="display:flex; gap:10px; margin:12px 0 16px; flex-wrap:wrap;">
+        <button class="chip active" id="matrixTabJava" onclick="switchMatrixTab('java')">☕ Java (35)</button>
+        <button class="chip" id="matrixTabPython" onclick="switchMatrixTab('python')">🐍 Python (40)</button>
+        <button class="chip" id="matrixTabDbms" onclick="switchMatrixTab('dbms')">🗄️ DBMS (54)</button>
+        <button class="chip" id="matrixTabAdsa" onclick="switchMatrixTab('adsa')">🌳 DSA / ADSA (16)</button>
+      </div>
+    </div>
+    <div id="syllabusMatrixContainer" style="overflow-y:auto; flex:1; padding-right:6px;">
+      <!-- Table populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Admin Assign Official Experiment Modal -->
+<div class="modal-overlay" id="assignExperimentModalOverlay">
+  <div class="modal glass" style="max-width:540px;">
+    <button class="modal-close" data-close="assignExperimentModalOverlay">✕</button>
+    <h3>🎯 Assign to Official Experiment</h3>
+    <p class="modal-sub">Map file <strong id="assignFileOriginalName" style="color:var(--accent);"></strong> to an official syllabus experiment.</p>
+    <form id="assignExperimentForm">
+      <input type="hidden" id="assignFileId" />
+      <div class="form-group" style="margin-bottom:14px;">
+        <label for="assignCourseSelect">Select Lab / Course *</label>
+        <select id="assignCourseSelect" class="sort-select" style="width:100%; padding:10px;" required>
+          <option value="java">☕ Object Oriented Programming through Java Lab (35 Experiments)</option>
+          <option value="python">🐍 Python Programming Skill Enhancement Lab (40 Experiments)</option>
+          <option value="dbms">🗄️ Database Management Systems Lab (54 Experiments)</option>
+          <option value="adsa">🌳 Advanced Data Structures and Algorithms using C Lab (16 Experiments)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label for="assignExpSelect">Select Official Experiment *</label>
+        <select id="assignExpSelect" class="sort-select" style="width:100%; padding:10px;" required></select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn-ghost" data-close="assignExperimentModalOverlay">Cancel</button>
+        <button type="submit" class="enter-btn primary-btn" style="margin-top:0;">Save Mapping</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Admin Program Requests Dashboard Modal -->
+<div class="modal-overlay" id="requestsModalOverlay">
+  <div class="modal glass large">
+    <button class="modal-close" data-close="requestsModalOverlay">✕</button>
+    <h3>📋 User Program Requests</h3>
+    <p class="modal-sub">Review and approve requests submitted by students.</p>
+    <div class="requests-list" id="requestsListContainer">
+      <!-- User requests list injected here -->
+    </div>
+  </div>
+</div>
+
+<!-- Admin Folder Management Modal -->
+<div class="modal-overlay" id="folderManagementModalOverlay">
+  <div class="modal glass large">
+    <button class="modal-close" data-close="folderManagementModalOverlay">✕</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+      <div>
+        <h3 style="margin:0;">📁 Folder Management</h3>
+        <p class="modal-sub" style="margin:4px 0 0 0;">Select multiple folders to batch manage or delete.</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; font-size:0.9rem; user-select:none;">
+          <input type="checkbox" id="selectAllFoldersCheckbox" style="width:18px; height:18px; cursor:pointer;" />
+          Select All
+        </label>
+        <button class="card-btn danger" id="deleteSelectedFoldersBtn" style="display:none; padding:8px 16px; font-weight:600;">
+          🗑 Delete Selected (<span id="selectedFoldersCount">0</span>)
+        </button>
+      </div>
+    </div>
+    
+    <div class="folder-management-list" id="folderManagementList" style="max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:4px;">
+      <!-- Folder list items with checkboxes rendered dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- Delete Selected Folders Confirmation Dialog Modal -->
+<div class="modal-overlay" id="deleteConfirmModalOverlay">
+  <div class="modal glass" style="max-width:440px; text-align:center;">
+    <button class="modal-close" data-close="deleteConfirmModalOverlay">✕</button>
+    <div style="font-size:2.5rem; margin-bottom:8px;">⚠️</div>
+    <h3 style="margin-bottom:8px;">Delete Selected Folders</h3>
+    <p id="deleteConfirmMessage" style="margin-bottom:20px; color:var(--text-secondary); font-size:0.95rem; line-height:1.4;">
+      Delete 1 selected folders permanently?<br>This action cannot be undone.
+    </p>
+    <div style="display:flex; justify-content:center; gap:12px;">
+      <button class="card-btn ghost" id="cancelDeleteFoldersBtn" style="padding:10px 20px;">Cancel</button>
+      <button class="card-btn danger" id="confirmDeleteFoldersBtn" style="padding:10px 20px; font-weight:600;">Delete Permanently</button>
+    </div>
+  </div>
+</div>
+
+<!-- In-Browser File Viewer & Code Editor Modal -->
+<div class="modal-overlay" id="previewModalOverlay">
+  <div class="modal glass large viewer-modal">
+    <button class="modal-close" data-close="previewModalOverlay" aria-label="Close file viewer">✕</button>
+    
+    <div class="viewer-header">
+      <div class="viewer-title-group">
+        <span class="viewer-file-icon" id="previewFileIcon">📝</span>
+        <div class="viewer-title-meta">
+          <h3 id="previewTitle">File Preview</h3>
+          <div class="viewer-badges-row">
+            <span class="viewer-lang-badge" id="previewLangBadge">CODE</span>
+            <span class="viewer-lines-badge" id="previewLinesBadge" style="display:none;">0 lines</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reading ergonomics: Font Zoom & Soft Wrap Toggle (Perfect for mobile & desktop) -->
+      <div class="viewer-reading-tools">
+        <div class="viewer-font-controls" title="Adjust Code Font Size">
+          <button type="button" class="viewer-tool-btn" id="viewerFontDecBtn" title="Decrease font size" aria-label="Decrease text size">A-</button>
+          <span class="viewer-font-label" id="viewerFontSizeLabel">13px</span>
+          <button type="button" class="viewer-tool-btn" id="viewerFontIncBtn" title="Increase font size" aria-label="Increase text size">A+</button>
+        </div>
+        <button type="button" class="viewer-tool-btn btn-wrap-toggle" id="viewerWrapToggleBtn" title="Toggle Line Wrap on Long Code Lines">
+          <span id="viewerWrapIcon">↩</span>
+          <span id="viewerWrapText">Wrap</span>
+        </button>
+      </div>
+
+      <div class="viewer-actions">
+        <button class="btn-action primary" id="viewerRunDirectBtn" title="Run in Online Compiler">⚡ Run Online</button>
+        <button class="btn-action" id="viewerExplainDirectBtn" title="AI Explain Code">🤖 Explain</button>
+        <button class="btn-action" id="copyCodeBtn" title="Copy Code">
+          <span id="copyCodeIcon">📋</span> <span id="copyCodeText">Copy</span>
+        </button>
+        <button class="btn-action" id="downloadPreviewBtn" title="Download File">⬇ Download</button>
+        <button class="btn-action admin-only-inline" id="editContentBtn" title="Edit Code Directly" style="display:none;">✏️ Edit</button>
+        <button class="btn-action" id="fullscreenViewerBtn" title="Fullscreen View">⛶</button>
+      </div>
+    </div>
+
+    <div class="viewer-split-container">
+      <div class="viewer-body" id="previewBody">
+        <!-- Code content or media rendered here -->
+      </div>
+
+      <!-- RIGHT SIDE / BELOW ON MOBILE: Solution Explorer Panel -->
+      <aside class="solution-explorer-panel" id="solutionExplorerPanel" style="display:none;">
+        <div class="sol-panel-header" id="solPanelHeader" title="Click to expand/collapse lab details">
+          <div class="sol-panel-header-left">
+            <span class="sol-panel-icon">💡</span>
+            <h4 class="sol-panel-title">Lab Details &amp; Solution</h4>
+          </div>
+          <button class="sol-panel-toggle-btn" id="solPanelToggleBtn" type="button" aria-label="Toggle details">
+            <span class="sol-toggle-icon" id="solToggleIcon">▾</span>
+          </button>
+        </div>
+
+        <div class="sol-panel-content" id="solPanelContent">
+          <div class="sol-panel-group">
+            <label class="sol-label">SUBJECT</label>
+            <div id="solSubjectBadge" class="sol-value-badge">☕ Java</div>
+          </div>
+
+          <div class="sol-panel-group">
+            <label class="sol-label">EXERCISE / MODULE</label>
+            <div id="solExerciseText" class="sol-value-text">Exercise 1 - Basics</div>
+          </div>
+
+          <div class="sol-panel-group">
+            <label class="sol-label">QUESTION / TOPIC</label>
+            <div id="solQuestionText" class="sol-question-title">Default Values</div>
+          </div>
+
+          <div class="sol-panel-group">
+            <label class="sol-label">DESCRIPTION</label>
+            <p id="solDescriptionText" class="sol-description-body">Write a Java program to display the default values of all primitive data types.</p>
+          </div>
+
+          <div class="sol-panel-group">
+            <label class="sol-label">EXPECTED OUTPUT</label>
+            <pre id="solExpectedOutputText" class="sol-output-box">Default Primitive Values in Java:
+byte: 0
+short: 0
+int: 0
+long: 0
+float: 0.0
+double: 0.0
+char: 0
+boolean: false</pre>
+          </div>
+
+          <div class="sol-panel-group">
+            <label class="sol-label">RELATED PROGRAMS</label>
+            <div id="solRelatedGrid" class="sol-related-chips">
+              <!-- Clickable program chips -->
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Admin Code Editor Section inside Preview -->
+    <div class="admin-editor-section" id="adminEditorSection" style="display:none;">
+      <div class="editor-header-bar">
+        <span>✏️ Admin Code Editor</span>
+        <span class="editor-tip">Make live changes to this file</span>
+      </div>
+      <textarea id="codeEditorTextarea" rows="12" class="code-textarea" spellcheck="false"></textarea>
+      <div class="editor-footer-bar">
+        <button class="btn-ghost" id="cancelEditContentBtn">Cancel</button>
+        <button class="upload-btn primary-btn" id="saveContentBtn">Save Code Changes 💾</button>
+      </div>
+    </div>
+
+    <!-- Sticky Mobile Quick Action Bar (Comfortable thumb reach on mobile devices) -->
+    <div class="viewer-mobile-bottom-bar" id="viewerMobileBottomBar">
+      <button type="button" class="mobile-bar-btn primary" id="mobileRunCodeBtn" title="Run in Online Compiler">
+        <span>⚡ Run</span>
+      </button>
+      <button type="button" class="mobile-bar-btn" id="mobileCopyCodeBtn" title="Copy code to clipboard">
+        <span id="mobileCopyIcon">📋</span> <span id="mobileCopyText">Copy</span>
+      </button>
+      <button type="button" class="mobile-bar-btn" id="mobileToggleSolBtn" style="display:none;" title="Show syllabus solution details">
+        <span>💡 Solution</span>
+      </button>
+      <button type="button" class="mobile-bar-btn" id="mobileExplainCodeBtn" title="AI Code Analysis">
+        <span>🤖 Explain</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Monaco Online Code Compiler & Playground Modal -->
+<div class="modal-overlay" id="compilerModalOverlay">
+  <div class="modal glass large compiler-modal" id="compilerModalBox">
+    <button class="modal-close" data-close="compilerModalOverlay">✕</button>
+    
+    <div class="compiler-header">
+      <div class="compiler-title-group">
+        <span class="compiler-icon">⚡</span>
+        <div>
+          <h3 id="compilerFileName">Online Code Compiler &amp; Playground</h3>
+          <p class="compiler-sub">Edit code, provide custom input, and execute online via Judge0 CE</p>
+        </div>
+      </div>
+      <div class="compiler-header-controls">
+        <select id="compilerLangSelect" class="compiler-lang-select">
+          <option value="python">Python 3</option>
+          <option value="java">Java 17</option>
+          <option value="c">C (GCC)</option>
+          <option value="cpp">C++ (G++)</option>
+          <option value="javascript">JavaScript (Node.js)</option>
+          <option value="typescript">TypeScript</option>
+          <option value="go">Go</option>
+          <option value="rust">Rust</option>
+          <option value="csharp">C#</option>
+          <option value="php">PHP</option>
+          <option value="ruby">Ruby</option>
+          <option value="swift">Swift</option>
+          <option value="kotlin">Kotlin</option>
+          <option value="scala">Scala</option>
+          <option value="r">R</option>
+          <option value="objective-c">Objective-C</option>
+          <option value="perl">Perl</option>
+          <option value="lua">Lua</option>
+          <option value="bash">Bash / Shell</option>
+          <option value="sql">SQL (SQLite)</option>
+        </select>
+        <button class="btn-action primary" id="compilerRunBtn">▶ Run</button>
+        <button class="btn-action danger" id="compilerStopBtn" style="display:none;">⏹ Stop</button>
+        <button class="btn-action" id="compilerClearBtn">🧹 Clear</button>
+        <button class="btn-action" id="compilerCopyBtn">📋 Copy</button>
+        <button class="btn-action" id="compilerDownloadBtn">⬇ Download</button>
+        <button class="btn-action" id="compilerResetBtn">↺ Reset</button>
+        <button class="btn-action" id="compilerFullscreenBtn">⛶ Fullscreen</button>
+        <button class="btn-action primary admin-only-inline" id="compilerSaveBtn" style="display:none;">💾 Save Permanently</button>
+      </div>
+    </div>
+
+    <!-- Main Playground Workspace -->
+    <div class="compiler-body">
+      <!-- Monaco Editor Container -->
+      <div class="editor-pane">
+        <div id="monacoEditorContainer" class="monaco-container"></div>
+      </div>
+
+      <!-- Input & Output Pane (VS Code Terminal Style) -->
+      <div class="io-pane">
+        
+        <!-- Terminal Header Navigation Tabs -->
+        <div class="terminal-tabs-bar">
+          <button class="term-tab active" data-tab="console">💻 Terminal Output</button>
+          <button class="term-tab" data-tab="stdin">📥 Standard Input (stdin)</button>
+          <button class="term-tab" data-tab="ai">✨ AI Code Tutor</button>
+        </div>
+
+        <!-- TAB 1: Live Interactive Console Output -->
+        <div class="term-tab-content active" id="termTabConsole">
+          <div class="pane-header">
+            <span>💻 Interactive Execution Terminal</span>
+            <div id="compilerStatusBadge" class="status-badge ready">Ready</div>
+          </div>
+
+          <div id="compilerMetrics" class="compiler-metrics" style="display:none;">
+            <span>⏱ Time: <strong id="metricTime">0.00s</strong></span>
+            <span>💾 Memory: <strong id="metricMemory">0 MB</strong></span>
+          </div>
+
+          <!-- Console Output Box -->
+          <div id="compilerConsole" class="console-output">
+            <div id="compilerLoading" class="compiler-loading" style="display:none;">
+              <div class="spinner"></div>
+              <span id="compilerLoadingText">Compiling &amp; Executing Code...</span>
+            </div>
+            <pre id="compilerStdoutText" class="output-text"></pre>
+            <pre id="compilerStderrText" class="error-text" style="display:none;"></pre>
+          </div>
+
+          <!-- Live Input Prompt Bar at bottom of Terminal -->
+          <div class="terminal-prompt-wrap" id="terminalPromptWrap">
+            <span class="prompt-symbol">❯</span>
+            <input type="text" id="terminalLiveInput" placeholder="Type input here and press Enter (e.g., scanf / input() value)..." autocomplete="off" />
+            <button class="btn-action-sm primary" id="terminalSendInputBtn">Send ↵</button>
+          </div>
+
+          <!-- HTML/CSS/JS Live Preview iframe -->
+          <iframe id="compilerIframePreview" class="iframe-preview" style="display:none;"></iframe>
+        </div>
+
+        <!-- TAB 2: Pre-Buffered Custom Input (stdin) -->
+        <div class="term-tab-content" id="termTabStdin" style="display:none;">
+          <div class="pane-header">
+            <span>📥 Custom Input Buffer (stdin)</span>
+            <span class="pane-tip">Provided prior to execution</span>
+          </div>
+          <textarea id="compilerStdin" class="stdin-textarea" placeholder="Enter input values line-by-line for input(), Scanner, scanf(), cin..."></textarea>
+        </div>
+
+        <!-- TAB 3: AI Code Explanation & Dry Run -->
+        <div class="term-tab-content" id="termTabAi" style="display:none;">
+          <div class="pane-header">
+            <span>✨ AI Solution Tutor &amp; Dry Run</span>
+            <button class="btn-action-sm primary" id="aiExplainCodeBtn">✨ Analyze Code</button>
+          </div>
+          <div id="aiExplainResults" class="ai-explain-container" style="display:none;">
+            <div class="explain-card">
+              <h4>📖 Logic &amp; Approach</h4>
+              <p id="aiExplainText"></p>
+            </div>
+            <div class="explain-grid">
+              <div class="explain-box">
+                <strong>Time Complexity:</strong>
+                <span id="aiExplainTime">O(N)</span>
+              </div>
+              <div class="explain-box">
+                <strong>Space Complexity:</strong>
+                <span id="aiExplainSpace">O(1)</span>
+              </div>
+            </div>
+            <div class="explain-card">
+              <h4>🏃 Step-by-Step Dry Run</h4>
+              <pre id="aiExplainDryRun"></pre>
+            </div>
+            <div class="explain-card">
+              <h4>💡 Optimization Tips</h4>
+              <p id="aiExplainOptimization"></p>
+            </div>
+          </div>
+          <div id="aiExplainEmpty" class="explain-empty">
+            <p>Click "Analyze Code" to generate explanation, time complexity, and dry-run execution trace.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Metadata Modal (Admin Only) -->
+<div class="modal-overlay" id="editModalOverlay">
+  <div class="modal glass">
+    <button class="modal-close" data-close="editModalOverlay">✕</button>
+    <h3>Edit Program Details</h3>
+    <p class="modal-sub">Modify file metadata, syllabus hierarchy, and expected output.</p>
+    
+    <label for="editNameInput">File / Folder Name</label>
+    <input type="text" id="editNameInput" />
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label for="editCategorySelect">Category / Subject</label>
+        <select id="editCategorySelect" class="modal-select">
+          <option value="java">☕ Java Programming</option>
+          <option value="python">🐍 Python Programming</option>
+          <option value="c">🔷 C Programming</option>
+          <option value="cpp">⚙️ C++ Programming</option>
+          <option value="adsa">🌳 ADSA</option>
+          <option value="dbms">🗄️ DBMS Lab</option>
+          <option value="all">📄 Other / General</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="editExerciseSelect">Exercise / Module</label>
+        <select id="editExerciseSelect" class="modal-select">
+          <option value="">(None / General)</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="editQuestionInput">Question / Topic Title</label>
+    <input type="text" id="editQuestionInput" placeholder="e.g. Default Values, AVL Tree, Bubble Sort" />
+
+    <label for="editDescInput">Description / Problem Statement</label>
+    <textarea id="editDescInput" rows="2" placeholder="Brief description of the lab program..."></textarea>
+    
+    <label for="editExpectedOutputInput">Expected Console Output</label>
+    <textarea id="editExpectedOutputInput" rows="3" placeholder="Sample output generated when executed..."></textarea>
+
+    <label for="editTagsInput">Tags (comma separated)</label>
+    <input type="text" id="editTagsInput" placeholder="e.g. lab, trees, avl, semester3" />
+    
+    <div class="checkbox-row" style="margin-top:10px;">
+      <input type="checkbox" id="editPinnedCheck" />
+      <label for="editPinnedCheck">📌 Pin this program to the top (Pinned Section)</label>
+    </div>
+
+    <button class="upload-btn primary-btn full-btn" id="editSaveBtn" style="margin-top:14px;">Save Details 💾</button>
+  </div>
+</div>
+
+<!-- Admin Syllabus Manager Modal -->
+<div class="modal-overlay" id="syllabusManagerModalOverlay">
+  <div class="modal glass large">
+    <button class="modal-close" data-close="syllabusManagerModalOverlay">✕</button>
+    <div class="modal-header">
+      <span class="modal-icon">⚙️</span>
+      <h3>Admin Syllabus Manager</h3>
+      <p class="modal-sub">Add, rename, or delete exercises and questions across all supported lab subjects.</p>
+    </div>
+
+    <div class="syllabus-mgr-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mgrSubjectSelect">Select Subject *</label>
+          <select id="mgrSubjectSelect" class="modal-select">
+            <option value="java">☕ Java Programming</option>
+            <option value="python">🐍 Python Programming</option>
+            <option value="c">🔷 C Programming</option>
+            <option value="cpp">⚙️ C++ Programming</option>
+            <option value="adsa">🌳 Advanced Data Structures &amp; Algorithms (ADSA)</option>
+            <option value="dbms">🗄️ DBMS Lab</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mgr-card" style="background:var(--bg-alt); padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--card-border);">
+        <h4 style="margin-top:0;">➕ Add New Exercise / Module</h4>
+        <div class="form-row">
+          <input type="text" id="mgrNewExerciseTitle" placeholder="e.g. Exercise 7 - Networking &amp; Sockets" style="flex:3;" />
+          <button class="upload-btn primary-btn" id="mgrAddExerciseBtn" style="flex:1;">Add Exercise</button>
+        </div>
+      </div>
+
+      <div class="mgr-card" style="background:var(--bg-alt); padding:16px; border-radius:12px; border:1px solid var(--card-border);">
+        <h4 style="margin-top:0;">➕ Add New Question / Topic</h4>
+        <div class="form-row" style="margin-bottom:10px;">
+          <select id="mgrExerciseSelect" class="modal-select" style="flex:1;">
+            <option value="">-- Select Exercise --</option>
+          </select>
+          <input type="text" id="mgrNewQuestionTitle" placeholder="e.g. Socket Connection" style="flex:2;" />
+        </div>
+        <textarea id="mgrNewQuestionDesc" rows="2" placeholder="Question description..." style="width:100%; margin-bottom:10px;"></textarea>
+        <textarea id="mgrNewQuestionOutput" rows="2" placeholder="Expected console output..." style="width:100%; margin-bottom:10px;"></textarea>
+        <button class="upload-btn primary-btn full-btn" id="mgrAddQuestionBtn">Add Question to Syllabus 🚀</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModalOverlay">
+  <div class="modal glass small">
+    <h3>Delete Item?</h3>
+    <p class="modal-sub">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="deleteCancelBtn">Cancel</button>
+      <button class="btn-danger" id="deleteConfirmBtn">Delete Permanently</button>
+    </div>
+  </div>
+</div>
+
+<!-- About Modal -->
+<div class="modal-overlay" id="aboutModalOverlay">
+  <div class="modal glass">
+    <button class="modal-close" data-close="aboutModalOverlay">✕</button>
+    <div class="about-header">
+      <div class="about-logo">💠</div>
+      <h3>ZIPSHARE</h3>
+      <p class="about-tagline">Student-Friendly File Sharing Platform</p>
+    </div>
+    <div class="about-body">
+      <p><strong>Mission:</strong> To make it effortless for students to browse, preview, and download programming solutions, lab records, notes, and full project folders without zipping hurdles.</p>
+      <p><strong>Features:</strong> Preserved folder uploads, in-browser syntax highlighting, real-time multi-keyword search, program requests system, Admin protected engine, and interactive subject animations.</p>
+      <p id="aboutGitRow"><strong>Source Code &amp; Git:</strong> <a href="https://github.com/" target="_blank" rel="noopener noreferrer" id="aboutGitLink" style="color:var(--accent); text-decoration:underline;">https://github.com/</a></p>
+      <p id="aboutApkRow"><strong>Companion Android App:</strong> <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" id="aboutApkLink" style="color:var(--accent-2); text-decoration:underline;">REPLICA APK (Download Live) 📲</a></p>
+      <p><strong>Developed By:</strong> NOMAD TEAM</p>
+      <p><strong>Owner:</strong> Anonymous</p>
+      <p><strong>Version:</strong> 3.0 Production Ready</p>
+    </div>
+  </div>
+</div>
+
+<!-- Site Footer -->
+<footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-links-row" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:10px; flex-wrap:wrap;">
+      <a href="https://github.com/" target="_blank" rel="noopener noreferrer" class="footer-link" id="footerGitLink" title="View Source on GitHub">
+        <span>🐙</span> <span id="footerGitText">GitHub Repository</span>
+      </a>
+      <span class="footer-sep" style="opacity:0.4;">•</span>
+      <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="footer-link" id="footerApkLink" title="Download REPLICA APK">
+        <span>📲</span> <span id="footerApkText">REPLICA Companion APK</span>
+      </a>
+    </div>
+    <p class="footer-copy">© 2026 ZipShare Student Hub</p>
+    <p class="footer-heart">Built for students with ❤️</p>
+    <p class="footer-nomad">Developed by <span class="gradient-text-nomad">Nomad</span></p>
+  </div>
+</footer>
+
+<!-- Session Badge (Bottom Right Floating Capsule) -->
+<div class="session-badge" id="sessionBadge">Welcome Anonymous 👋</div>
+
+<script src="script.js"></script>
+</body>
+</html>

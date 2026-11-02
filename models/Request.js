@@ -8,4 +8,4 @@ const requestSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Request', requestSchema);
+module.exports = mongoose.models.Request || mongoose.models.UserRequest || mongoose.model('Request', requestSchema);

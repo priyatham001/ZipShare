@@ -1,0 +1,926 @@
+Skip to main content
+Build your ideas with Gemini
+Skip to main content
+ZipShare
+spark
+Gemini
+Gemini 3.8 Flash
+Ran for 16s
+
+summarize_auto
+Action history
+chevron_right
+Here are key actions taken for the app:
+
+build
+Built
+All REPLICA APK links have been updated across the entire codebase to https://betadrop.app/i/WxHMDn:
+HTML Components (public/index.html):
+Onboarding splash promo action button (#introReplicaInstallBtn)
+Top announcement banner CTA button (#replicaInstallBtn)
+Admin settings link input placeholder (#adminPromoLinkInput)
+Frontend Logic (public/script.js):
+Promo configuration state default (promoSettings.replicaLink)
+Admin modal form pre-population and reset button handlers
+Click-through and badge icon event handlers
+Backend & Persistence (data/settings.json, routes/admin.js):
+Active persisted settings file
+Server fallback default promo settings and /api/admin/settings endpoint
+flag
+Checkpoint
+https://betadrop.app/i/csGXSh
+update the link with this please
+Gemini 3.8 Flash
+Ran for 1m 29s
+
+summarize_auto
+Action history
+chevron_right
+Here are key actions taken for the app:
+
+edit
+Edited 4 files
+data/settings.json
+check_circle
+routes/admin.js
+check_circle
+public/index.html
+check_circle
+public/script.js
+check_circle
+build
+Built
+All REPLICA APK download links have been updated across all locations to https://betadrop.app/i/csGXSh:
+HTML Markup (public/index.html):
+Onboarding splash installation CTA button (#introReplicaInstallBtn)
+Top header banner CTA link (#replicaInstallBtn)
+Admin settings form link placeholder (#adminPromoLinkInput)
+Frontend Application State (public/script.js):
+Promo configuration state default (promoSettings.replicaLink)
+Admin modal form pre-fill and default reset handlers
+Direct download click listeners for banners, buttons, and app icons
+Persistent Storage & Server (data/settings.json, routes/admin.js):
+Persisted promo settings store
+Server-side fallback configuration and the /api/admin/settings endpoint
+flag
+Checkpoint
+I made some changes.
+summarize_auto
+Manual edit
+edit
+Edited 12 files
+Lab Programs Updated.zip
+check_circle
+data/settings.json
+check_circle
+public/index.html
+check_circle
+public/script.js
+check_circle
+public/style.css
+check_circle
+public/syllabus.json
+check_circle
+routes/admin.js
+check_circle
+routes/ai.js
+check_circle
+routes/syllabus.js
+check_circle
+server.js
+check_circle
+services/syllabusData.js
+check_circle
+services/syllabusMatcher.js
+check_circle
+flag
+Checkpoint
+Update my ZipShare site with the following changes.
+Switch these experiments from "COMING SOON" to "AVAILABLE" when their files are present:
+Java #20: 20_Test.java and 20_Hello.java (both belong to the same slot, it is a package demo)
+Python #33: 33_Geometry Class.py
+Python #34: 34_Create NumPy Array.py
+Python #35: 35_Slicing and Indexing.py
+Python #36: 36_Numpy Array Operations.py
+Python #37: 37_Numpy Array Statistics.py
+DBMS #9: 9_Smart City Streetlight Monitoring.sql
+DBMS #30: 30_SUBSTR.sql
+Fix the "Needs Review / Unmapped" bug. 30_SUBSTR.sql is wrongly filed under ADSA. Route it to DBMS experiment #30 "SUBSTR". Make the routing use the extension and number rules above so this cannot happen again.
+Allow multiple files per experiment slot, and show every file with its own View, Run Online and Download buttons.
+Update the counters:
+Java 19/35 to 20/35
+Python 32/40 to 37/40
+DBMS 49/54 to 51/54
+DSA stays 14/16
+Official Experiments stays 145
+Available Now 114 to 124
+Coming Soon 31 to 21
+Compute these from the data instead of hardcoding them.
+These stay COMING SOON because there are no files yet: Java 21 to 35, Python 38 to 40, DBMS 52 to 54, DSA 15 to 16.
+Give me the full updated files, and a short checklist of how to upload the new files so they match correctly.
+Executive Summary
+This report presents a complete design and implementation strategy for a responsive, accessible, and privacy-compliant web page featuring a Black-Hole animation, an anime-style planetary theme for language selection, a subscription form, and a final page with an Apple-like UI. Key deliverables include full HTML/CSS/JS source code, asset references, AI image prompts for the graphics, deployment instructions, optimization notes, and a testing checklist. Emphasis is placed on vanilla HTML/CSS/JS (no heavy frameworks), minimal dependencies, cross-browser support, and graceful degradation (e.g. prefers-reduced-motion media query for animation). We compare implementation options (static+form service vs. Node.js), list royalty-free image sources, and include mermaid diagrams illustrating page flow and components. Throughout, we cite official references (MDN, W3C, etc.) for web standards and best practices.
+1. Black Hole Animation
+An animated black hole effect can be achieved with CSS and HTML (or Canvas/JS for more complex visuals). A simple yet effective approach uses a rotating gradient “accretion disk” behind a central dark circle. For example:
+code
+Html
+<div id="blackhole-container">
+  <div class="acc-disk"></div>
+  <div class="hole"></div>
+</div>
+code
+CSS
+#blackhole-container {
+  position: relative;
+  width: 300px; height: 300px;
+  margin: 0 auto;
+}
+.acc-disk {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,200,200,1) 10%, rgba(0,0,0,0.8) 70%);
+  animation: spin 8s linear infinite;
+}
+.hole {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%; height: 60%;
+  background: #000;
+  border-radius: 50%;
+  box-shadow: 0 0 40px 20px rgba(0,0,0,0.7);
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+This creates a dark central “hole” with a rotating ring. For more realism, add multiple <div> rings with CSS animations or use <canvas> for particle effects. In all cases, respect the prefers-reduced-motion setting: use a media query to disable or simplify animation for users who have requested reduced motion.
+Graceful degradation: If CSS animations aren’t supported or motion is reduced, the disk can remain static or fallback to a static image. Using @media (prefers-reduced-motion: reduce) { .acc-disk { animation: none; } } ensures compliance.
+Cross-browser: The above CSS relies on standard features. The transform and animation properties are supported in all modern browsers (see MDN compatibility). Always test on major browsers (Chrome, Firefox, Safari, Edge).
+Performance: Use will-change: transform on animated elements to enable GPU acceleration. Limit DOM elements and avoid heavy canvas loops on mobile. Serve optimized assets (minified CSS/JS, compressed images).
+Fallback: Provide a static background image or simplified effect if JavaScript/CSS fails. For example, wrap the animation in a <noscript> tag with a static image.
+Related Resources: MDN’s guide to CSS animations and media queries provides syntax examples. Apple’s sites often use subtle animations; however, any motion should be optional (as per WCAG and prefers-reduced-motion).
+2. Anime-Style Planetary Theme (Language Selection)
+The site’s languages will be visualized as planets, each an anime-style graphic (e.g. a colorful orb with distinctive patterns or rings). We recommend sourcing or generating whimsical planets that suggest each language (for example, Earth-like for English, a cherry blossom–themed planet for Japanese, etc.).
+Image Assets: Use royalty-free or AI-generated illustrations. Possible sources include [Pixabay] (e.g. “planet earth illustration”, [Fig.76 example] for inspiration), Unsplash, [Pexels], or vector art from [Pixabay Illustrations]. For anime style specifically, one may generate art via AI using prompts like the following:
+“Vibrant anime-style blue-green planet with swirling clouds and golden rings, set against a starry cosmos”
+“Fantasy anime planet: pastel-colored continents, cherry blossom petals orbiting, neon ring”
+“Anime cosmic scene: glowing purple planet with geometric land patterns and bright nebula backdrop”
+These prompts yield images (with tools like Stable Diffusion). For example, Stockcake shows anime planet art prompts (e.g. “vibrant anime-style Earth floats in deep space, golden rings, cherry blossoms” [29†L253-L262]).
+If using actual images, cite them in the asset list. Example asset (from Pixabay):
+Figure: Artistic illustration of Earth in space (Pixabay).
+(This embedded image is for demonstration and is CC0. The actual site should use images matching the anime theme.)
+Implementation: In HTML, each planet can be a linked image or styled <div>. Example snippet:
+code
+Html
+<nav id="lang-planets">
+  <a href="/en"><img src="assets/planet_earth_anime.png" alt="English"></a>
+  <a href="/jp"><img src="assets/planet_cherry_anime.png" alt="日本語"></a>
+  <!-- More planets... -->
+</nav>
+Use CSS to size and layout the planets in a row or orbit. Include alt text for accessibility (e.g. the language name). On hover/focus, add a subtle glow or scale transform (remember :focus outline for keyboard users).
+Accessibility: Ensure links have clear text (alt or visually hidden labels) for screen readers. A title attribute or aria-label may help (e.g. <a href="/jp" aria-label="Japanese language">).
+3. Subscription Form (Accessible, Validated, Privacy-Compliant)
+A newsletter/subscription form collects user emails for content download. Requirements: validated, accessible, GDPR-friendly, no tracking. Example form:
+code
+Html
+<form id="subscribeForm" method="POST" action="/subscribe">
+  <label for="email">Email address:</label>
+  <input 
+    type="email" id="email" name="email" required 
+    aria-required="true" 
+    placeholder="you@example.com"
+  />
+  <button type="submit">Subscribe</button>
+  <div id="emailError" aria-live="polite"></div>
+</form>
+We use <input type="email"> which provides built-in format validation. The browser ensures the value resembles an email (applying the :invalid pseudo-class otherwise). HTML5 form validation is well-supported.
+The required attribute forces entry. We add aria-required="true" for screen readers.
+For real-time feedback, use the Constraint Validation API or JS to call checkValidity() and write messages into the <div id="emailError" aria-live="polite">. The aria-live="polite" ensures screen readers announce validation messages. Example JS (very simple):
+code
+JavaScript
+document.getElementById('subscribeForm').addEventListener('submit', function(e) {
+  const email = e.target.email;
+  if (!email.checkValidity()) {
+    e.preventDefault();
+    document.getElementById('emailError').textContent = email.validationMessage;
+  }
+});
+Validation: As MDN warns, client-side validation is not a security substitute. The server must re-check/cleanse the data. Use token/CSRF protection as needed.
+Privacy/GDPR: Clearly label the form. Do NOT auto-subscribe or require tick boxes unless opted-in. Include a brief note linking to your privacy policy. E.g., “By subscribing you agree to receive emails; you can unsubscribe anytime.” Ensure consent is explicit. No cookies or tracking pixels should fire on form load/submit. (You can cite GDPR guidelines if needed – e.g. EU law requires consent but isn’t easily citable here.)
+Third-party vs. Self-Hosted: See the table below. For a static site, a third-party form service (Formspree, Mailchimp) can handle submissions with no backend; it simplifies implementation but ties to an external provider. A Node.js/Express backend option gives full control (and can use Nodemailer or a database) but requires server hosting.
+Option	Description	Pros	Cons
+Static + Form Service
+(e.g. Formspree, Mailchimp)	Embed a service’s form or API for email capture.	No custom server code needed;
+often free tier;
+built-in spam protection.	Dependent on 3rd-party;
+limited customization;
+must trust provider with data.
+Node.js / Express Endpoint	Custom server-side route to receive form data and store/send email.	Full control over data;
+no external dependency;
+easy to integrate into own system.	Requires server hosting;
+security responsibilities;
+more code to maintain.
+※ All user data must be handled securely. For example, Node.js code could use express-validator for sanitization and a service (SendGrid, Mailgun) to send confirmation emails.
+4. Apple-Style Final Page UI
+The final landing or “thank you” page after subscription should reflect Apple’s clean, product-centric style: lots of whitespace, high-quality imagery, and clear typography. Steps:
+Layout: Use a simple vertical flow: header with product/title, a large hero image (e.g. the Earth or thematic graphic), followed by text sections in a grid or stacked card layout.
+Typography: Use a system font stack for crisp rendering. For example:
+code
+CSS
+body { 
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #111;
+  margin: 0; padding: 0;
+}
+(This matches Apple’s use of San Francisco-style fonts.)
+Imagery: Full-width images or animations can be used. In our demo, the [Figure] above (satellite Earth) could serve as a header background or section graphic. If using background-attachment: fixed, ensure fallback for mobile (sticky).
+Colors: Stick to minimal palette (whites, light greys, and one accent color). Apple often uses shades of gray (#f5f5f7 background, #333 text).
+Components: Buttons should use subtle gradients or flat design. Example button CSS:
+code
+CSS
+button {
+  background: #0071e3; color: #fff;
+  border: none; border-radius: 4px;
+  padding: 10px 16px;
+  cursor: pointer; font-size: 1rem;
+}
+button:hover { background: #005bb5; }
+Grid/Flex: Use CSS Grid or Flexbox for responsiveness. E.g., a two-column grid for desktop that collapses to one column on small screens (via @media (max-width: 768px)).
+References: Apple’s design principles emphasize minimalism and focus. Smooth transitions (fade/slide) can be added, but honor prefers-reduced-motion. See Apple’s Human Interface Guidelines for iOS (for inspiration on spacing and scale) and MDN for techniques (e.g. [@media (prefers-reduced-motion)], CSS Grid on MDN for layout).
+5. Build & Deployment
+Build: No build tools are strictly needed (vanilla JS/CSS). For convenience, one could use NPM scripts for minification (e.g. npm run build to concatenate/minify). Clearly include a <meta name="viewport" content="width=device-width, initial-scale=1"> for mobile scaling.
+Hosting: Any static host works (GitHub Pages, Netlify). If using Node backend, deploy to Node-capable host (Heroku, AWS Elastic Beanstalk, or a container). Provide instructions to install Node, run npm install, and npm start.
+Assets: All images/icons should be optimized (use WebP if possible, or compressed PNG). List all image files with source and license. (See “Asset List” below.)
+6. Accessibility & Performance Optimizations
+WCAG Compliance: Ensure text has sufficient color contrast (use tools), images have alt text, forms have labels. Use landmarks (<header>, <main>, <footer>) for screen-reader navigation.
+Keyboard Navigation: All interactive elements (buttons, links, form controls) must be focusable. Use :focus { outline: 2px solid #... } to highlight.
+ARIA: Use ARIA live regions for dynamic updates (errors, success messages). Mark required fields with aria-required="true". If an element’s name isn’t conveyed by a visible label, use aria-label.
+Performance:
+Minimize CSS and JS (via tools or build step).
+Use CSS variables (:root { --primary-color: #0071e3; }) for theme consistency.
+Lazy-load images (with <img loading="lazy">).
+Combine and async JS where appropriate.
+Use gzip/Brotli on server.
+Check with Lighthouse or WebPageTest for scores.
+7. Testing Checklist
+Responsive Testing: Verify layout on mobile, tablet, desktop (@media breakpoints, flexible grids). Use browser dev tools.
+Cross-Browser: Test on latest Chrome, Firefox, Safari, Edge. Ensure CSS prefixes if needed (e.g. -webkit-) or use Autoprefixer.
+Accessibility: Use automated tools (WAVE, Lighthouse A11y) and manual testing with keyboard and a screen-reader (e.g. NVDA or VoiceOver). Check form labels and error announcements.
+Form Validation: Enter invalid email, empty submit, and valid submission. Ensure correct error text appears and focus is managed.
+Performance: Use Lighthouse or similar to confirm no blocking render issues, acceptable load times. Check no hidden trackers or third-party cookies.
+Privacy Compliance: Verify no data is sent without consent. If using third-party form, read their GDPR compliance docs. Provide an unsubscribe and privacy policy link.
+Security: If implementing backend, run npm audit and sanitize inputs to prevent injection. (Not needed for a static form solution.)
+8. Asset Inventory (Table)
+Asset	Type	Source & License	AI Prompt (if generating)
+Black Hole Visual	Animation/Canvas/CSS Effect	Custom code (no external image needed)	Anime-style cosmic black hole with swirling luminous accretion disk in vibrant colors.
+Planet – English	Illustration	e.g. [Pixabay: fantasy space planet]	Vibrant anime Earth planet with glowing continents and rings, surrounded by stars.
+Planet – Japanese	Illustration	e.g. [Pixabay: pink pastel planet]	Anime pastel planet with cherry blossom petals and pink clouds, ringed by golden light.
+Planet – Spanish	Illustration	e.g. [Pixabay]	Anime-style ruby-red planet with decorative golden filigree and orbiting stars.
+Subscription Icon	SVG Icon or PNG	[FontAwesome] or [Flaticon] (free for personal use)	Minimal envelope or newsletter icon in flat style.
+Background Hero	Photo/Illustration	[Pixabay, earth space] (CC0)	High-contrast space scene with a glowing Earth (for Apple-style header).
+(For each, cite actual source in the delivered “Asset List” file. Pixabay and Pexels images are CC0, suitable for commercial use. Ensure any vector assets used are similarly licensed.)
+9. Implementation Options Comparison
+Concern	Static Site + Form Service	Node.js/Express Backend
+Setup	HTML/CSS/JS hosting + embedded form.	Full server with endpoints.
+Dependencies	Minimal; may include form service script.	Node, Express, email library (e.g. Nodemailer).
+Development Effort	Low; mostly frontend.	Higher; need backend code.
+Security	Delegated to service (e.g. Formspree).	Must implement CSRF protection, validation.
+GDPR/Privacy	Must rely on service’s compliance.	Full control; must handle consents.
+Cost	Often free tiers; may charge above threshold.	Costs for hosting and email service.
+See discussion on static-form solutions (e.g. Formspree) vs. self-hosted in web communities. We recommend static+service for simplicity, unless the project specifically needs custom processing.
+10. Mermaid Diagrams
+hub
+Diagram
+Mermaid diagram
+hub
+Diagram
+Mermaid diagram
+11. Citations
+Key references include MDN Web Docs for HTML/CSS/APIs: e.g. <input type="email"> validation, CSS media queries, and ARIA/live for accessibility. Apple-inspired design principles are summarized in industry guides. All assets from sources like Pixabay are royalty-free.
+This exhaustive approach ensures a production-ready page with modern best practices and documented choices. The full source code and assets will be provided as deliverables, along with build instructions and a detailed test plan.
+Gemini 3.8 Flash
+Canceled
+
+summarize_auto
+Action history
+chevron_right
+error
+The task was canceled.
+error
+The task was canceled.
+lightbulb_tips
+Suggestions
+Make changes, add new features, ask for anything
+
+/?__aistudio_auth_token=0SJL6AWLC-iS6UpwilxudMQYHRGFbX-HQzuat4YWPfU%3D
+
+info
+12
+Error: The task was canceled.
+
+
+
+
+
+
+
+Paste this into AI Studio. Put the first block in **System instructions** and the second in the chat box. Also attach your site's code (`server.js`, the frontend and the experiment list or database seed) so it can edit the real files.
+
+**System instructions**
+
+```
+You are a senior full-stack developer maintaining "ZipShare V3", a student file-sharing website for college lab programs. Stack: Node.js, Express, MongoDB, plain HTML/CSS/JS frontend.
+
+Rules you must always follow:
+1. Matching rule: every uploaded file is matched to an official experiment by the NUMBER at the start of its file name, plus the category (lab) it is uploaded under.
+2. File name format: <S.No>_<name>.<ext>
+   - S.No is the official experiment number, no leading zeros (1_, 2_ ... 51_).
+   - Java files use number + class file name, e.g. 20_Test.java.
+   - Python, SQL and C files use number + official experiment name, e.g. 33_Geometry Class.py.
+   - Quotes in names are plain single quotes, e.g. 11_Writing using Identity 'is'.py.
+3. Categories and official totals:
+   - Java: Object Oriented Programming through Java Lab, B23CS2105, 35 experiments
+   - Python: Python Programming Skill Enhancement Lab, B23CS2106, 40 experiments
+   - DBMS: Database Management Systems Lab, B23CS2104, 54 experiments
+   - ADSA: Advanced Data Structures and Algorithms using C Lab, B23CI2102, 16 experiments
+4. Route files by extension and number: .java to Java, .py to Python, .sql to DBMS, .c to ADSA. A .sql file must never go to ADSA.
+5. An experiment slot can hold more than one file. Show all of them under the same experiment card.
+6. Never rename, delete or modify existing uploaded files or existing database records. Only add or fix.
+7. Return complete, working code for every file you change, not snippets, and say which file each block belongs to.
+8. Keep the current design, theme and layout unchanged.
+```
+
+**Chat prompt**
+
+```
+Update my ZipShare site with the following changes.
+
+1. Switch these experiments from "COMING SOON" to "AVAILABLE" when their files are present:
+   - Java #20: 20_Test.java and 20_Hello.java (both belong to the same slot, it is a package demo)
+   - Python #33: 33_Geometry Class.py
+   - Python #34: 34_Create NumPy Array.py
+   - Python #35: 35_Slicing and Indexing.py
+   - Python #36: 36_Numpy Array Operations.py
+   - Python #37: 37_Numpy Array Statistics.py
+   - DBMS #9: 9_Smart City Streetlight Monitoring.sql
+   - DBMS #30: 30_SUBSTR.sql
+
+2. Fix the "Needs Review / Unmapped" bug. 30_SUBSTR.sql is wrongly filed under ADSA. Route it to DBMS experiment #30 "SUBSTR". Make the routing use the extension and number rules above so this cannot happen again.
+
+3. Allow multiple files per experiment slot, and show every file with its own View, Run Online and Download buttons.
+
+4. Update the counters:
+   - Java 19/35 to 20/35
+   - Python 32/40 to 37/40
+   - DBMS 49/54 to 51/54
+   - DSA stays 14/16
+   - Official Experiments stays 145
+   - Available Now 114 to 124
+   - Coming Soon 31 to 21
+   Compute these from the data instead of hardcoding them.
+
+5. These stay COMING SOON because there are no files yet: Java 21 to 35, Python 38 to 40, DBMS 52 to 54, DSA 15 to 16.
+
+Give me the full updated files, and a short checklist of how to upload the new files so they match correctly.
+```
+
+When you send the remaining programs, I'll add them with the exact names and tell you what to change in the prompt.
+
+
+
+# ZIPSHARE — COMPLETE VISUAL ASSET AND WEBSITE REDESIGN PROMPT
+
+## PROJECT OBJECTIVE
+
+Redesign my existing ZipShare website into a premium, futuristic program and file-sharing platform.
+
+The visual identity must be based on realistic cosmic environments, supermassive black holes, natural planetary scenery and sophisticated product photography.
+
+IMPORTANT:
+- This is a program and file-sharing platform.
+- Do not make it look like a gaming website.
+- Do not make it look like a space exploration application.
+- Do not generate complete website screenshots or collages.
+- Every image must be an individual, separate asset.
+- Provide independent desktop and mobile compositions.
+- Use realistic photographic and cinematic imagery.
+- Do not invent, redesign or replace the real ZipShare logo.
+- Use the existing logo from the project.
+- Do not add language-selection screens.
+- Do not place decorative symbols, fake icons, text or buttons inside the images.
+
+## 1. MAIN HERO — SUPERMASSIVE BLACK HOLE
+
+### Desktop image prompt
+
+Find a genuine, high-quality cinematic image or scientific visualization of a supermassive black hole.
+
+Requirements:
+- Resolution: 1920 × 1080 or higher.
+- Aspect ratio: 16:9.
+- Massive black central event horizon.
+- Realistic luminous accretion disk.
+- Natural gravitational lensing.
+- Deep black surrounding space.
+- Violet, electric-blue and subtle amber light.
+- Realistic cosmic dust and distant stars.
+- Natural depth and atmospheric lighting.
+- Leave sufficient dark negative space for website headlines.
+
+Do not include text, logos, symbols, planets covering the black hole, UI elements or watermarks.
+
+### Mobile image prompt
+
+Find or source a separate portrait composition.
+
+Requirements:
+- Resolution: 1080 × 1920.
+- Aspect ratio: 9:16.
+- Black hole clearly visible near the centre.
+- Accretion disk must remain visible after cropping.
+- Natural dark background.
+- Sufficient contrast for white text.
+- No artificial stretching of desktop images.
+
+## 2. TILE — LIGHTNING-FAST PROGRAM SHARING
+
+### Desktop image prompt
+
+Find a realistic photograph of a modern programming workstation with:
+- A high-quality laptop.
+- A programming environment visible on its display.
+- Software development workspace.
+- Natural desk lighting.
+- Clean, premium composition.
+- Realistic computer screen and keyboard.
+- Dark, sophisticated atmosphere.
+
+Composition must communicate fast software and file sharing.
+
+Resolution: 1600 × 900 minimum.
+
+### Mobile image prompt
+
+Find a vertical photograph of a laptop or compact computer showing a programming workspace.
+
+Resolution: 1080 × 1920.
+
+Keep the laptop display and programming environment clearly visible.
+
+## 3. TILE — ULTRA-SECURE FILE SHARING
+
+### Desktop image prompt
+
+Find a realistic photograph of a professional data-centre environment.
+
+Requirements:
+- Real server racks.
+- Actual hardware.
+- Deep perspective.
+- Subtle blue lighting.
+- Premium photographic quality.
+- Clean composition.
+- Natural reflections.
+- Professional cybersecurity infrastructure atmosphere.
+
+Do not use cartoon shields, padlocks, artificial security symbols or illustrations.
+
+Resolution: 1600 × 900 minimum.
+
+### Mobile image prompt
+
+Find a portrait photograph of server racks inside a real data centre.
+
+Requirements:
+- Strong vertical composition.
+- Visible server equipment.
+- Natural lighting.
+- Dark blue atmosphere.
+- High photographic detail.
+
+Resolution: 1080 × 1920.
+
+## 4. TILE — ANYWHERE ACCESS
+
+### Desktop image prompt
+
+Find a realistic professional photograph showing a laptop and smartphone together on a modern desk.
+
+Requirements:
+- Both devices must be clearly visible.
+- Screens should show realistic file-management or software interfaces.
+- Modern workspace.
+- Natural ambient lighting.
+- Premium product photography.
+- Clean background.
+- Realistic reflections and shadows.
+
+Resolution: 1600 × 900 minimum.
+
+### Mobile image prompt
+
+Find a portrait photograph showing a smartphone and laptop together.
+
+Keep both devices visible within the portrait frame.
+
+Resolution: 1080 × 1920.
+
+## 5. TILE — PREMIUM FILE-SHARING EXPERIENCE
+
+### Desktop image prompt
+
+Find a realistic premium product photograph featuring a modern laptop, elegant workspace and high-quality screen presentation.
+
+Requirements:
+- Professional appearance.
+- Minimal composition.
+- Natural lighting.
+- Real materials and reflections.
+- Dark premium background.
+- Cinematic depth of field.
+- No artificial UI overlays.
+
+Resolution: 1600 × 900 minimum.
+
+### Mobile image prompt
+
+Find a portrait product photograph of a modern laptop and smartphone in a clean workspace.
+
+Resolution: 1080 × 1920.
+
+## 6. FILE TRANSFER ANIMATION SECTION
+
+### Desktop image prompt
+
+Find a realistic photograph or cinematic visual showing a computer and smartphone communicating through a digital file-transfer environment.
+
+Requirements:
+- Laptop on one side.
+- Smartphone on the other side.
+- Realistic file-sharing context.
+- Natural glowing data-stream effects.
+- Subtle purple and blue illumination.
+- Realistic device photography.
+- Deep space-inspired environment without excessive decoration.
+
+Resolution: 1920 × 1080.
+
+### Mobile image prompt
+
+Create or source a portrait composition with:
+- Laptop near the top.
+- Smartphone near the bottom.
+- A visually clear transfer connection.
+- Enough space between both devices.
+- Natural lighting and perspective.
+
+Resolution: 1080 × 1920.
+
+## 7. FINAL PRODUCT SHOWCASE — PREMIUM MINIMAL UI
+
+The final section must transition away from the heavy cosmic background.
+
+Create a clean, premium product presentation inspired by minimalist technology websites.
+
+### Desktop image prompt
+
+Find a premium photograph of a modern laptop and smartphone displayed in a clean, minimalist studio environment.
+
+Requirements:
+- Soft white and light-grey background.
+- Elegant natural shadows.
+- Minimal product composition.
+- Excellent screen visibility.
+- Professional product photography.
+- Spacious negative space.
+- Sophisticated lighting.
+- No logos or added typography.
+
+Resolution: 1920 × 1080.
+
+### Mobile image prompt
+
+Find an individual portrait composition of a smartphone with a laptop partially visible behind it.
+
+Requirements:
+- Minimal white background.
+- Natural product photography.
+- Soft shadows.
+- Elegant lighting.
+- Clear product visibility.
+
+Resolution: 1080 × 1920.
+
+## 8. IMAGE SOURCES
+
+Search for genuine photographs and visual assets using:
+
+- Unsplash
+- Pexels
+- Pixabay
+- NASA Scientific Visualization Studio
+
+Use individual original image pages, not website mockups.
+
+For every selected image:
+1. Verify that the image actually exists.
+2. Save the original source URL.
+3. Verify its licensing and commercial-use permissions.
+4. Prefer high-resolution WebP or AVIF versions.
+5. Keep desktop and mobile versions separate.
+6. Do not use watermarked images.
+7. Do not use images containing another website's branding.
+8. Avoid duplicated images across tiles.
+
+## 9. ANIMATION INSTRUCTIONS
+
+The images must look natural when animated.
+
+Use:
+
+**Black hole**
+- Slow rotation of the accretion disk.
+- Subtle camera zoom.
+- Natural gravitational-lensing appearance.
+- Slowly moving background particles.
+
+**Programming workstation**
+- Gentle camera movement.
+- Subtle lighting changes.
+- Small focus shift.
+
+**Security infrastructure**
+- Slow horizontal camera movement.
+- Natural server lights.
+- Subtle depth effects.
+
+**Device-sharing section**
+- Gentle movement between the devices.
+- Soft moving light along the transfer path.
+- Show successful transfer only after the actual operation succeeds.
+
+**Final product showcase**
+- Slow fade-in.
+- Gentle product-image zoom.
+- Minimal transitions.
+
+Do not animate the entire image aggressively.
+
+Maintain smooth performance on mobile and desktop.
+
+Use reduced-motion alternatives for accessibility.
+
+## 10. RESPONSIVE IMAGE REQUIREMENTS
+
+Create two independent image assets for every section.
+
+Desktop:
+- 1920 × 1080 preferred.
+- Wide cinematic composition.
+- Suitable for large displays.
+
+Mobile:
+- 1080 × 1920 preferred.
+- Portrait composition.
+- Main subject visible without cropping.
+- Suitable for narrow screens.
+
+Do not merely stretch desktop images into mobile images.
+
+Use responsive image sources and appropriate cropping.
+
+## 11. FILE ORGANIZATION
+
+Organize assets as follows:
+
+public/assets/zipshare/
+- hero-blackhole-desktop.webp
+- hero-blackhole-mobile.webp
+- program-sharing-desktop.webp
+- program-sharing-mobile.webp
+- secure-storage-desktop.webp
+- secure-storage-mobile.webp
+- anywhere-access-desktop.webp
+- anywhere-access-mobile.webp
+- premium-experience-desktop.webp
+- premium-experience-mobile.webp
+- file-transfer-desktop.webp
+- file-transfer-mobile.webp
+- final-showcase-desktop.webp
+- final-showcase-mobile.webp
+
+Keep the original ZipShare logo separate.
+
+## 12. WEBSITE IMPLEMENTATION RULES
+
+Before modifying the application:
+
+1. Inspect the complete existing codebase.
+2. Identify all current routes and components.
+3. Identify the existing real ZipShare logo.
+4. Create a backup or Git checkpoint.
+5. Identify all existing functional links.
+
+Remove unwanted replica, duplicate, placeholder and demonstration links.
+
+IMPORTANT: Do not remove real navigation, upload/download links, file-sharing URLs, authentication routes, API endpoints, legal links or necessary integrations.
+
+Redesign the interface while preserving actual functionality.
+
+Do not replace the existing application with a static image or mockup.
+
+## 13. FINAL ACCEPTANCE CHECKLIST
+
+Verify all of the following:
+
+- Separate genuine images for every section.
+- Separate desktop and mobile compositions.
+- No complete website mockup images.
+- No invented ZipShare logo.
+- No fake icons or decorative symbols inside photographs.
+- No language-selection screen.
+- Natural-looking animation.
+- Fully responsive layouts.
+- Existing program-sharing functionality works.
+- Upload and download work.
+- File links work.
+- Authentication works.
+- Existing dashboard and admin functionality work.
+- No broken routes or links.
+- No console errors.
+- No unnecessary external dependencies.
+- No major performance regressions.
+
+At completion, report every image source, its licence, every modified file, and all tests performed.
+
+Do not claim everything works unless it has actually been tested.
+
+FINAL DESIGN GOAL:
+
+ZipShare must feel like a premium, reliable program-sharing platform with a cinematic black-hole identity, realistic imagery, natural animation, beautiful desktop and mobile layouts, and an elegant minimalist final presentation.
+
+## ZIPSHARE — CINEMATIC BLACK HOLE HERO ANIMATION
+
+Animate the uploaded black-hole image into an ultra-realistic, cinematic space sequence for the first hero tile of the ZipShare website.
+
+**MAIN ANIMATION:**
+
+Create a massive, realistic black hole floating in deep space. Keep the central black event horizon perfectly dark, stable and circular while its surrounding accretion disk slowly rotates with natural flowing movement.
+
+**ANIMATION DETAILS:**
+
+1. Accretion disk: Slowly rotate the glowing orange, violet and electric-blue plasma around the black hole. Make the light flow look natural and physically realistic.
+
+2. Gravitational lensing: Create subtle distortion of the stars and background light around the black hole.
+
+3. Cosmic particles: Add tiny dust particles and distant stars moving slowly through space.
+
+4. Light effects: Create gentle variations in the brightness of the accretion disk, with realistic reflections and glowing edges.
+
+5. Camera movement: Slowly push the camera towards the black hole, creating a cinematic sense of depth.
+
+6. Background: Add subtle movement to distant cosmic clouds without disturbing the main composition.
+
+7. Atmosphere: Make the scene mysterious, powerful, realistic and visually breathtaking.
+
+**IMPORTANT WEBSITE REQUIREMENTS:**
+
+- Duration: 8–10 seconds.
+- Create a seamless, continuous loop.
+- 16:9 landscape composition for desktop.
+- Maintain a centre-focused composition suitable for mobile cropping.
+- Preserve the original image's composition and visual identity.
+- Leave sufficient dark negative space for website headlines and buttons.
+- Natural, smooth movement without sudden transitions.
+- Professional cinematic quality.
+- Optimise the result for use as a website background.
+
+**STRICT NEGATIVE INSTRUCTIONS:**
+
+Do not add text, logos, watermarks, letters, numbers, icons, symbols, planets that were not in the original image, UI elements or artificial objects.
+
+Do not deform the black hole.
+
+Do not make the accretion disk rotate unnaturally fast.
+
+Do not create flashing lights, excessive particles, camera shaking, flickering or visual glitches.
+
+Do not change the original black-hole structure.
+
+**FINAL RESULT:**
+
+A breathtaking, realistic, smoothly animated supermassive black hole that makes visitors feel as though they are slowly entering the ZipShare cosmic universe.
+
+sports_esports
+Create a game
+
+3d_rotation
+Three.js 3D scenes
+
+science
+Add Bioscience Skills
+
+Build an Android app
+
+head_mounted_device
+Build an XR Blocks app
+
+Google Drive
+
+Google Sheets
+
+Gmail
+
+Google Calendar
+
+Google Docs
+
+Google Slides
+
+Google Tasks
+
+Google Chat
+
+Google Forms
+
+Google Keep
+
+Google Meet
+
+Contacts
+
+audio_spark
+Convert text to speech
+
+music_note
+Generate music
+
+Add database and auth
+
+image_edit_auto
+Create & edit images
+
+audio_spark
+Add voice conversations
+
+movie
+Animate images into video
+
+google
+Use Google Search data
+
+google_pin
+Use Google Maps data
+
+image
+Generate high-quality images
+
+spark
+Add Gemini intelligence
+
+voice_chat
+Add a Gemini chatbot
+
+video_spark
+Generate video from text
+
+aspect_ratio
+Control image aspect ratios
+
+document_scanner
+Analyze images
+
+bolt
+Add low-latency responses
+
+video_library
+Analyze video content
+
+speech_to_text
+Transcribe audio
+
+network_intelligence
+Enable high thinking
+Explore apps built with Gemini 4 Argon
+
+Wizard Chess 3D
+Remix
+Interactive 3D Gothic Cathedral Wizard Chess with sculpted stone pieces, cinematic melee captures, stone shatter physics, and single-player AI.
+
+
+Desk Racer
+Remix
+Miniature desk coaster time-trial racing game in Three.js
+
+
+3D GPU Fur Simulation
+Remix
+Interactive 3D fur physics and hair shading simulation for a stylized creature across studio, nature, and live AR camera environments.
+
+
+Argon Tennis
+Remix
+3D arcade tennis game with frantic racket kinematics, expressive Mii characters, webcam & phone motion controls, and Lyria 3 audio.
+
+Analyzing Configuration Data

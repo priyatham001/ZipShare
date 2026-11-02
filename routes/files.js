@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const archiver = require('archiver');
 const router = express.Router();
 const { filesDB, suggestionsDB } = require('../db');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, verifyAdminToken } = require('../middleware/auth');
 const { isCloudinaryConfigured, uploadToCloudinary, deleteFromCloudinary, fetchRemoteContent } = require('../services/cloudinary');
 const { matchFileToSyllabus } = require('../services/syllabusMatcher');
 const { getCourseByKey } = require('../services/syllabusData');
@@ -358,6 +358,13 @@ router.get('/', async (req, res) => {
       andConditions.push({ question: new RegExp(question.trim(), 'i') });
     }
 
+    const isAdmin = verifyAdminToken(req);
+    const userEmail = (req.query.userEmail || req.headers['x-user-email'] || '').toLowerCase().trim();
+
+    if (!isAdmin) {
+      andConditions.push({ status: { $ne: 'draft' } });
+    }
+
     const query = andConditions.length > 0 ? { $and: andConditions } : {};
 
     let sortSpec = { pinned: -1, experimentNumber: 1, uploadDate: -1 };
@@ -366,7 +373,21 @@ router.get('/', async (req, res) => {
     else if (sort === 'name') sortSpec = { pinned: -1, experimentName: 1, originalName: 1 };
 
     const files = await filesDB.find(query, sortSpec, 500);
-    res.json(files);
+
+    let filteredFiles = files;
+    if (!isAdmin) {
+      filteredFiles = files.filter(f => {
+        if (f.status === 'draft') return false;
+        if (f.assignmentType === 'individual') {
+          if (!userEmail) return false;
+          const assigned = Array.isArray(f.assignedUsers) ? f.assignedUsers : [];
+          return assigned.some(u => String(u).toLowerCase().trim() === userEmail);
+        }
+        return true;
+      });
+    }
+
+    res.json(filteredFiles);
   } catch (err) {
     console.error('List files error:', err.message);
     res.status(500).json({ error: 'Could not load file list.' });

@@ -17,6 +17,8 @@ const fileSchema = new mongoose.Schema({
   experimentName: { type: String, default: null },
   matchConfidence: { type: String, default: 'high' },
   status: { type: String, default: 'available' },
+  assignmentType: { type: String, default: 'global' }, // 'global' or 'individual'
+  assignedUsers: { type: [String], default: [] },
   reviewReason: { type: String, default: null },
   subject: { type: String, default: null },
   exercise: { type: String, default: null },
@@ -34,4 +36,4 @@ const fileSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('File', fileSchema);
+module.exports = mongoose.models.File || mongoose.model('File', fileSchema);

@@ -32,6 +32,8 @@ const fileSchema = new mongoose.Schema({
   experimentName: { type: String, default: null },
   matchConfidence: { type: String, default: 'high' },
   status: { type: String, default: 'available' },
+  assignmentType: { type: String, default: 'global' }, // 'global' or 'individual'
+  assignedUsers: { type: [String], default: [] },
   reviewReason: { type: String, default: null },
   subject: { type: String, default: null },
   exercise: { type: String, default: null },
@@ -68,9 +70,9 @@ const userRequestSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-const MongoFile = mongoose.model('File', fileSchema);
-const MongoSuggestion = mongoose.model('Suggestion', suggestionSchema);
-const MongoUserRequest = mongoose.model('UserRequest', userRequestSchema);
+const MongoFile = mongoose.models.File || mongoose.model('File', fileSchema);
+const MongoSuggestion = mongoose.models.Suggestion || mongoose.model('Suggestion', suggestionSchema);
+const MongoUserRequest = mongoose.models.UserRequest || mongoose.models.Request || mongoose.model('UserRequest', userRequestSchema);
 
 // JSON Fallback Store
 function loadJsonDB() {
@@ -394,6 +396,8 @@ const filesDB = {
       experimentName: d.experimentName || null,
       matchConfidence: d.matchConfidence || 'high',
       status: d.status || 'available',
+      assignmentType: d.assignmentType || 'global',
+      assignedUsers: Array.isArray(d.assignedUsers) ? d.assignedUsers : [],
       reviewReason: d.reviewReason || null,
       subject: d.subject || null,
       exercise: d.exercise || null,
@@ -415,6 +419,12 @@ const filesDB = {
     }));
     db.files.push(...created);
     saveJsonDB(db);
+    return created;
+  },
+
+  async create(doc) {
+    if (isMongo) return await MongoFile.create(doc);
+    const created = (await this.insertMany([doc]))[0];
     return created;
   },
 
