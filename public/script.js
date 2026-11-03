@@ -759,20 +759,10 @@ function showScreen3Categories() {
     screen3.classList.add('zpw-fade-out');
 
     setTimeout(() => {
-      const container = $('zipshareWelcomeContainer');
-      if (container) {
-        container.classList.add('hidden');
-        container.style.display = 'none';
-      }
-
-      const appEl = $('app');
-      if (appEl) {
-        appEl.classList.add('show');
-      }
-
-      switchCategory(activeCategory);
-      toast(`Welcome to ZipShare! Exploring ${activeCategory.toUpperCase()}... 🚀`, 'success');
-    }, 400);
+      screen3.style.display = 'none';
+      screen3.classList.remove('zpw-fade-in');
+      launchLanguageTransition(activeCategory);
+    }, 380);
   }
 
   if (enterBtn) {
@@ -786,6 +776,462 @@ function showScreen3Categories() {
       completeWelcomeAndOpenHome();
     }
   }, 6000);
+}
+
+let zpwTransAnimFrame = null;
+
+function launchLanguageTransition(category) {
+  const transScreen = $('zpwScreenTransition');
+  if (!transScreen) {
+    finalizeHomeOpening(category);
+    return;
+  }
+
+  transScreen.className = `zpw-screen zpw-screen-transition theme-${category}`;
+  transScreen.style.display = 'flex';
+  transScreen.classList.remove('zpw-fade-out');
+  transScreen.classList.add('zpw-fade-in');
+
+  const wrapper = $('zpwTransVisualWrapper');
+  const titleEl = $('zpwTransTitle');
+  const statusEl = $('zpwTransStatusLabel');
+  const barEl = $('zpwTransProgressBar');
+  const codeBackdrop = $('zpwTransCodeBackdrop');
+
+  const configs = {
+    java: {
+      title: 'Brewing your Java workspace...',
+      status: 'JAVA VIRTUAL MACHINE INITIALIZING',
+      code: `// Java Virtual Machine Boot Sequence
+public class ZipShareLab {
+    private static final Logger log = LoggerFactory.getLogger(ZipShareLab.class);
+    public static void main(String[] args) throws InterruptedException {
+        ConcurrentHashMap<String, Program> labStore = new ConcurrentHashMap<>();
+        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        CompletableFuture.supplyAsync(() -> labStore.put("java", new Program("OOP Architecture")))
+            .thenAccept(res -> log.info("Java Environment Loaded."));
+    }
+}`,
+      svg: `
+        <div class="zpw-java-3d-stage">
+          <svg class="zpw-java-cup-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="cupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f97316"/>
+                <stop offset="50%" stop-color="#ef4444"/>
+                <stop offset="100%" stop-color="#991b1b"/>
+              </linearGradient>
+              <linearGradient id="steamGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stop-color="#f97316" stop-opacity="0.8"/>
+                <stop offset="50%" stop-color="#fb923c" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#fef08a" stop-opacity="0.1"/>
+              </linearGradient>
+            </defs>
+            <ellipse cx="100" cy="165" rx="72" ry="14" fill="#1e1b4b" stroke="#f97316" stroke-width="2.5" opacity="0.9"/>
+            <ellipse cx="100" cy="164" rx="56" ry="9" fill="#0f172a" stroke="#fb923c" stroke-width="1.2"/>
+            <path d="M48 95 C48 152 70 158 100 158 C130 158 152 152 152 95 Z" fill="url(#cupGrad)" stroke="#fed7aa" stroke-width="2"/>
+            <ellipse cx="100" cy="95" rx="52" ry="14" fill="#451a03" stroke="#f97316" stroke-width="2"/>
+            <ellipse cx="100" cy="96" rx="44" ry="10" fill="#2d1205"/>
+            <path d="M72 96 C80 92 120 100 128 96" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+            <path d="M148 105 C175 105 175 142 144 145" fill="none" stroke="#f97316" stroke-width="5" stroke-linecap="round"/>
+            <path class="zpw-steam-path-1" d="M85 82 C78 60 102 45 92 22" fill="none" stroke="url(#steamGrad)" stroke-width="4.5" stroke-linecap="round"/>
+            <path class="zpw-steam-path-2" d="M102 80 C95 55 118 40 108 14" fill="none" stroke="url(#steamGrad)" stroke-width="5" stroke-linecap="round"/>
+            <path class="zpw-steam-path-3" d="M118 84 C112 65 130 52 124 28" fill="none" stroke="url(#steamGrad)" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </div>`
+    },
+    python: {
+      title: 'Uncoiling your Python workspace...',
+      status: 'PYTHON 3.12 RUNTIME COMPOSING',
+      code: `# Python High-Performance Engine Boot
+import asyncio, sys, json
+from dataclasses import dataclass
+
+@dataclass
+class Workspace:
+    name: str = "ZipShare Python"
+    version: str = "3.12-optimized"
+
+async def init_runtime():
+    pipeline = [x**2 for x in range(1000) if x % 2 == 0]
+    yield from pipeline
+    return Workspace()
+
+asyncio.run(init_runtime())`,
+      svg: `
+        <div class="zpw-python-3d-stage">
+          <svg class="zpw-python-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="pyBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#1d4ed8"/>
+              </linearGradient>
+              <linearGradient id="pyYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fef08a"/>
+                <stop offset="100%" stop-color="#eab308"/>
+              </linearGradient>
+            </defs>
+            <path d="M98 22 C60 22 45 36 45 60 L45 80 L98 80 L98 90 L30 90 C15 90 2 105 2 135 C2 165 18 178 52 178 L70 178 L70 155 C70 135 85 120 105 120 L152 120 C172 120 188 105 188 85 L188 60 C188 36 172 22 135 22 Z" fill="url(#pyBlue)" opacity="0.95"/>
+            <circle cx="70" cy="45" r="7" fill="#ffffff"/>
+            <circle cx="70" cy="45" r="3.5" fill="#0369a1"/>
+            <path d="M102 178 C140 178 155 164 155 140 L155 120 L102 120 L102 110 L170 110 C185 110 198 95 198 65 C198 35 182 22 148 22 L130 22 L130 45 C130 65 115 80 95 80 L48 80 C28 80 12 95 12 115 L12 140 C12 164 28 178 65 178 Z" fill="url(#pyYellow)" opacity="0.95"/>
+            <circle cx="130" cy="155" r="7" fill="#ffffff"/>
+            <circle cx="130" cy="155" r="3.5" fill="#a16207"/>
+          </svg>
+        </div>`
+    },
+    c: {
+      title: 'Compiling your C workspace...',
+      status: 'GCC LOW-LEVEL COMPILER LINKING',
+      code: `/* Low-Level C Systems Runtime Kernel */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+typedef struct {
+    uint32_t memory_addr;
+    char buffer[256];
+} SystemRegistry;
+
+int main(int argc, char **argv) {
+    SystemRegistry *reg = (SystemRegistry*)malloc(sizeof(SystemRegistry));
+    reg->memory_addr = 0x7FFF8000;
+    strncpy(reg->buffer, "SYS_READY", sizeof(reg->buffer));
+    return 0;
+}`,
+      svg: `
+        <div class="zpw-c-3d-stage">
+          <svg class="zpw-c-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="cMetallic" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#475569"/>
+                <stop offset="35%" stop-color="#94a3b8"/>
+                <stop offset="70%" stop-color="#334155"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+              <linearGradient id="cCyanNeon" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+            <path d="M155 58 C142 36 122 22 96 22 C52 22 20 58 20 102 C20 146 52 182 96 182 C124 182 144 168 156 146 L124 130 C116 142 108 148 96 148 C72 148 54 128 54 102 C54 76 72 56 96 56 C108 56 116 62 124 74 Z" fill="#030812" transform="translate(6, 6)"/>
+            <path d="M155 58 C142 36 122 22 96 22 C52 22 20 58 20 102 C20 146 52 182 96 182 C124 182 144 168 156 146 L124 130 C116 142 108 148 96 148 C72 148 54 128 54 102 C54 76 72 56 96 56 C108 56 116 62 124 74 Z" fill="url(#cMetallic)" stroke="url(#cCyanNeon)" stroke-width="4"/>
+            <path d="M142 66 C132 48 116 38 96 38 C60 38 34 66 34 102 C34 138 60 166 96 166 C116 166 132 156 142 138" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-dasharray="6 3"/>
+            <circle cx="96" cy="38" r="4" fill="#38bdf8"/>
+            <circle cx="34" cy="102" r="4" fill="#38bdf8"/>
+            <circle cx="96" cy="166" r="4" fill="#38bdf8"/>
+          </svg>
+        </div>`
+    },
+    adsa: {
+      title: 'Building your algorithm workspace...',
+      status: 'GRAPH & DATA STRUCTURES SYNCHRONIZING',
+      code: `// Advanced Data Structures & Optimization Algorithms
+class AVLTree<T extends Comparable<T>> {
+    private Node<T> root;
+    private int height(Node<T> n) { return n == null ? 0 : n.height; }
+    private int getBalance(Node<T> n) { return n == null ? 0 : height(n.left) - height(n.right); }
+    public Node<T> rotateRight(Node<T> y) {
+        Node<T> x = y.left;
+        Node<T> T2 = x.right;
+        x.right = y; y.left = T2;
+        return x;
+    }
+}`,
+      svg: `
+        <div class="zpw-adsa-3d-stage">
+          <svg class="zpw-adsa-svg" viewBox="0 0 280 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="dijkstraPath" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#10b981"/>
+                <stop offset="50%" stop-color="#34d399"/>
+                <stop offset="100%" stop-color="#6ee7b7"/>
+              </linearGradient>
+              <filter id="neonGreenGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <path d="M20 180 L80 140 L140 160 L200 130 L260 160" stroke="#4c1d95" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.6"/>
+            <path d="M40 80 L100 40 L160 60 L220 30" stroke="#581c87" stroke-width="1.5" opacity="0.5"/>
+            
+            <!-- Top-left Binary Tree -->
+            <line x1="60" y1="20" x2="35" y2="48" stroke="#a855f7" stroke-width="2"/>
+            <line x1="60" y1="20" x2="85" y2="48" stroke="#a855f7" stroke-width="2"/>
+            <line x1="35" y1="48" x2="20" y2="76" stroke="#c084fc" stroke-width="1.5"/>
+            <line x1="35" y1="48" x2="50" y2="76" stroke="#c084fc" stroke-width="1.5"/>
+            <circle cx="60" cy="20" r="7" fill="#3b0764" stroke="#c084fc" stroke-width="2"/>
+            <circle cx="35" cy="48" r="6" fill="#3b0764" stroke="#a855f7" stroke-width="1.5"/>
+            <circle cx="85" cy="48" r="6" fill="#3b0764" stroke="#a855f7" stroke-width="1.5"/>
+            <circle cx="20" cy="76" r="4.5" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.5"/>
+            <circle cx="50" cy="76" r="4.5" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.5"/>
+
+            <!-- Graph Edges -->
+            <line x1="70" y1="130" x2="115" y2="95" stroke="#ec4899" stroke-width="2"/>
+            <line x1="115" y1="95" x2="165" y2="95" stroke="#ec4899" stroke-width="2"/>
+            <line x1="115" y1="95" x2="140" y2="140" stroke="#a855f7" stroke-width="2"/>
+            <line x1="165" y1="95" x2="195" y2="135" stroke="#ec4899" stroke-width="2"/>
+            <line x1="140" y1="140" x2="195" y2="135" stroke="#a855f7" stroke-width="2"/>
+            <line x1="140" y1="140" x2="175" y2="185" stroke="#ec4899" stroke-width="2"/>
+            <line x1="195" y1="135" x2="245" y2="110" stroke="#ec4899" stroke-width="2"/>
+
+            <!-- Glowing Dijkstra Shortest Path Beam (Green Neon) -->
+            <path class="zpw-dijkstra-beam" d="M35 160 L70 130 L115 95 L140 140 L195 135 L245 110" fill="none" stroke="url(#dijkstraPath)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGreenGlow)"/>
+
+            <!-- Nodes with Labels -->
+            <g class="zpw-graph-node" transform="translate(35, 160)">
+              <circle r="12" fill="#064e3b" stroke="#34d399" stroke-width="2.5"/>
+              <text y="3.5" font-size="8" font-weight="bold" fill="#6ee7b7" text-anchor="middle" font-family="monospace">START</text>
+            </g>
+            <g class="zpw-graph-node" transform="translate(70, 130)">
+              <circle r="10" fill="#1e1b4b" stroke="#38bdf8" stroke-width="2"/>
+              <text y="3.5" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="sans-serif">A</text>
+            </g>
+            <g class="zpw-graph-node" transform="translate(115, 95)">
+              <circle r="10" fill="#701a75" stroke="#f472b6" stroke-width="2"/>
+              <text y="3.5" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="sans-serif">B</text>
+            </g>
+            <g class="zpw-graph-node" transform="translate(165, 95)">
+              <circle r="10" fill="#3b0764" stroke="#a855f7" stroke-width="2"/>
+              <text y="3.5" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="sans-serif">C</text>
+            </g>
+            <g class="zpw-graph-node" transform="translate(140, 140)">
+              <circle r="11" fill="#047857" stroke="#34d399" stroke-width="2.5"/>
+              <text y="3.5" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="sans-serif">D</text>
+            </g>
+            <g class="zpw-graph-node" transform="translate(195, 135)">
+              <circle r="10" fill="#701a75" stroke="#f472b6" stroke-width="2"/>
+              <text y="3.5" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="sans-serif">F</text>
+            </g>
+            <g class="zpw-graph-node" transform="translate(245, 110)">
+              <circle r="11" fill="#064e3b" stroke="#34d399" stroke-width="2.5"/>
+              <text y="3.5" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="sans-serif">K</text>
+            </g>
+
+            <!-- Sorting Bars at Bottom Right -->
+            <g transform="translate(190, 168)">
+              <rect class="zpw-adsa-bar" x="0" y="0" width="8" height="28" rx="2" fill="#a855f7"/>
+              <rect class="zpw-adsa-bar" x="12" y="0" width="8" height="18" rx="2" fill="#ec4899"/>
+              <rect class="zpw-adsa-bar" x="24" y="0" width="8" height="34" rx="2" fill="#38bdf8"/>
+              <rect class="zpw-adsa-bar" x="36" y="0" width="8" height="14" rx="2" fill="#10b981"/>
+              <rect class="zpw-adsa-bar" x="48" y="0" width="8" height="24" rx="2" fill="#f59e0b"/>
+            </g>
+          </svg>
+        </div>`
+    },
+    dbms: {
+      title: 'Connecting your database workspace...',
+      status: 'ENTERPRISE DATABASE CLUSTERS CONNECTING',
+      code: `-- Enterprise Relational Engine & Query Optimizer
+CREATE TABLE zipshare_records (
+    record_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    subject_code VARCHAR(32) NOT NULL,
+    lab_title TEXT NOT NULL,
+    is_published BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX idx_subject_status ON zipshare_records (subject_code, is_published);
+SELECT * FROM zipshare_records WHERE subject_code = 'DBMS' ORDER BY created_at DESC;`,
+      svg: `
+        <div class="zpw-dbms-3d-stage">
+          <svg class="zpw-dbms-svg" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="dbBodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#021f18"/>
+                <stop offset="25%" stop-color="#064e3b"/>
+                <stop offset="50%" stop-color="#047857"/>
+                <stop offset="75%" stop-color="#064e3b"/>
+                <stop offset="100%" stop-color="#01140f"/>
+              </linearGradient>
+              <linearGradient id="dbNeonCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.2"/>
+                <stop offset="50%" stop-color="#38bdf8" stop-opacity="1"/>
+                <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.2"/>
+              </linearGradient>
+              <filter id="cyanGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <ellipse cx="120" cy="195" rx="55" ry="14" fill="#000000" opacity="0.8"/>
+            <path d="M68 55 C68 40 91 30 120 30 C149 30 172 40 172 55 L172 175 C172 190 149 200 120 200 C91 200 68 190 68 175 Z" fill="url(#dbBodyGrad)" stroke="#065f46" stroke-width="1.5"/>
+            <ellipse class="zpw-db-ring-glow" cx="120" cy="85" rx="52" ry="13" fill="none" stroke="url(#dbNeonCyan)" stroke-width="3" filter="url(#cyanGlow)"/>
+            <ellipse class="zpw-db-ring-glow" cx="120" cy="120" rx="52" ry="13" fill="none" stroke="url(#dbNeonCyan)" stroke-width="3" filter="url(#cyanGlow)"/>
+            <ellipse class="zpw-db-ring-glow" cx="120" cy="155" rx="52" ry="13" fill="none" stroke="url(#dbNeonCyan)" stroke-width="3" filter="url(#cyanGlow)"/>
+            <ellipse class="zpw-db-ring-glow" cx="120" cy="188" rx="52" ry="13" fill="none" stroke="url(#dbNeonCyan)" stroke-width="3" filter="url(#cyanGlow)"/>
+            <ellipse cx="120" cy="55" rx="52" ry="13" fill="#065f46" stroke="#22d3ee" stroke-width="2"/>
+            <ellipse cx="120" cy="55" rx="34" ry="8.5" fill="#022c22" stroke="#38bdf8" stroke-width="2.5" filter="url(#cyanGlow)"/>
+            <ellipse cx="120" cy="55" rx="16" ry="4" fill="#67e8f9" filter="url(#cyanGlow)"/>
+            <g class="zpw-db-cage" stroke="#38bdf8" stroke-width="1" opacity="0.85">
+              <line x1="50" y1="45" x2="68" y2="25"/>
+              <line x1="68" y1="25" x2="120" y2="18"/>
+              <line x1="120" y1="18" x2="172" y2="25"/>
+              <line x1="172" y1="25" x2="190" y2="45"/>
+              <line x1="50" y1="45" x2="44" y2="105"/>
+              <line x1="44" y1="105" x2="50" y2="165"/>
+              <line x1="50" y1="165" x2="68" y2="215"/>
+              <line x1="68" y1="215" x2="120" y2="222"/>
+              <line x1="120" y1="222" x2="172" y2="215"/>
+              <line x1="172" y1="215" x2="190" y2="165"/>
+              <line x1="190" y1="165" x2="196" y2="105"/>
+              <line x1="196" y1="105" x2="190" y2="45"/>
+              <line x1="50" y1="45" x2="120" y2="55"/>
+              <line x1="190" y1="45" x2="120" y2="55"/>
+              <line x1="44" y1="105" x2="68" y2="85"/>
+              <line x1="44" y1="105" x2="120" y2="120"/>
+              <line x1="196" y1="105" x2="172" y2="85"/>
+              <line x1="196" y1="105" x2="120" y2="120"/>
+              <line x1="50" y1="165" x2="120" y2="155"/>
+              <line x1="190" y1="165" x2="120" y2="155"/>
+              <line x1="68" y1="215" x2="120" y2="188"/>
+              <line x1="172" y1="215" x2="120" y2="188"/>
+              <line x1="44" y1="105" x2="50" y2="45"/>
+              <line x1="120" y1="18" x2="120" y2="55"/>
+              <line x1="120" y1="222" x2="120" y2="188"/>
+            </g>
+            <g fill="#38bdf8" filter="url(#cyanGlow)">
+              <circle cx="50" cy="45" r="3.5"/>
+              <circle cx="68" cy="25" r="3"/>
+              <circle cx="120" cy="18" r="4"/>
+              <circle cx="172" cy="25" r="3"/>
+              <circle cx="190" cy="45" r="3.5"/>
+              <circle cx="44" cy="105" r="4"/>
+              <circle cx="196" cy="105" r="4"/>
+              <circle cx="50" cy="165" r="3.5"/>
+              <circle cx="190" cy="165" r="3.5"/>
+              <circle cx="68" cy="215" r="3"/>
+              <circle cx="120" cy="222" r="4"/>
+              <circle cx="172" cy="215" r="3"/>
+            </g>
+            <circle class="zpw-db-node-pulse" cx="84" cy="120" r="3" fill="#ffffff" filter="url(#cyanGlow)"/>
+            <circle class="zpw-db-node-pulse" cx="156" cy="155" r="3" fill="#ffffff" filter="url(#cyanGlow)"/>
+          </svg>
+        </div>`
+    }
+  };
+
+  const conf = configs[category] || configs.java;
+  if (titleEl) titleEl.textContent = conf.title;
+  if (statusEl) statusEl.textContent = conf.status;
+  if (codeBackdrop) codeBackdrop.textContent = conf.code;
+  if (wrapper) wrapper.innerHTML = conf.svg;
+
+  initTransCanvas(category);
+
+  let startTime = performance.now();
+  const duration = 2300;
+
+  function stepProgress(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(100, (elapsed / duration) * 100);
+    if (barEl) barEl.style.width = progress + '%';
+
+    if (progress < 100) {
+      requestAnimationFrame(stepProgress);
+    } else {
+      setTimeout(() => {
+        finalizeHomeOpening(category);
+      }, 250);
+    }
+  }
+  requestAnimationFrame(stepProgress);
+}
+
+function finalizeHomeOpening(category) {
+  if (zpwTransAnimFrame) cancelAnimationFrame(zpwTransAnimFrame);
+
+  const transScreen = $('zpwScreenTransition');
+  if (transScreen) transScreen.classList.add('zpw-fade-out');
+
+  setTimeout(() => {
+    const container = $('zipshareWelcomeContainer');
+    if (container) {
+      container.classList.add('hidden');
+      container.style.display = 'none';
+    }
+
+    const appEl = $('app');
+    if (appEl) {
+      appEl.classList.add('show');
+    }
+
+    switchCategory(category);
+    toast(`${category.toUpperCase()} Workspace Active! 🚀`, 'success');
+  }, 400);
+}
+
+function initTransCanvas(category) {
+  const canvas = $('zpwTransCanvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  let w = canvas.width = window.innerWidth;
+  let h = canvas.height = window.innerHeight;
+
+  const particles = [];
+  const count = 65;
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * (category === 'c' ? 0.3 : 0.8),
+      vy: category === 'java' ? -(Math.random() * 1.6 + 0.4) : (category === 'c' ? Math.random() * 2 + 0.6 : (Math.random() - 0.5) * 0.8),
+      radius: Math.random() * 2.5 + 1,
+      alpha: Math.random() * 0.8 + 0.2,
+      char: String.fromCharCode(48 + Math.floor(Math.random() * 2))
+    });
+  }
+
+  function renderTrans() {
+    ctx.clearRect(0, 0, w, h);
+
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (category === 'java') {
+        if (p.y < 0) { p.y = h; p.x = Math.random() * w; }
+        ctx.fillStyle = Math.random() > 0.5 ? '#f97316' : '#ef4444';
+      } else if (category === 'python') {
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+        ctx.fillStyle = Math.random() > 0.5 ? '#38bdf8' : '#eab308';
+      } else if (category === 'c') {
+        if (p.y > h) { p.y = 0; p.x = Math.random() * w; }
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = '11px monospace';
+        ctx.fillText(p.char, p.x, p.y);
+        return;
+      } else if (category === 'adsa') {
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+        ctx.fillStyle = Math.random() > 0.5 ? '#a855f7' : '#ec4899';
+      } else {
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+        ctx.fillStyle = Math.random() > 0.5 ? '#10b981' : '#14b8a6';
+      }
+
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    zpwTransAnimFrame = requestAnimationFrame(renderTrans);
+  }
+
+  renderTrans();
 }
 
 function initCosmicParticles() {
