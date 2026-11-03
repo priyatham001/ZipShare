@@ -41,6 +41,7 @@
       <div class="zpw-bh-status-row">
         <span class="zpw-bh-dot"></span>
         <span class="zpw-bh-status" id="zpwBhStatusText">Initializing ZipShare Workspace...</span>
+        <span class="zpw-bh-percent" id="zpwBhPercent">0%</span>
         <span class="zpw-bh-timer" id="zpwBhTimer">10s</span>
       </div>
       <div class="zpw-bh-progress-track">
@@ -107,136 +108,102 @@
     </div>
   </section>
 
-  <!-- SCREEN 3 — PROGRAMMING CATEGORY SELECTION TILES -->
+  <!-- SCREEN 3 — PROGRAMMING CATEGORY SELECTION -->
   <section id="zpwScreen3" class="zpw-screen zpw-screen-categories" aria-label="Choose Your Programming Universe" style="display:none;">
     <div class="zpw-carousel-bg"></div>
-    <div class="zpw-screen-content zpw-carousel-layout">
+    <div class="zpw-screen-content zpw-categories-layout">
       <div class="zpw-header-block">
-        <span class="zpw-step-pill">3. PROGRAMMING CATEGORY SELECTION</span>
-        <h1 class="zpw-title">Choose Your Programming Universe.</h1>
-        <p class="zpw-subtitle">Rotating 3D carousel of selectable programming categories.</p>
+        <span class="zpw-step-pill">3. PROGRAMMING CATEGORY</span>
+        <h1 class="zpw-title">Choose Your Workspace.</h1>
+        <p class="zpw-subtitle">Select your primary programming curriculum to enter.</p>
       </div>
 
-      <!-- 3D ROTATING CAROUSEL -->
-      <div class="zpw-carousel-stage" id="zpwCarouselStage">
-        <button class="zpw-carousel-nav prev" id="zpwCarouselPrev" aria-label="Previous Category">‹</button>
-        
-        <div class="zpw-carousel-track" id="zpwCarouselTrack">
-          <!-- Java -->
-          <div class="zpw-cat-card cat-java active" data-cat="java" data-index="0" tabindex="0">
-            <div class="zpw-cat-media" style="background-image: url('/assets/welcome/java-tile.webp');">
-              <div class="zpw-cat-gradient"></div>
-              <div class="zpw-card-fx zpw-fx-java">
-                <div class="zpw-steam-plume"></div>
-                <div class="zpw-ember-spark s1"></div>
-                <div class="zpw-ember-spark s2"></div>
-              </div>
-              <span class="zpw-cat-tag">JAVA</span>
-            </div>
-            <div class="zpw-cat-info">
-              <div class="zpw-cat-title-row">
-                <span class="zpw-cat-icon">☕</span>
-                <h3 class="zpw-cat-name">JAVA</h3>
-              </div>
-              <p class="zpw-cat-desc">Java Programming</p>
-              <div class="zpw-cat-select-indicator">Selected Category</div>
-            </div>
+      <!-- RESPONSIVE CATEGORY GRID -->
+      <div class="zpw-cat-grid" id="zpwCatGrid">
+        <!-- Java -->
+        <div class="zpw-cat-card cat-java active" data-cat="java" tabindex="0" role="button" aria-pressed="true">
+          <div class="zpw-cat-card-glow"></div>
+          <div class="zpw-cat-icon-wrap">
+            <span class="zpw-cat-icon">☕</span>
+            <span class="zpw-cat-tag">JAVA</span>
           </div>
-
-          <!-- Python -->
-          <div class="zpw-cat-card cat-python" data-cat="python" data-index="1" tabindex="0">
-            <div class="zpw-cat-media" style="background-image: url('/assets/welcome/python-tile.webp');">
-              <div class="zpw-cat-gradient"></div>
-              <div class="zpw-card-fx zpw-fx-python">
-                <div class="zpw-circuit-line"></div>
-                <div class="zpw-snake-glow-orb g1"></div>
-                <div class="zpw-snake-glow-orb g2"></div>
-              </div>
-              <span class="zpw-cat-tag">PYTHON</span>
-            </div>
-            <div class="zpw-cat-info">
-              <div class="zpw-cat-title-row">
-                <span class="zpw-cat-icon">🐍</span>
-                <h3 class="zpw-cat-name">PYTHON</h3>
-              </div>
-              <p class="zpw-cat-desc">Python Programming</p>
-              <div class="zpw-cat-select-indicator">Selected Category</div>
-            </div>
-          </div>
-
-          <!-- C Language -->
-          <div class="zpw-cat-card cat-c" data-cat="c" data-index="2" tabindex="0">
-            <div class="zpw-cat-media" style="background-image: url('/assets/welcome/c-language-tile.webp');">
-              <div class="zpw-cat-gradient"></div>
-              <div class="zpw-card-fx zpw-fx-c">
-                <div class="zpw-c-scanline"></div>
-                <div class="zpw-c-binary-drift"></div>
-              </div>
-              <span class="zpw-cat-tag">C LANGUAGE</span>
-            </div>
-            <div class="zpw-cat-info">
-              <div class="zpw-cat-title-row">
-                <span class="zpw-cat-icon">💻</span>
-                <h3 class="zpw-cat-name">C LANGUAGE</h3>
-              </div>
-              <p class="zpw-cat-desc">C Programming</p>
-              <div class="zpw-cat-select-indicator">Selected Category</div>
-            </div>
-          </div>
-
-          <!-- ADSA -->
-          <div class="zpw-cat-card cat-adsa" data-cat="adsa" data-index="3" tabindex="0">
-            <div class="zpw-cat-media" style="background-image: url('/assets/welcome/adsa-tile.webp');">
-              <div class="zpw-cat-gradient"></div>
-              <div class="zpw-card-fx zpw-fx-adsa">
-                <div class="zpw-tree-branch-fx"></div>
-                <div class="zpw-graph-node-pulse n1"></div>
-                <div class="zpw-graph-node-pulse n2"></div>
-                <div class="zpw-graph-node-pulse n3"></div>
-              </div>
-              <span class="zpw-cat-tag">ADSA</span>
-            </div>
-            <div class="zpw-cat-info">
-              <div class="zpw-cat-title-row">
-                <span class="zpw-cat-icon">🌳</span>
-                <h3 class="zpw-cat-name">ADSA</h3>
-              </div>
-              <p class="zpw-cat-desc">Advanced Data Structures &amp; Algorithms</p>
-              <div class="zpw-cat-select-indicator">Selected Category</div>
-            </div>
-          </div>
-
-          <!-- DBMS -->
-          <div class="zpw-cat-card cat-dbms" data-cat="dbms" data-index="4" tabindex="0">
-            <div class="zpw-cat-media" style="background-image: url('/assets/welcome/dbms-tile.webp');">
-              <div class="zpw-cat-gradient"></div>
-              <div class="zpw-card-fx zpw-fx-dbms">
-                <div class="zpw-db-scan-beam"></div>
-                <div class="zpw-db-data-stream"></div>
-              </div>
-              <span class="zpw-cat-tag">DBMS</span>
-            </div>
-            <div class="zpw-cat-info">
-              <div class="zpw-cat-title-row">
-                <span class="zpw-cat-icon">🗄️</span>
-                <h3 class="zpw-cat-name">DBMS</h3>
-              </div>
-              <p class="zpw-cat-desc">Database Management Systems</p>
-              <div class="zpw-cat-select-indicator">Selected Category</div>
+          <div class="zpw-cat-info">
+            <h3 class="zpw-cat-name">Java</h3>
+            <p class="zpw-cat-desc">OOP, Threads &amp; Core Labs</p>
+            <div class="zpw-cat-meta-row">
+              <span class="zpw-cat-badge">35 Labs</span>
+              <span class="zpw-cat-select-indicator">✓ Selected</span>
             </div>
           </div>
         </div>
 
-        <button class="zpw-carousel-nav next" id="zpwCarouselNext" aria-label="Next Category">›</button>
-      </div>
+        <!-- Python -->
+        <div class="zpw-cat-card cat-python" data-cat="python" tabindex="0" role="button" aria-pressed="false">
+          <div class="zpw-cat-card-glow"></div>
+          <div class="zpw-cat-icon-wrap">
+            <span class="zpw-cat-icon">🐍</span>
+            <span class="zpw-cat-tag">PYTHON</span>
+          </div>
+          <div class="zpw-cat-info">
+            <h3 class="zpw-cat-name">Python</h3>
+            <p class="zpw-cat-desc">Scripts, Logic &amp; Algorithms</p>
+            <div class="zpw-cat-meta-row">
+              <span class="zpw-cat-badge">40 Labs</span>
+              <span class="zpw-cat-select-indicator">✓ Selected</span>
+            </div>
+          </div>
+        </div>
 
-      <!-- Carousel Dots / Indicators -->
-      <div class="zpw-carousel-dots" id="zpwCarouselDots">
-        <button class="zpw-dot active" data-index="0" aria-label="Java"></button>
-        <button class="zpw-dot" data-index="1" aria-label="Python"></button>
-        <button class="zpw-dot" data-index="2" aria-label="C Language"></button>
-        <button class="zpw-dot" data-index="3" aria-label="ADSA"></button>
-        <button class="zpw-dot" data-index="4" aria-label="DBMS"></button>
+        <!-- C Language -->
+        <div class="zpw-cat-card cat-c" data-cat="c" tabindex="0" role="button" aria-pressed="false">
+          <div class="zpw-cat-card-glow"></div>
+          <div class="zpw-cat-icon-wrap">
+            <span class="zpw-cat-icon">💻</span>
+            <span class="zpw-cat-tag">C LANG</span>
+          </div>
+          <div class="zpw-cat-info">
+            <h3 class="zpw-cat-name">C Language</h3>
+            <p class="zpw-cat-desc">Pointers, Memory &amp; Matrix</p>
+            <div class="zpw-cat-meta-row">
+              <span class="zpw-cat-badge">Core C</span>
+              <span class="zpw-cat-select-indicator">✓ Selected</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADSA -->
+        <div class="zpw-cat-card cat-adsa" data-cat="adsa" tabindex="0" role="button" aria-pressed="false">
+          <div class="zpw-cat-card-glow"></div>
+          <div class="zpw-cat-icon-wrap">
+            <span class="zpw-cat-icon">🌳</span>
+            <span class="zpw-cat-tag">ADSA</span>
+          </div>
+          <div class="zpw-cat-info">
+            <h3 class="zpw-cat-name">ADSA</h3>
+            <p class="zpw-cat-desc">Trees, Graphs &amp; Sortings</p>
+            <div class="zpw-cat-meta-row">
+              <span class="zpw-cat-badge">16 Labs</span>
+              <span class="zpw-cat-select-indicator">✓ Selected</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DBMS -->
+        <div class="zpw-cat-card cat-dbms" data-cat="dbms" tabindex="0" role="button" aria-pressed="false">
+          <div class="zpw-cat-card-glow"></div>
+          <div class="zpw-cat-icon-wrap">
+            <span class="zpw-cat-icon">🗄️</span>
+            <span class="zpw-cat-tag">DBMS</span>
+          </div>
+          <div class="zpw-cat-info">
+            <h3 class="zpw-cat-name">DBMS</h3>
+            <p class="zpw-cat-desc">SQL Queries, Normalization</p>
+            <div class="zpw-cat-meta-row">
+              <span class="zpw-cat-badge">54 Labs</span>
+              <span class="zpw-cat-select-indicator">✓ Selected</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="zpw-action-bar">
@@ -285,6 +252,28 @@
 
 <!-- Main App Container -->
 <div class="app" id="app">
+
+  <!-- Subject-Specific Loading Transition Overlay -->
+  <div id="languageLoadingOverlay" class="lang-loading-overlay" style="display:none;" aria-live="polite">
+    <div class="lang-trans-backdrop" id="langTransBackdrop"></div>
+    <div class="lang-trans-code-backdrop" id="langTransCodeBackdrop"></div>
+    <canvas id="langTransCanvas" class="lang-trans-canvas"></canvas>
+    <div class="lang-trans-foreground">
+      <div id="langTransVisualWrapper" class="lang-trans-visual-wrapper"></div>
+      <div class="lang-trans-meta">
+        <div class="lang-trans-status-pill">
+          <span class="pulse-dot"></span>
+          <span id="langTransStatusLabel">INITIALIZING WORKSPACE</span>
+        </div>
+        <h2 id="langTransTitle" class="lang-trans-title">Loading Workspace...</h2>
+        <div class="lang-trans-progress-wrap">
+          <div class="lang-trans-progress-track">
+            <div id="langTransProgressBar" class="lang-trans-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Header Navigation -->
   <nav class="navbar">

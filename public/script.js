@@ -476,6 +476,7 @@ function startWelcomeJourney(isReplay = false) {
   const progressBar = $('zpwBhProgressBar');
   const statusText = $('zpwBhStatusText');
   const timerBadge = $('zpwBhTimer');
+  const percentBadge = $('zpwBhPercent');
 
   function updateScreen1Progress(now) {
     if (advancedFromScreen1) return;
@@ -485,6 +486,10 @@ function startWelcomeJourney(isReplay = false) {
 
     if (progressBar) {
       progressBar.style.width = `${progress}%`;
+    }
+
+    if (percentBadge) {
+      percentBadge.textContent = `${Math.round(progress)}%`;
     }
 
     if (timerBadge) {
@@ -652,7 +657,7 @@ function showScreen2Theme() {
   zpwAutoAdvanceTimer = setTimeout(advanceFromScreen2, 5000);
 }
 
-// ---------------- SCREEN 3: 3D PROGRAMMING CATEGORY CAROUSEL ----------------
+// ---------------- SCREEN 3: RESPONSIVE CATEGORY SELECTION ----------------
 function showScreen3Categories() {
   const screen3 = $('zpwScreen3');
   if (!screen3) return;
@@ -661,182 +666,36 @@ function showScreen3Categories() {
   screen3.classList.add('zpw-fade-in');
 
   const cards = Array.from(document.querySelectorAll('.zpw-cat-card'));
-  const dots = Array.from(document.querySelectorAll('.zpw-dot'));
-  const prevBtn = $('zpwCarouselPrev');
-  const nextBtn = $('zpwCarouselNext');
   const enterBtn = $('zpwEnterZipShareBtn');
-  const stage = $('zpwCarouselStage');
 
-  const catNames = ['java', 'python', 'c', 'adsa', 'dbms'];
-  const initialIndex = catNames.indexOf(activeCategory);
-  if (initialIndex !== -1) {
-    zpwCarouselIndex = initialIndex;
-  } else {
-    zpwCarouselIndex = 0;
-  }
-
-  let isHoveredOrInteracted = false;
-
-  function updateCarouselPositions() {
-    const total = cards.length;
-    const isMobile = window.innerWidth <= 768;
-
-    cards.forEach((card, i) => {
-      let offset = i - zpwCarouselIndex;
-      if (offset > total / 2) offset -= total;
-      if (offset < -total / 2) offset += total;
-
-      card.classList.toggle('active', offset === 0);
-
-      if (offset === 0) {
-        card.style.transform = isMobile 
-          ? 'translate3d(0, 0, 40px) scale(1.03)' 
-          : 'translate3d(0, 0, 100px) scale(1.06)';
-        card.style.zIndex = '10';
-        card.style.opacity = '1';
-        card.style.borderColor = '#38bdf8';
-        card.style.boxShadow = '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(56, 189, 248, 0.45)';
-        card.style.pointerEvents = 'auto';
-        activeCategory = card.dataset.cat;
-      } else if (offset === 1) {
-        card.style.transform = isMobile 
-          ? 'translate3d(140px, 0, -30px) scale(0.86)' 
-          : 'translate3d(270px, 0, -50px) rotateY(-20deg) scale(0.9)';
-        card.style.zIndex = '5';
-        card.style.opacity = isMobile ? '0.5' : '0.75';
-        card.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-        card.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.5)';
-        card.style.pointerEvents = 'auto';
-      } else if (offset === -1) {
-        card.style.transform = isMobile 
-          ? 'translate3d(-140px, 0, -30px) scale(0.86)' 
-          : 'translate3d(-270px, 0, -50px) rotateY(20deg) scale(0.9)';
-        card.style.zIndex = '5';
-        card.style.opacity = isMobile ? '0.5' : '0.75';
-        card.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-        card.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.5)';
-        card.style.pointerEvents = 'auto';
-      } else if (offset === 2) {
-        card.style.transform = isMobile 
-          ? 'translate3d(240px, 0, -80px) scale(0.72)' 
-          : 'translate3d(490px, 0, -140px) rotateY(-35deg) scale(0.78)';
-        card.style.zIndex = '1';
-        card.style.opacity = isMobile ? '0.15' : '0.35';
-        card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        card.style.boxShadow = 'none';
-        card.style.pointerEvents = 'auto';
-      } else if (offset === -2) {
-        card.style.transform = isMobile 
-          ? 'translate3d(-240px, 0, -80px) scale(0.72)' 
-          : 'translate3d(-490px, 0, -140px) rotateY(35deg) scale(0.78)';
-        card.style.zIndex = '1';
-        card.style.opacity = isMobile ? '0.15' : '0.35';
-        card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        card.style.boxShadow = 'none';
-        card.style.pointerEvents = 'auto';
-      } else {
-        card.style.transform = 'translate3d(0, 0, -250px) scale(0.5)';
-        card.style.zIndex = '0';
-        card.style.opacity = '0';
-        card.style.pointerEvents = 'none';
-      }
-    });
-
-    dots.forEach((dot, i) => {
-      dot.classList.toggle('active', i === zpwCarouselIndex);
+  function selectCategory(cat) {
+    activeCategory = cat;
+    cards.forEach(c => {
+      const isSel = c.dataset.cat === cat;
+      c.classList.toggle('active', isSel);
+      c.setAttribute('aria-pressed', isSel ? 'true' : 'false');
     });
   }
 
-  updateCarouselPositions();
+  // Pre-select current active or java
+  selectCategory(activeCategory || 'java');
 
-  function nextSlide() {
-    zpwCarouselIndex = (zpwCarouselIndex + 1) % cards.length;
-    updateCarouselPositions();
-  }
-
-  function prevSlide() {
-    zpwCarouselIndex = (zpwCarouselIndex - 1 + cards.length) % cards.length;
-    updateCarouselPositions();
-  }
-
-  function startAutoRotation() {
-    stopAutoRotation();
-    zpwCarouselTimer = setInterval(() => {
-      if (!isHoveredOrInteracted) {
-        nextSlide();
-      }
-    }, 3000);
-  }
-
-  function stopAutoRotation() {
-    if (zpwCarouselTimer) {
-      clearInterval(zpwCarouselTimer);
-      zpwCarouselTimer = null;
-    }
-  }
-
-  startAutoRotation();
-
-  if (stage) {
-    stage.onmouseenter = () => { isHoveredOrInteracted = true; };
-    stage.onmouseleave = () => { isHoveredOrInteracted = false; };
-  }
-
-  cards.forEach((card, idx) => {
+  cards.forEach(card => {
     card.onclick = () => {
-      isHoveredOrInteracted = true;
-      zpwCarouselIndex = idx;
-      updateCarouselPositions();
+      selectCategory(card.dataset.cat);
     };
-  });
-
-  if (prevBtn) {
-    prevBtn.onclick = (e) => {
-      e.stopPropagation();
-      isHoveredOrInteracted = true;
-      prevSlide();
-    };
-  }
-
-  if (nextBtn) {
-    nextBtn.onclick = (e) => {
-      e.stopPropagation();
-      isHoveredOrInteracted = true;
-      nextSlide();
-    };
-  }
-
-  dots.forEach(dot => {
-    dot.onclick = () => {
-      isHoveredOrInteracted = true;
-      zpwCarouselIndex = parseInt(dot.dataset.index, 10);
-      updateCarouselPositions();
-    };
-  });
-
-  let touchStartX = 0;
-  if (stage) {
-    stage.ontouchstart = (e) => {
-      isHoveredOrInteracted = true;
-      touchStartX = e.touches[0].clientX;
-    };
-    stage.ontouchend = (e) => {
-      const touchEndX = e.changedTouches[0].clientX;
-      const diff = touchStartX - touchEndX;
-      if (Math.abs(diff) > 40) {
-        if (diff > 0) nextSlide();
-        else prevSlide();
+    card.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectCategory(card.dataset.cat);
       }
     };
-  }
+  });
 
   let advancedFromScreen3 = false;
   function completeWelcomeAndOpenHome() {
     if (advancedFromScreen3) return;
     advancedFromScreen3 = true;
-
-    stopAutoRotation();
-    clearTimeout(zpwAutoAdvanceTimer);
 
     localStorage.setItem('zipshare_favorite_subject', activeCategory);
     localStorage.setItem('zipshare_visited', 'true');
@@ -845,7 +704,9 @@ function showScreen3Categories() {
     screen3.classList.add('zpw-fade-out');
 
     setTimeout(() => {
-      finalizeHomeOpening(activeCategory);
+      screen3.style.display = 'none';
+      screen3.classList.remove('zpw-fade-in');
+      launchLanguageTransition(activeCategory);
     }, 350);
   }
 
@@ -854,12 +715,6 @@ function showScreen3Categories() {
       completeWelcomeAndOpenHome();
     };
   }
-
-  zpwAutoAdvanceTimer = setTimeout(() => {
-    if (!isHoveredOrInteracted) {
-      completeWelcomeAndOpenHome();
-    }
-  }, 6000);
 }
 
 let zpwTransAnimFrame = null;
@@ -1902,43 +1757,191 @@ function initCosmicParticles() {
   let w = canvas.width = window.innerWidth;
   let h = canvas.height = window.innerHeight;
 
-  const particles = [];
-  const numParticles = 80;
+  const onResize = () => {
+    if (!canvas) return;
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  };
+  window.addEventListener('resize', onResize);
 
-  for (let i = 0; i < numParticles; i++) {
-    particles.push({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      radius: Math.random() * 2.2 + 0.6,
-      vx: (Math.random() - 0.5) * 0.45,
-      vy: (Math.random() - 0.5) * 0.45,
-      alpha: Math.random() * 0.8 + 0.2,
-      color: Math.random() > 0.4 ? '#38bdf8' : (Math.random() > 0.5 ? '#a855f7' : '#fbbf24')
+  // Starfield with gravitational deflection
+  const stars = [];
+  const starCount = Math.min(140, Math.floor((w * h) / 10000));
+  for (let i = 0; i < starCount; i++) {
+    stars.push({
+      ox: Math.random() * w,
+      oy: Math.random() * h,
+      size: Math.random() * 1.8 + 0.6,
+      baseAlpha: Math.random() * 0.7 + 0.3,
+      twinkleSpeed: Math.random() * 0.04 + 0.01,
+      twinklePhase: Math.random() * Math.PI * 2
     });
   }
 
+  // Relativistic accretion disk particles
+  const diskParticles = [];
+  const numDisk = w < 768 ? 160 : 280;
+  for (let i = 0; i < numDisk; i++) {
+    const orbitR = Math.random() * 0.65 + 0.35; // Normalized radius
+    diskParticles.push({
+      orbitR: orbitR,
+      angle: Math.random() * Math.PI * 2,
+      speed: (0.018 / Math.sqrt(orbitR)) * (Math.random() * 0.3 + 0.85),
+      size: Math.random() * 2.8 + 1.0,
+      zOffset: (Math.random() - 0.5) * 14,
+      sparkle: Math.random() * 0.5 + 0.5
+    });
+  }
+
+  // Infalling matter stream filaments
+  const streams = [];
+  for (let s = 0; s < 6; s++) {
+    streams.push({
+      angle: (s * Math.PI * 2) / 6,
+      r: 1.0,
+      speed: 0.006 + Math.random() * 0.004,
+      width: Math.random() * 2 + 1.2
+    });
+  }
+
+  let frame = 0;
+
   function renderCosmic() {
+    frame++;
     ctx.clearRect(0, 0, w, h);
 
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
+    const cx = w * 0.5;
+    const cy = h * (w < 768 ? 0.44 : 0.48); // Adaptive vertical center for mobile layout
+    const baseR = Math.min(w, h) * (w < 768 ? 0.22 : 0.18); // Event horizon radius
+    const tilt = 0.28; // Accretion disk tilt factor
 
-      if (p.x < 0) p.x = w;
-      if (p.x > w) p.x = 0;
-      if (p.y < 0) p.y = h;
-      if (p.y > h) p.y = 0;
+    // 1. Starfield with Gravitational Lensing Deflection
+    stars.forEach(st => {
+      st.twinklePhase += st.twinkleSpeed;
+      const alpha = st.baseAlpha * (0.7 + 0.3 * Math.sin(st.twinklePhase));
+
+      const dx = st.ox - cx;
+      const dy = st.oy - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      let px = st.ox;
+      let py = st.oy;
+
+      if (dist > baseR * 0.9 && dist < baseR * 4.2) {
+        const deflection = (baseR * baseR * 14) / (dist * dist + 100);
+        px -= (dx / dist) * deflection;
+        py -= (dy / dist) * deflection;
+      }
 
       ctx.save();
-      ctx.globalAlpha = p.alpha;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = p.color;
+      ctx.arc(px, py, st.size, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     });
+
+    // 2. Accretion Glow / Corona
+    const outerGlow = ctx.createRadialGradient(cx, cy, baseR * 0.9, cx, cy, baseR * 3.4);
+    outerGlow.addColorStop(0, 'rgba(251, 146, 60, 0.42)');
+    outerGlow.addColorStop(0.25, 'rgba(234, 88, 12, 0.26)');
+    outerGlow.addColorStop(0.6, 'rgba(180, 83, 9, 0.12)');
+    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = outerGlow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR * 3.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Einstein Gravitational Lensing Arcs (Gargantua curved light paths)
+    // Upper lens arc
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - baseR * 0.22, baseR * 1.58, baseR * 0.88, -0.06, Math.PI * 0.88, Math.PI * 2.12);
+    ctx.strokeStyle = 'rgba(253, 186, 116, 0.75)';
+    ctx.lineWidth = baseR * 0.26;
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = '#f97316';
+    ctx.stroke();
+    ctx.restore();
+
+    // Lower lens arc
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + baseR * 0.18, baseR * 1.42, baseR * 0.55, 0.05, 0, Math.PI);
+    ctx.strokeStyle = 'rgba(234, 88, 12, 0.45)';
+    ctx.lineWidth = baseR * 0.18;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#ea580c';
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Infalling Gas Stream Trails
+    streams.forEach(st => {
+      st.r -= st.speed;
+      if (st.r < 0.2) st.r = 1.0;
+      st.angle += 0.024;
+      const strR = baseR * (1.1 + st.r * 1.8);
+      const sx = cx + Math.cos(st.angle) * strR;
+      const sy = cy + Math.sin(st.angle) * strR * tilt;
+      ctx.save();
+      ctx.strokeStyle = `rgba(254, 215, 170, ${st.r * 0.6})`;
+      ctx.lineWidth = st.width;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx - Math.sin(st.angle) * 12, sy + Math.cos(st.angle) * 12 * tilt);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // 5. Relativistic Orbiting Accretion Disk Particles with Doppler Beaming
+    diskParticles.sort((a, b) => Math.sin(a.angle) - Math.sin(b.angle));
+
+    diskParticles.forEach(p => {
+      p.angle += p.speed;
+      const r = baseR * (1.15 + p.orbitR * 2.1);
+      const px = cx + Math.cos(p.angle) * r;
+      const py = cy + Math.sin(p.angle) * r * tilt + p.zOffset;
+
+      const dopplerFactor = Math.cos(p.angle); // -1 approaching on left, +1 receding on right
+      let brightness = 0.65 - dopplerFactor * 0.35;
+      let pColor;
+      if (dopplerFactor < -0.3) {
+        pColor = `rgba(255, 250, 230, ${brightness * 0.95})`; // Hot blue-white
+      } else if (dopplerFactor < 0.3) {
+        pColor = `rgba(251, 146, 60, ${brightness * 0.9})`; // Golden orange
+      } else {
+        pColor = `rgba(220, 38, 38, ${brightness * 0.75})`; // Redshifted deeper red
+      }
+
+      ctx.save();
+      ctx.fillStyle = pColor;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#f97316';
+      ctx.beginPath();
+      ctx.arc(px, py, p.size * (1.1 - dopplerFactor * 0.2), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // 6. Photon Ring (Razor-sharp glowing boundary)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR * 1.06, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 240, 0.95)';
+    ctx.lineWidth = Math.max(2, baseR * 0.035);
+    ctx.shadowBlur = 28;
+    ctx.shadowColor = '#fbbf24';
+    ctx.stroke();
+    ctx.restore();
+
+    // 7. Event Horizon Shadow (Absolute Singularity)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+    ctx.fillStyle = '#000000';
+    ctx.shadowBlur = 0;
+    ctx.fill();
+    ctx.restore();
 
     zpwCosmicCanvasAnim = requestAnimationFrame(renderCosmic);
   }
