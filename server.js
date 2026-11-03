@@ -22,9 +22,9 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serverless-safe DB connection middleware for API routes on Vercel
+// Serverless-safe DB connection middleware for API routes on Vercel (skip for AI and compiler routes)
 app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api')) {
+  if (req.path.startsWith('/api') && !req.path.startsWith('/api/ai') && !req.path.startsWith('/api/compiler')) {
     try {
       await connectDB();
     } catch (e) {
@@ -41,6 +41,7 @@ app.use('/api/requests', requestsRouter);
 app.use('/api/compiler', compilerRouter);
 app.use('/api/ai', aiRouter);
 
+app.use('/vendor/three.min.js', express.static(path.join(__dirname, 'node_modules', 'three', 'build', 'three.min.js')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Database offline / Mongoose fallback error middleware

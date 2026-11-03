@@ -48,7 +48,7 @@ STRICT RULES:
     const userPrompt = `Subject/Category: ${subject || 'General Programming'}\nStudent Request: ${prompt}`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: userPrompt,
       config: {
         systemInstruction,
@@ -127,7 +127,7 @@ Analyze the provided code and return a JSON object with:
     const userPrompt = `Language: ${language || 'Auto'}\nFile Name: ${fileName || 'Program'}\n\nSource Code:\n${code.slice(0, 4000)}`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: userPrompt,
       config: {
         systemInstruction,
@@ -154,6 +154,119 @@ Analyze the provided code and return a JSON object with:
   } catch (err) {
     console.error('AI Explain error:', err.message);
     res.status(500).json({ error: 'Failed to generate explanation', details: err.message });
+  }
+});
+
+// POST /api/ai/chat - Multi-turn conversational chatbot with conversation history & roles
+router.post('/chat', async (req, res) => {
+  try {
+    const { message, history = [], role = 'general', subject = 'general' } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Message content is required.' });
+    }
+
+    const ai = getAIClient();
+    if (!ai) {
+      return res.json({
+        reply: "Hello! I am ZipShare AI Student Assistant. To activate live Gemini neural intelligence, ensure GEMINI_API_KEY is configured in your server environment. In the meantime, you can explore all 145 official syllabus programs or compile code in the Online Playground!",
+        role,
+        roleTitle: 'Offline Student Assistant',
+        offline: true
+      });
+    }
+
+    // Role-to-model mapping as requested
+    let modelName = 'gemini-3.8-flash';
+    let roleTitle = '🎓 ZipShare Lab Mentor';
+    let systemInstruction = `You are ZipShare AI — an expert academic computer science lab assistant and programming tutor for engineering university students.
+You specialize in:
+1. Database Management Systems (DBMS Lab B23CS2104: DDL, DML, Joins, Aggregations, Group By, Subqueries, PL/SQL, Cursors, Procedures, Triggers, Transactions).
+2. Object-Oriented Programming via Java (classes, inheritance, polymorphism, exceptions, interfaces, threads, collections).
+3. Python Programming Skill Enhancement (data types, loops, functions, lists, dicts, numpy/pandas, files).
+4. Advanced Data Structures and Algorithms in C (AVL trees, BST, graphs, hashing, sorting, dynamic programming).
+
+Guidelines:
+- Explain code clearly with concise, production-ready syntax.
+- Format code blocks using proper markdown syntax with language tags (e.g., \`\`\`sql, \`\`\`java, \`\`\`python, \`\`\`c).
+- Maintain conversation history and refer back to previous context naturally across multiple turns.
+- If the student asks for lab answers or exam practice, provide standard academic solutions with expected outputs.
+- Be encouraging, clear, and pedagogically helpful.`;
+
+    if (role === 'fast' || role === 'tutor') {
+      modelName = 'gemini-3.1-flash-lite';
+      roleTitle = '⚡ Fast Syntax Tutor';
+      systemInstruction = `You are ZipShare Fast Tutor — a lightning-fast coding assistant. Give direct, rapid, concise answers and quick code fixes without unnecessary fluff. Ideal for rapid syntax checks, one-liner queries, and quick bug fixes.`;
+    } else if (role === 'complex' || role === 'architect') {
+      modelName = 'gemini-4-argon';
+      roleTitle = '🧠 Deep Systems Architect';
+      systemInstruction = `You are ZipShare Deep Systems Architect — specializing in deep algorithmic analysis, database query planner optimization, indexing strategies, time/space complexity proofs, and robust software architecture. Provide in-depth, rigorous explanations.`;
+    }
+
+    // Format history for Gemini SDK
+    const formattedHistory = [];
+    if (Array.isArray(history)) {
+      for (const item of history) {
+        if (item && item.role && item.text) {
+          const geminiRole = item.role === 'user' ? 'user' : 'model';
+          formattedHistory.push({
+            role: geminiRole,
+            parts: [{ text: String(item.text) }]
+          });
+        }
+      }
+    }
+
+    let replyText = '';
+    const candidateModels = [modelName];
+    if (!candidateModels.includes('gemini-3.1-flash-lite')) candidateModels.push('gemini-3.1-flash-lite');
+    if (!candidateModels.includes('gemini-3.8-flash')) candidateModels.push('gemini-3.8-flash');
+
+    let usedModel = modelName;
+    let lastError = null;
+
+    for (const m of candidateModels) {
+      try {
+        const chat = ai.chats.create({
+          model: m,
+          config: {
+            systemInstruction
+          },
+          history: formattedHistory
+        });
+
+        const result = await chat.sendMessage({
+          message: message.trim()
+        });
+
+        if (result && result.text) {
+          replyText = result.text;
+          usedModel = m;
+          break;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn(`Model ${m} call failed (${err.message}), trying next candidate...`);
+      }
+    }
+
+    if (!replyText) {
+      // Graceful academic fallback if Google Gemini services are temporarily unreachable
+      replyText = `Hello! I am your ZipShare AI Lab Tutor.\n\nWhile Google AI servers are temporarily experiencing high traffic spikes, here is quick academic guidance for your query:\n- If you are working on **DBMS Lab (B23CS2104)**, check experiments 1–54 in the **Syllabus Matrix**.\n- You can test any SQL, Java, Python, or C code directly in the built-in **Online Compiler** (Judge0 CE).\n\nPlease try asking again in a few moments!`;
+    }
+
+    res.json({
+      reply: replyText,
+      model: usedModel,
+      role: role,
+      roleTitle: roleTitle
+    });
+  } catch (err) {
+    console.error('Chat endpoint error:', err.message);
+    res.status(500).json({
+      error: 'Failed to process chat response',
+      details: err.message
+    });
   }
 });
 

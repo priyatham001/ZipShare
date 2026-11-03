@@ -114,9 +114,118 @@ print(f"({a} > 10 and {b} < 5): {a > 10 and b < 5}")
 `
 };
 
+const crypto = require('crypto');
+const { execSync } = require('child_process');
+
+async function seedLabProgramsFromZip() {
+  const zipPath = path.join(__dirname, '..', 'Lab Programs Updated.zip');
+  const extractedRoot = '/extracted_lab_programs/Lab Programs Updated';
+
+  try {
+    if (!fs.existsSync(extractedRoot) && fs.existsSync(zipPath)) {
+      console.log('📦 Extracting "Lab Programs Updated.zip"...');
+      execSync(`unzip -q -o "${zipPath}" -d /extracted_lab_programs`);
+    }
+  } catch (err) {
+    console.warn('Extraction notice:', err.message);
+  }
+
+  if (!fs.existsSync(extractedRoot)) {
+    return 0;
+  }
+
+  const existingFiles = await filesDB.find({}, {}, 10000);
+  const existingNames = new Set(existingFiles.map(f => f.originalName));
+
+  const subdirs = [
+    { folder: 'java programs', category: 'java' },
+    { folder: 'python code', category: 'python' },
+    { folder: 'SQL Lab Programs', category: 'dbms' },
+    { folder: 'DS code', category: 'adsa' }
+  ];
+
+  const docsToInsert = [];
+
+  for (const { folder, category } of subdirs) {
+    const fullFolder = path.join(extractedRoot, folder);
+    if (!fs.existsSync(fullFolder)) continue;
+
+    const fileList = fs.readdirSync(fullFolder);
+    for (const fname of fileList) {
+      if (fname.startsWith('.') || fname.endsWith('.txt')) continue;
+      const fpath = path.join(fullFolder, fname);
+      if (!fs.statSync(fpath).isFile()) continue;
+
+      if (existingNames.has(fname)) {
+        continue; // Rule 6: Never modify existing uploaded files
+      }
+
+      let content = '';
+      try {
+        content = fs.readFileSync(fpath, 'utf8');
+      } catch (rErr) {
+        content = '';
+      }
+
+      const ext = path.extname(fname).replace('.', '').toLowerCase();
+      const storedName = crypto.randomUUID() + '.' + ext;
+      const destPath = path.join(UPLOAD_DIR, storedName);
+
+      try {
+        fs.writeFileSync(destPath, content, 'utf8');
+      } catch (wErr) {}
+
+      const match = matchFileToSyllabus({
+        originalName: fname,
+        extension: ext,
+        relativePath: fname,
+        content: content,
+        category: category
+      });
+
+      docsToInsert.push({
+        originalName: fname,
+        storedName: storedName,
+        relativePath: fname,
+        folderName: null,
+        batchId: null,
+        extension: ext,
+        category: match.category || category,
+        course: match.course,
+        courseCode: match.courseCode,
+        experimentNumber: match.experimentNumber,
+        experimentName: match.experimentName,
+        matchConfidence: match.matchConfidence,
+        status: match.status,
+        reviewReason: match.reviewReason || null,
+        size: Buffer.byteLength(content, 'utf8'),
+        tags: [ext, match.category || category],
+        description: match.experimentName ? `Experiment #${match.experimentNumber}: ${match.experimentName}` : '',
+        content: content,
+        pinned: false,
+        downloads: 0,
+        uploadDate: new Date().toISOString()
+      });
+
+      existingNames.add(fname);
+    }
+  }
+
+  if (docsToInsert.length > 0) {
+    await filesDB.insertMany(docsToInsert);
+    console.log(`✨ Successfully seeded ${docsToInsert.length} official lab programs from update package!`);
+  }
+
+  return docsToInsert.length;
+}
+
 async function migrateExistingFilesToSyllabus() {
   console.log('🔄 Checking existing files for official syllabus mapping...');
   try {
+    // 1. Seed any new files from Lab Programs Updated package
+    await seedLabProgramsFromZip();
+
+    // 2. Audit and fix syllabus mapping for all existing records
     const files = await filesDB.find({}, {}, 10000);
     let mappedCount = 0;
     let reviewCount = 0;
@@ -126,7 +235,7 @@ async function migrateExistingFilesToSyllabus() {
       if (f.storedName) {
         const fullPath = path.join(UPLOAD_DIR, f.storedName);
         if (!fs.existsSync(fullPath)) {
-          const sample = SAMPLE_CODES[f.originalName];
+          const sample = f.content || SAMPLE_CODES[f.originalName];
           if (sample) {
             try {
               fs.writeFileSync(fullPath, sample, 'utf-8');
@@ -141,7 +250,7 @@ async function migrateExistingFilesToSyllabus() {
         content = SAMPLE_CODES[f.originalName];
       }
 
-      // Run matcher
+      // Run matcher with updated Rule 4 (.sql strictly to dbms, never adsa)
       const match = matchFileToSyllabus({
         originalName: f.originalName,
         extension: f.extension,
@@ -169,14 +278,12 @@ async function migrateExistingFilesToSyllabus() {
 
       if (match.status === 'available') {
         mappedCount++;
-        console.log(`✅ Mapped "${f.originalName}" -> ${match.category.toUpperCase()} #${match.experimentNumber}: ${match.experimentName}`);
       } else {
         reviewCount++;
-        console.log(`⚠️ Unmapped/Needs Review: "${f.originalName}" (${match.status}) - ${match.reviewReason || 'Ambiguous'}`);
       }
     }
 
-    console.log(`✨ Syllabus migration complete: ${mappedCount} mapped (available), ${reviewCount} needing review.`);
+    console.log(`✨ Syllabus sync complete: ${mappedCount} mapped (available), ${reviewCount} needing review.`);
     return { mappedCount, reviewCount, total: files.length };
   } catch (err) {
     console.error('Syllabus migration error:', err.message);

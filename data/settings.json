@@ -1,12 +1,6 @@
 {
-  "replicaLink": "https://betadrop.app/i/eXW3zM",
-  "replicaTitle": "REPLICA: Keyboard Companion",
-  "replicaSubtext": "Try our new APK — click to install REPLICA directly on your device",
-  "replicaBadge": "TRY OUR NEW APK",
-  "replicaBtnText": "Install REPLICA APK 📲",
-  "promoEnabled": true,
-  "updatedAt": "2026-10-30T09:56:47.255Z",
   "gitRepoLink": "https://github.com/",
   "gitRepoTitle": "GitHub Repository",
-  "gitRepoEnabled": true
+  "gitRepoEnabled": true,
+  "updatedAt": "2026-10-31T12:00:00.000Z"
 }

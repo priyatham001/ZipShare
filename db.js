@@ -48,6 +48,10 @@ const fileSchema = new mongoose.Schema({
   assetId: { type: String, default: null },
   mimeType: { type: String, default: null },
   uploadedBy: { type: String, default: 'admin' },
+  publicationStatus: { type: String, default: 'published' }, // 'draft' or 'published'
+  assignmentType: { type: String, default: 'global' }, // 'global' or 'individual'
+  isGloballyAssigned: { type: Boolean, default: true },
+  assignedUsers: [{ type: String }],
   pinned: { type: Boolean, default: false },
   downloads: { type: Number, default: 0 },
   uploadDate: { type: Date, default: Date.now },
@@ -412,6 +416,10 @@ const filesDB = {
       size: d.size || 0,
       tags: d.tags || [],
       description: d.description || '',
+      publicationStatus: d.publicationStatus || 'published',
+      assignmentType: d.assignmentType || 'global',
+      isGloballyAssigned: d.isGloballyAssigned !== false,
+      assignedUsers: Array.isArray(d.assignedUsers) ? d.assignedUsers : [],
       pinned: Boolean(d.pinned),
       downloads: d.downloads || 0,
       uploadDate: d.uploadDate || new Date().toISOString(),

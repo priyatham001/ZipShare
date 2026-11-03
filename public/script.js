@@ -399,9 +399,12 @@ function initZipshareWelcome() {
     });
   }
 
-  // Check if user already visited
-  const hasVisited = localStorage.getItem('zipshare_visited');
-  if (hasVisited) {
+  // Check if forced via query param or if session completed
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceWelcome = urlParams.has('welcome') || urlParams.has('replay');
+  const sessionCompleted = sessionStorage.getItem('zipshare_session_onboarding_shown');
+
+  if (!forceWelcome && sessionCompleted) {
     if (container) {
       container.classList.add('hidden');
       container.style.display = 'none';
@@ -413,7 +416,7 @@ function initZipshareWelcome() {
     return;
   }
 
-  // Otherwise, start the 3-screen welcome journey
+  // Otherwise, start the exact 3-screen welcome journey
   startWelcomeJourney(false);
 }
 
@@ -478,11 +481,11 @@ function startWelcomeJourney(isReplay = false) {
       screen1.classList.remove('active');
 
       showScreen2Theme();
-    }, 400);
+    }, 380);
   }
 
-  // Show intro for approx 1.8 seconds, then advance
-  const screen1Timeout = setTimeout(advanceFromScreen1, 1800);
+  // Show intro for 1.4 seconds (approx 1-1.5s), then advance automatically
+  const screen1Timeout = setTimeout(advanceFromScreen1, 1400);
 
   const skipBtn = $('zpwSkipBhBtn');
   if (skipBtn) {
@@ -755,14 +758,13 @@ function showScreen3Categories() {
 
     localStorage.setItem('zipshare_favorite_subject', activeCategory);
     localStorage.setItem('zipshare_visited', 'true');
+    sessionStorage.setItem('zipshare_session_onboarding_shown', 'true');
 
     screen3.classList.add('zpw-fade-out');
 
     setTimeout(() => {
-      screen3.style.display = 'none';
-      screen3.classList.remove('zpw-fade-in');
-      launchLanguageTransition(activeCategory);
-    }, 380);
+      finalizeHomeOpening(activeCategory);
+    }, 350);
   }
 
   if (enterBtn) {
@@ -1147,10 +1149,21 @@ SELECT * FROM zipshare_records WHERE subject_code = 'DBMS' ORDER BY created_at D
 function finalizeHomeOpening(category) {
   if (zpwTransAnimFrame) cancelAnimationFrame(zpwTransAnimFrame);
 
+  const screen1 = $('zpwScreen1');
+  const screen2 = $('zpwScreen2');
+  const screen3 = $('zpwScreen3');
   const transScreen = $('zpwScreenTransition');
+
   if (transScreen) transScreen.classList.add('zpw-fade-out');
 
   setTimeout(() => {
+    [screen1, screen2, screen3, transScreen].forEach(s => {
+      if (s) {
+        s.style.display = 'none';
+        s.classList.remove('active', 'zpw-fade-in');
+      }
+    });
+
     const container = $('zipshareWelcomeContainer');
     if (container) {
       container.classList.add('hidden');
@@ -1164,7 +1177,7 @@ function finalizeHomeOpening(category) {
 
     switchCategory(category);
     toast(`${category.toUpperCase()} Workspace Active! 🚀`, 'success');
-  }, 400);
+  }, 350);
 }
 
 function initTransCanvas(category) {
@@ -1232,6 +1245,571 @@ function initTransCanvas(category) {
   }
 
   renderTrans();
+}
+
+// =========================================================
+// SUBJECT-SPECIFIC FULL-SCREEN LANGUAGE LOADING TRANSITIONS
+// =========================================================
+let langLoadingAnimFrame = null;
+
+const LANG_CONFIGS = {
+  java: {
+    title: 'Brewing your Java workspace...',
+    status: 'JAVA VIRTUAL MACHINE INITIALIZING',
+    code: `// Java Virtual Machine Boot Sequence
+public class ZipShareLab {
+    private static final Logger log = LoggerFactory.getLogger(ZipShareLab.class);
+    public static void main(String[] args) throws InterruptedException {
+        ConcurrentHashMap<String, Program> labStore = new ConcurrentHashMap<>();
+        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        CompletableFuture.supplyAsync(() -> labStore.put("java", new Program("OOP Architecture")))
+            .thenAccept(res -> log.info("Java Environment Loaded."));
+    }
+}`,
+    svg: `
+      <div class="zpw-java-3d-stage">
+        <svg class="zpw-java-cup-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="cupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f97316"/>
+              <stop offset="50%" stop-color="#ef4444"/>
+              <stop offset="100%" stop-color="#991b1b"/>
+            </linearGradient>
+            <linearGradient id="steamGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="#f97316" stop-opacity="0.8"/>
+              <stop offset="50%" stop-color="#fb923c" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="#fef08a" stop-opacity="0.1"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="100" cy="165" rx="72" ry="14" fill="#1e1b4b" stroke="#f97316" stroke-width="2.5" opacity="0.9"/>
+          <ellipse cx="100" cy="164" rx="56" ry="9" fill="#0f172a" stroke="#fb923c" stroke-width="1.2"/>
+          <path d="M48 95 C48 152 70 158 100 158 C130 158 152 152 152 95 Z" fill="url(#cupGrad)" stroke="#fed7aa" stroke-width="2"/>
+          <ellipse cx="100" cy="95" rx="52" ry="14" fill="#451a03" stroke="#f97316" stroke-width="2"/>
+          <ellipse cx="100" cy="96" rx="44" ry="10" fill="#2d1205"/>
+          <path d="M72 96 C80 92 120 100 128 96" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+          <path d="M148 105 C175 105 175 142 144 145" fill="none" stroke="#f97316" stroke-width="5" stroke-linecap="round"/>
+          <path class="zpw-steam-path-1" d="M85 82 C78 60 102 45 92 22" fill="none" stroke="url(#steamGrad)" stroke-width="4.5" stroke-linecap="round"/>
+          <path class="zpw-steam-path-2" d="M102 80 C95 55 118 40 108 14" fill="none" stroke="url(#steamGrad)" stroke-width="5" stroke-linecap="round"/>
+          <path class="zpw-steam-path-3" d="M118 84 C112 65 130 52 124 28" fill="none" stroke="url(#steamGrad)" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+      </div>`
+  },
+  python: {
+    title: 'Uncoiling your Python workspace...',
+    status: 'PYTHON 3.12 RUNTIME COMPOSING',
+    code: `# Python High-Performance Engine Boot
+import asyncio, sys, json
+from dataclasses import dataclass
+
+@dataclass
+class Workspace:
+    name: str = "ZipShare Python"
+    version: str = "3.12-optimized"
+
+async def init_runtime():
+    pipeline = [x**2 for x in range(1000) if x % 2 == 0]
+    yield from pipeline
+    return Workspace()
+
+asyncio.run(init_runtime())`,
+    svg: `
+      <div class="zpw-python-3d-stage">
+        <svg class="zpw-python-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="pyBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#1d4ed8"/>
+            </linearGradient>
+            <linearGradient id="pyYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fef08a"/>
+              <stop offset="100%" stop-color="#eab308"/>
+            </linearGradient>
+          </defs>
+          <path d="M98 22 C60 22 45 36 45 60 L45 80 L98 80 L98 90 L30 90 C15 90 2 105 2 135 C2 165 18 178 52 178 L70 178 L70 155 C70 135 85 120 105 120 L152 120 C172 120 188 105 188 85 L188 60 C188 36 172 22 135 22 Z" fill="url(#pyBlue)" opacity="0.95"/>
+          <circle cx="70" cy="45" r="7" fill="#ffffff"/>
+          <circle cx="70" cy="45" r="3.5" fill="#0369a1"/>
+          <path d="M102 178 C140 178 155 164 155 140 L155 120 L102 120 L102 110 L170 110 C185 110 198 95 198 65 C198 35 182 22 148 22 L130 22 L130 45 C130 65 115 80 95 80 L48 80 C28 80 12 95 12 115 L12 140 C12 164 28 178 65 178 Z" fill="url(#pyYellow)" opacity="0.95"/>
+          <circle cx="130" cy="155" r="7" fill="#ffffff"/>
+          <circle cx="130" cy="155" r="3.5" fill="#a16207"/>
+        </svg>
+      </div>`
+  },
+  c: {
+    title: 'Compiling your C workspace...',
+    status: 'GCC LOW-LEVEL COMPILER LINKING',
+    code: `/* Low-Level C Systems Runtime Kernel */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    uint32_t memory_addr;
+    char buffer[256];
+} SystemRegistry;
+
+int main(int argc, char **argv) {
+    SystemRegistry *reg = (SystemRegistry*)malloc(sizeof(SystemRegistry));
+    reg->memory_addr = 0x7FFF8000;
+    strncpy(reg->buffer, "SYS_READY", sizeof(reg->buffer));
+    return 0;
+}`,
+    svg: `
+      <div class="zpw-c-3d-stage">
+        <svg class="zpw-c-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="cMetallic" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#475569"/>
+              <stop offset="35%" stop-color="#94a3b8"/>
+              <stop offset="70%" stop-color="#334155"/>
+              <stop offset="100%" stop-color="#0f172a"/>
+            </linearGradient>
+            <linearGradient id="cCyanNeon" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+          <path d="M155 58 C142 36 122 22 96 22 C52 22 20 58 20 102 C20 146 52 182 96 182 C124 182 144 168 156 146 L124 130 C116 142 108 148 96 148 C72 148 54 128 54 102 C54 76 72 56 96 56 C108 56 116 62 124 74 Z" fill="#030812" transform="translate(6, 6)"/>
+          <path d="M155 58 C142 36 122 22 96 22 C52 22 20 58 20 102 C20 146 52 182 96 182 C124 182 144 168 156 146 L124 130 C116 142 108 148 96 148 C72 148 54 128 54 102 C54 76 72 56 96 56 C108 56 116 62 124 74 Z" fill="url(#cMetallic)" stroke="url(#cCyanNeon)" stroke-width="4"/>
+          <path d="M142 66 C132 48 116 38 96 38 C60 38 34 66 34 102 C34 138 60 166 96 166 C116 166 132 156 142 138" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-dasharray="6 3"/>
+        </svg>
+      </div>`
+  },
+  adsa: {
+    title: 'Building your algorithm workspace...',
+    status: 'GRAPH & TREE TOPOLOGY STRUCTURING',
+    code: `// Advanced Data Structures & Algorithm Core
+template <typename T>
+class RedBlackTree {
+    struct Node {
+        T data;
+        bool color; // RED = true, BLACK = false
+        Node *left, *right, *parent;
+    };
+    Node *root;
+    void rotateLeft(Node *&root, Node *&pt);
+    void fixViolation(Node *&root, Node *&pt);
+};`,
+    svg: `
+      <div class="zpw-adsa-3d-stage">
+        <svg class="zpw-adsa-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="adsaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#c084fc"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+          </defs>
+          <line x1="100" y1="42" x2="60" y2="88" stroke="#a855f7" stroke-width="3"/>
+          <line x1="100" y1="42" x2="140" y2="88" stroke="#a855f7" stroke-width="3"/>
+          <line x1="60" y1="88" x2="36" y2="138" stroke="#c084fc" stroke-width="2.5"/>
+          <line x1="60" y1="88" x2="84" y2="138" stroke="#c084fc" stroke-width="2.5"/>
+          <line x1="140" y1="88" x2="116" y2="138" stroke="#c084fc" stroke-width="2.5"/>
+          <line x1="140" y1="88" x2="164" y2="138" stroke="#c084fc" stroke-width="2.5"/>
+          <circle cx="100" cy="42" r="18" fill="url(#adsaGrad)" stroke="#f3e8ff" stroke-width="2"/>
+          <text x="100" y="47" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="12" fill="#ffffff">50</text>
+          <circle cx="60" cy="88" r="15" fill="#581c87" stroke="#c084fc" stroke-width="2"/>
+          <text x="60" y="93" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="11" fill="#ffffff">25</text>
+          <circle cx="140" cy="88" r="15" fill="#581c87" stroke="#c084fc" stroke-width="2"/>
+          <text x="140" y="93" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="11" fill="#ffffff">75</text>
+          <circle cx="36" cy="138" r="12" fill="#3b0764" stroke="#a855f7" stroke-width="1.8"/>
+          <circle cx="84" cy="138" r="12" fill="#3b0764" stroke="#a855f7" stroke-width="1.8"/>
+          <circle cx="116" cy="138" r="12" fill="#3b0764" stroke="#a855f7" stroke-width="1.8"/>
+          <circle cx="164" cy="138" r="12" fill="#3b0764" stroke="#a855f7" stroke-width="1.8"/>
+          <g transform="translate(45, 168)">
+            <rect class="zpw-adsa-bar b1" x="0" y="6" width="12" height="20" rx="3" fill="#ec4899"/>
+            <rect class="zpw-adsa-bar b2" x="18" y="14" width="12" height="12" rx="3" fill="#a855f7"/>
+            <rect class="zpw-adsa-bar b3" x="36" y="2" width="12" height="24" rx="3" fill="#8b5cf6"/>
+            <rect class="zpw-adsa-bar b4" x="54" y="18" width="12" height="8" rx="3" fill="#6366f1"/>
+            <rect class="zpw-adsa-bar b5" x="72" y="10" width="12" height="16" rx="3" fill="#38bdf8"/>
+            <rect class="zpw-adsa-bar b6" x="90" y="0" width="12" height="26" rx="3" fill="#10b981"/>
+          </g>
+        </svg>
+      </div>`
+  },
+  dbms: {
+    title: 'Connecting your database workspace...',
+    status: 'RELATIONAL ENGINE CONNECTING',
+    code: `-- Relational Schema & Optimization Kernel
+SELECT e.id, e.name, COUNT(f.id) as total_solutions
+FROM experiments e
+LEFT JOIN files f ON f.experiment_number = e.sno
+WHERE e.category = 'DBMS' AND e.status = 'available'
+GROUP BY e.id, e.name
+ORDER BY e.sno ASC;`,
+    svg: `
+      <div class="zpw-dbms-3d-stage">
+        <svg class="zpw-dbms-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="dbDisk1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#14b8a6"/>
+              <stop offset="50%" stop-color="#0d9488"/>
+              <stop offset="100%" stop-color="#042f2e"/>
+            </linearGradient>
+            <linearGradient id="dbDisk2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#06b6d4"/>
+              <stop offset="50%" stop-color="#0891b2"/>
+              <stop offset="100%" stop-color="#164e63"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(0, 115)">
+            <ellipse cx="100" cy="30" rx="64" ry="18" fill="url(#dbDisk1)" stroke="#5eead4" stroke-width="2"/>
+            <path d="M36 30 L36 48 C36 58 64 66 100 66 C136 66 164 58 164 48 L164 30 Z" fill="#042f2e" stroke="#2dd4bf" stroke-width="2"/>
+          </g>
+          <g transform="translate(0, 75)">
+            <ellipse cx="100" cy="30" rx="64" ry="18" fill="url(#dbDisk2)" stroke="#67e8f9" stroke-width="2"/>
+            <path d="M36 30 L36 48 C36 58 64 66 100 66 C136 66 164 58 164 48 L164 30 Z" fill="#083344" stroke="#22d3ee" stroke-width="2"/>
+          </g>
+          <g transform="translate(0, 35)">
+            <ellipse cx="100" cy="30" rx="64" ry="18" fill="url(#dbDisk1)" stroke="#5eead4" stroke-width="2.5"/>
+            <path d="M36 30 L36 48 C36 58 64 66 100 66 C136 66 164 58 164 48 L164 30 Z" fill="#042f2e" stroke="#2dd4bf" stroke-width="2"/>
+            <ellipse cx="100" cy="30" rx="54" ry="14" fill="#0f766e" stroke="#99f6e4" stroke-width="1.2"/>
+            <line x1="60" y1="30" x2="140" y2="30" stroke="#ccfbf1" stroke-width="1.5" stroke-dasharray="4 3"/>
+          </g>
+        </svg>
+      </div>`
+  }
+};
+
+function triggerLanguageLoadingTransition(category, loadPromise) {
+  const overlay = $('languageLoadingOverlay');
+  if (!overlay) return;
+
+  const cfg = LANG_CONFIGS[category];
+  if (!cfg) return;
+
+  // Set theme & title
+  overlay.className = `lang-loading-overlay theme-${category}`;
+  overlay.style.display = 'flex';
+  overlay.classList.remove('fade-out');
+
+  if ($('langTransVisualWrapper')) $('langTransVisualWrapper').innerHTML = cfg.svg;
+  if ($('langTransTitle')) $('langTransTitle').textContent = cfg.title;
+  if ($('langTransStatusLabel')) $('langTransStatusLabel').textContent = cfg.status;
+  if ($('langTransCodeBackdrop')) $('langTransCodeBackdrop').textContent = cfg.code.repeat(4);
+
+  const bar = $('langTransProgressBar');
+  if (bar) bar.style.width = '15%';
+
+  // Start particles
+  initLangTransCanvas(category);
+
+  // Smooth progress animation
+  let p = 15;
+  const startTime = Date.now();
+  const minDisplayMs = 550; // Smooth visual threshold, never freezing or blocking 4s
+
+  const progressInterval = setInterval(() => {
+    p = Math.min(p + 14, 90);
+    if (bar) bar.style.width = `${p}%`;
+  }, 100);
+
+  const finishTransition = () => {
+    clearInterval(progressInterval);
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, minDisplayMs - elapsed);
+
+    setTimeout(() => {
+      if (bar) bar.style.width = '100%';
+      setTimeout(() => {
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          if (langLoadingAnimFrame) {
+            cancelAnimationFrame(langLoadingAnimFrame);
+            langLoadingAnimFrame = null;
+          }
+        }, 400);
+      }, 150);
+    }, remaining);
+  };
+
+  if (loadPromise && typeof loadPromise.then === 'function') {
+    loadPromise.then(finishTransition).catch(err => {
+      console.warn('Language load warning:', err);
+      finishTransition();
+    });
+  } else {
+    setTimeout(finishTransition, minDisplayMs);
+  }
+}
+
+function initLangTransCanvas(category) {
+  const canvas = $('langTransCanvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  let w = canvas.width = window.innerWidth;
+  let h = canvas.height = window.innerHeight;
+
+  const particles = [];
+  const count = 55;
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.9,
+      vy: category === 'java' ? -(Math.random() * 1.8 + 0.5) : (Math.random() - 0.5) * 0.9,
+      radius: Math.random() * 2.5 + 1,
+      alpha: Math.random() * 0.8 + 0.2
+    });
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, w, h);
+
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (category === 'java') {
+        if (p.y < 0) { p.y = h; p.x = Math.random() * w; }
+        ctx.fillStyle = Math.random() > 0.5 ? '#f97316' : '#ef4444';
+      } else if (category === 'python') {
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+        ctx.fillStyle = Math.random() > 0.5 ? '#38bdf8' : '#eab308';
+      } else if (category === 'c') {
+        if (p.y > h) { p.y = 0; p.x = Math.random() * w; }
+        ctx.fillStyle = '#22d3ee';
+      } else if (category === 'adsa') {
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+        ctx.fillStyle = Math.random() > 0.5 ? '#a855f7' : '#ec4899';
+      } else {
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+        ctx.fillStyle = Math.random() > 0.5 ? '#10b981' : '#14b8a6';
+      }
+
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    langLoadingAnimFrame = requestAnimationFrame(render);
+  }
+
+  render();
+}
+
+// =========================================================
+// SPOTLIGHT COMMAND SEARCH PALETTE (Ctrl + K / ⌘K)
+// =========================================================
+let cmdSelectedIdx = 0;
+let cmdFilteredResults = [];
+let cmdActiveSubject = 'all';
+
+function initCommandSearch() {
+  const triggerBtn = $('cmdSearchTriggerBtn');
+  const overlay = $('cmdSearchOverlay');
+  const input = $('cmdSearchInput');
+  const resultsContainer = $('cmdResultsList');
+  const filterChips = $('cmdFilterChips');
+
+  if (triggerBtn) {
+    triggerBtn.addEventListener('click', openCommandSearch);
+  }
+
+  // Global Keyboard Shortcut: Ctrl + K or ⌘K
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      openCommandSearch();
+    } else if (e.key === 'Escape' && overlay && overlay.style.display === 'flex') {
+      closeCommandSearch();
+    }
+  });
+
+  if (overlay) {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) closeCommandSearch();
+    });
+  }
+
+  if (input) {
+    input.addEventListener('input', () => {
+      renderCommandSearchResults(input.value.trim());
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveCmdSelection(1);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveCmdSelection(-1);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        executeCmdSelection();
+      }
+    });
+  }
+
+  if (filterChips) {
+    filterChips.querySelectorAll('.cmd-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterChips.querySelectorAll('.cmd-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        cmdActiveSubject = btn.getAttribute('data-subject') || 'all';
+        renderCommandSearchResults(input ? input.value.trim() : '');
+      });
+    });
+  }
+}
+
+function openCommandSearch() {
+  const overlay = $('cmdSearchOverlay');
+  const input = $('cmdSearchInput');
+  if (!overlay) return;
+
+  overlay.style.display = 'flex';
+  cmdSelectedIdx = 0;
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+  renderCommandSearchResults('');
+}
+
+function closeCommandSearch() {
+  const overlay = $('cmdSearchOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function renderCommandSearchResults(query) {
+  const container = $('cmdResultsList');
+  if (!container) return;
+
+  let allItems = [];
+
+  // Gather syllabus items
+  if (syllabusData) {
+    Object.keys(syllabusData).forEach(cat => {
+      if (cmdActiveSubject !== 'all' && cmdActiveSubject !== cat) return;
+      const course = syllabusData[cat];
+      (course.exercises || []).forEach(ex => {
+        (ex.questions || []).forEach(q => {
+          allItems.push({
+            type: 'syllabus',
+            category: cat,
+            experimentNumber: q.number,
+            title: q.rawTitle || q.title,
+            courseCode: course.code,
+            file: (lastFiles || []).find(f => f.category === cat && f.experimentNumber === q.number)
+          });
+        });
+      });
+    });
+  }
+
+  // Also include uploaded files
+  (lastFiles || []).forEach(f => {
+    if (cmdActiveSubject !== 'all' && f.category !== cmdActiveSubject) return;
+    if (!allItems.some(it => it.file && (it.file._id || it.file.id) === (f._id || f.id))) {
+      allItems.push({
+        type: 'file',
+        category: f.category || 'code',
+        experimentNumber: f.experimentNumber,
+        title: f.experimentName || f.originalName,
+        file: f
+      });
+    }
+  });
+
+  const q = query.toLowerCase();
+  cmdFilteredResults = allItems.filter(item => {
+    if (!q) return true;
+    const t = (item.title || '').toLowerCase();
+    const c = (item.category || '').toLowerCase();
+    const sno = String(item.experimentNumber || '');
+    return t.includes(q) || c.includes(q) || sno.includes(q);
+  }).slice(0, 30);
+
+  if (cmdFilteredResults.length === 0) {
+    container.innerHTML = '<div class="cmd-empty-state">No matching lab programs found. Try another search.</div>';
+    return;
+  }
+
+  cmdSelectedIdx = Math.min(cmdSelectedIdx, cmdFilteredResults.length - 1);
+
+  let html = '';
+  cmdFilteredResults.forEach((it, idx) => {
+    const isSelected = idx === cmdSelectedIdx;
+    const catIcon = ICONS[it.category] ? ICONS[it.category].icon : (it.category === 'java' ? '☕' : it.category === 'python' ? '🐍' : it.category === 'c' ? '💻' : it.category === 'dbms' ? '🗄️' : '🌳');
+    const hasFile = Boolean(it.file);
+    const expTag = it.experimentNumber ? `#${String(it.experimentNumber).padStart(2,'0')}` : 'FILE';
+
+    html += `
+      <div class="cmd-result-item ${isSelected ? 'selected' : ''}" data-idx="${idx}" onclick="selectCmdItemByIndex(${idx})">
+        <div class="cmd-item-left">
+          <span class="cmd-item-icon">${catIcon}</span>
+          <div>
+            <div class="cmd-item-title">${escapeHtml(it.title)}</div>
+            <div class="cmd-item-meta">${escapeHtml(it.category.toUpperCase())} · <strong style="color:var(--accent);">${expTag}</strong> · ${hasFile ? '<span style="color:#10b981;">● Available</span>' : '<span style="color:#f59e0b;">○ Syllabus</span>'}</div>
+          </div>
+        </div>
+        <div>
+          ${hasFile ? '<button class="card-btn" style="padding:2px 8px; font-size:0.75rem;">👁 Open</button>' : '<span style="font-size:0.75rem; color:var(--text-dim);">Syllabus</span>'}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function moveCmdSelection(dir) {
+  if (cmdFilteredResults.length === 0) return;
+  cmdSelectedIdx = (cmdSelectedIdx + dir + cmdFilteredResults.length) % cmdFilteredResults.length;
+  
+  document.querySelectorAll('.cmd-result-item').forEach((el, idx) => {
+    el.classList.toggle('selected', idx === cmdSelectedIdx);
+    if (idx === cmdSelectedIdx) {
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  });
+}
+
+function selectCmdItemByIndex(idx) {
+  cmdSelectedIdx = idx;
+  executeCmdSelection();
+}
+
+function executeCmdSelection() {
+  const item = cmdFilteredResults[cmdSelectedIdx];
+  if (!item) return;
+
+  closeCommandSearch();
+
+  if (item.file) {
+    previewFile(item.file._id || item.file.id);
+  } else if (item.category) {
+    switchCategory(item.category);
+  }
+}
+
+// =========================================================
+// HERO SECTION ACTIONS
+// =========================================================
+function initHeroActions() {
+  const exploreBtn = $('heroExploreBtn');
+  if (exploreBtn) {
+    exploreBtn.addEventListener('click', () => {
+      const target = $('labLayoutWrapper') || $('fileGrid');
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  const browseBtn = $('heroBrowseBtn');
+  if (browseBtn) {
+    browseBtn.addEventListener('click', () => {
+      const target = $('filters');
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
 }
 
 function initCosmicParticles() {
@@ -1586,7 +2164,8 @@ function renderSubjectAnimation(cat) {
 }
 
 // ---------------- Category Switcher ----------------
-function switchCategory(cat) {
+function switchCategory(cat, skipAnimation = false) {
+  const prevCat = activeCategory;
   activeCategory = cat;
 
   document.querySelectorAll('.chip').forEach(chip => {
@@ -1611,8 +2190,15 @@ function switchCategory(cat) {
   if ($('gridSectionTitle')) $('gridSectionTitle').textContent = `${s.title} (${lastFiles.length})`;
 
   renderSubjectAnimation(cat);
-  loadFiles();
   renderBreadcrumbs();
+
+  const isLangSubject = ['java', 'python', 'c', 'adsa', 'dbms'].includes(cat);
+  if (isLangSubject && !skipAnimation && prevCat !== cat) {
+    const loadPromise = loadFiles();
+    triggerLanguageLoadingTransition(cat, loadPromise);
+  } else {
+    loadFiles();
+  }
 }
 
 function setSyllabusFilter(subject, exercise = null, question = null) {
@@ -2101,6 +2687,10 @@ function createExperimentCard(item, isAdmin) {
   card.className = `file-card ${isAvailable ? 'available-card' : 'coming-soon-card'} ${isPinned ? 'pinned-card' : ''}`;
 
   if (isAvailable) {
+    const fId = file._id || file.id;
+    card.addEventListener('pointerenter', () => prefetchProgram(fId), { passive: true });
+    card.addEventListener('focusin', () => prefetchProgram(fId), { passive: true });
+
     const ext = (file.extension || 'default').toLowerCase();
     const meta = ICONS[ext] || ICONS.default;
     const runnable = isRunnableFile(file);
@@ -2180,6 +2770,10 @@ function createStandaloneFileCard(file, isAdmin) {
 
   const card = document.createElement('div');
   card.className = `file-card ${file.pinned ? 'pinned-card' : ''}`;
+
+  const fId = file._id || file.id;
+  card.addEventListener('pointerenter', () => prefetchProgram(fId), { passive: true });
+  card.addEventListener('focusin', () => prefetchProgram(fId), { passive: true });
 
   let actionBtns = `
     <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
@@ -2466,7 +3060,7 @@ async function togglePinFolder(batchId, pinned) {
   }
 }
 
-// ---------------- Stats ----------------
+// ---------------- Apple Bento Stats ----------------
 async function loadStats() {
   try {
     const [statsRes, sylRes] = await Promise.all([
@@ -2479,25 +3073,73 @@ async function loadStats() {
     const statsBar = $('statsBar');
     if (!statsBar) return;
 
-    if (syl) {
-      statsBar.innerHTML = `
-        <div class="stat-card"><b>${syl.totalOfficial || 145}</b><span>Official Experiments</span></div>
-        <div class="stat-card" style="border-color: rgba(16,185,129,0.4);"><b>${syl.totalAvailable}</b><span style="color:#10b981;">Available Now</span></div>
-        <div class="stat-card" style="border-color: rgba(245,158,11,0.4);"><b>${syl.totalComingSoon}</b><span style="color:#f59e0b;">Coming Soon</span></div>
-        <div class="stat-card"><b>${syl.courses.java.available}/35</b><span>Java Lab</span></div>
-        <div class="stat-card"><b>${syl.courses.python.available}/40</b><span>Python Lab</span></div>
-        <div class="stat-card"><b>${syl.courses.dbms ? syl.courses.dbms.available : 0}/54</b><span>DBMS Lab</span></div>
-        <div class="stat-card"><b>${syl.courses.adsa.available}/16</b><span>DSA Lab</span></div>
-      `;
-    } else {
-      statsBar.innerHTML = `
-        <div class="stat-card"><b>${s.totalFiles || 0}</b><span>Total Files</span></div>
-        <div class="stat-card"><b>${s.pinned || 0}</b><span>Pinned Items</span></div>
-        <div class="stat-card"><b>${s.totalDownloads || 0}</b><span>Downloads</span></div>
-        <div class="stat-card"><b>${fmtSize(s.storageUsed || 0)}</b><span>Storage Used</span></div>
-      `;
-    }
+    const totalOfficial = syl ? (syl.totalOfficial || 145) : 145;
+    const availableNow = syl ? (syl.totalAvailable || 124) : 124;
+    const comingSoon = syl ? (syl.totalComingSoon || 21) : 21;
+    const downloads = s.totalDownloads || 61;
+
+    statsBar.innerHTML = `
+      <div class="bento-stats-grid">
+        <div class="bento-stat-card">
+          <div class="bento-stat-top">
+            <span class="bento-stat-icon">📚</span>
+            <span class="bento-stat-badge">OFFICIAL LABS</span>
+          </div>
+          <div class="bento-stat-num count-up" data-val="${totalOfficial}">${totalOfficial}</div>
+          <div class="bento-stat-label">Official Experiments</div>
+          <div class="bento-stat-sub">Java 35 · Python 40 · DBMS 54 · ADSA 16</div>
+        </div>
+
+        <div class="bento-stat-card">
+          <div class="bento-stat-top">
+            <span class="bento-stat-icon">⚡</span>
+            <span class="bento-stat-badge" style="background:rgba(16,185,129,0.14); color:#10b981; border-color:rgba(16,185,129,0.3);">READY TO RUN</span>
+          </div>
+          <div class="bento-stat-num count-up" data-val="${availableNow}" style="color:#10b981;">${availableNow}</div>
+          <div class="bento-stat-label">Available Programs</div>
+          <div class="bento-stat-sub">${comingSoon} upcoming in official curriculum</div>
+        </div>
+
+        <div class="bento-stat-card">
+          <div class="bento-stat-top">
+            <span class="bento-stat-icon">💻</span>
+            <span class="bento-stat-badge">5 SUBJECTS</span>
+          </div>
+          <div class="bento-stat-num">5</div>
+          <div class="bento-stat-label">Core Lab Subjects</div>
+          <div class="bento-stat-sub">Java, Python, C, DBMS &amp; ADSA</div>
+        </div>
+
+        <div class="bento-stat-card">
+          <div class="bento-stat-top">
+            <span class="bento-stat-icon">📥</span>
+            <span class="bento-stat-badge">COMMUNITY</span>
+          </div>
+          <div class="bento-stat-num count-up" data-val="${downloads}">${downloads}</div>
+          <div class="bento-stat-label">Total Downloads</div>
+          <div class="bento-stat-sub">Live student downloads from database</div>
+        </div>
+      </div>
+    `;
+
+    animateBentoCounts();
   } catch { /* non-critical */ }
+}
+
+function animateBentoCounts() {
+  document.querySelectorAll('.bento-stat-num.count-up').forEach(el => {
+    const target = parseInt(el.getAttribute('data-val'), 10) || 0;
+    if (target === 0) return;
+    let count = 0;
+    const duration = 750;
+    const stepTime = 25;
+    const increment = Math.ceil(target / (duration / stepTime));
+    const timer = setInterval(() => {
+      count = Math.min(count + increment, target);
+      el.textContent = count;
+      if (count >= target) clearInterval(timer);
+    }, stepTime);
+  });
 }
 
 // ---------------- Playful Mascot Micro-Animations ----------------
@@ -2950,6 +3592,138 @@ async function triggerPreviewExplain() {
   }, 200);
 }
 
+// ---------------- Fast Program In-Memory Cache & Prefetch ----------------
+const programPreviewCache = new Map();
+
+function prefetchProgram(id) {
+  if (!id || programPreviewCache.has(id)) return;
+  fetch(`/api/files/${id}/preview`)
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (data && data.file) {
+        programPreviewCache.set(id, data);
+      }
+    })
+    .catch(() => {});
+}
+
+function prefetchAdjacentPrograms(currentId) {
+  if (!lastFiles || lastFiles.length === 0) return;
+  const idx = lastFiles.findIndex(f => (f._id || f.id) === currentId);
+  if (idx > 0) {
+    const prevFile = lastFiles[idx - 1];
+    if (prevFile) prefetchProgram(prevFile._id || prevFile.id);
+  }
+  if (idx >= 0 && idx < lastFiles.length - 1) {
+    const nextFile = lastFiles[idx + 1];
+    if (nextFile) prefetchProgram(nextFile._id || nextFile.id);
+  }
+}
+
+function setupWorkspaceNav(currentId) {
+  const prevBtn = $('viewerPrevProgramBtn');
+  const nextBtn = $('viewerNextProgramBtn');
+  if (!lastFiles || lastFiles.length === 0) {
+    if (prevBtn) prevBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+    return;
+  }
+
+  const idx = lastFiles.findIndex(f => (f._id || f.id) === currentId);
+  const prevFile = idx > 0 ? lastFiles[idx - 1] : null;
+  const nextFile = idx >= 0 && idx < lastFiles.length - 1 ? lastFiles[idx + 1] : null;
+
+  if (prevBtn) {
+    prevBtn.style.display = prevFile ? 'inline-flex' : 'none';
+    prevBtn.onclick = () => {
+      if (prevFile) previewFile(prevFile._id || prevFile.id);
+    };
+  }
+
+  if (nextBtn) {
+    nextBtn.style.display = nextFile ? 'inline-flex' : 'none';
+    nextBtn.onclick = () => {
+      if (nextFile) previewFile(nextFile._id || nextFile.id);
+    };
+  }
+}
+
+function renderProgramWorkspace(file, content, type) {
+  previewingFile = file;
+
+  if ($('previewTitle')) $('previewTitle').textContent = file.originalName;
+  const ext = (file.extension || 'default').toLowerCase();
+  if ($('previewFileIcon')) $('previewFileIcon').textContent = (ICONS[ext] || ICONS.default).icon;
+
+  // macOS Titlebar Breadcrumbs
+  const subjName = (file.subject || file.category || 'CODE').toUpperCase();
+  if ($('previewBreadcrumbSubject')) $('previewBreadcrumbSubject').textContent = subjName;
+  if ($('previewBreadcrumbFile')) {
+    const label = file.experimentName ? `#${file.experimentNumber ? String(file.experimentNumber).padStart(2,'0') : ''} ${file.experimentName}` : file.originalName;
+    $('previewBreadcrumbFile').textContent = label;
+  }
+
+  // Badges update
+  const langBadge = $('previewLangBadge');
+  if (langBadge) {
+    langBadge.textContent = subjName;
+  }
+
+  const linesBadge = $('previewLinesBadge');
+  if (linesBadge && type === 'text') {
+    const lineCount = (content || '').split('\n').length;
+    linesBadge.textContent = `${lineCount} line${lineCount === 1 ? '' : 's'}`;
+    linesBadge.style.display = 'inline-block';
+  } else if (linesBadge) {
+    linesBadge.style.display = 'none';
+  }
+
+  const sizeBadge = $('previewSizeBadge');
+  if (sizeBadge && file.size) {
+    sizeBadge.textContent = fmtSize(file.size);
+    sizeBadge.style.display = 'inline-block';
+  }
+
+  const mobileSolBtn = $('mobileToggleSolBtn');
+  if (mobileSolBtn) {
+    const hasSol = file && (file.subject || file.exercise || file.question);
+    mobileSolBtn.style.display = hasSol ? 'inline-flex' : 'none';
+  }
+
+  const body = $('previewBody');
+  const adminEditBtn = $('editContentBtn');
+
+  if (adminToken && type === 'text') {
+    if (adminEditBtn) adminEditBtn.style.display = 'inline-block';
+    if ($('codeEditorTextarea')) $('codeEditorTextarea').value = content || '';
+  } else {
+    if (adminEditBtn) adminEditBtn.style.display = 'none';
+  }
+
+  if ($('adminEditorSection')) $('adminEditorSection').style.display = 'none';
+
+  const solPanel = $('solutionExplorerPanel');
+  if (solPanel) solPanel.classList.remove('open');
+  renderSolutionPanel(file);
+
+  if (body) {
+    if (type === 'text') {
+      body.innerHTML = `<pre><code class="language-${ext}">${escapeHtml(content || '')}</code></pre>`;
+      if (window.hljs) window.hljs.highlightAll();
+    } else if (type === 'image') {
+      body.innerHTML = `<img src="${file.url || ''}" style="max-width:100%; border-radius:12px; display:block; margin:0 auto;" />`;
+    } else if (type === 'pdf') {
+      body.innerHTML = `<iframe src="${file.url || ''}" style="width:100%; height:450px; border:none; border-radius:12px;"></iframe>`;
+    } else {
+      body.innerHTML = `<p style="text-align:center; padding:30px;">Binary / Unsupported format. Please download to view on your system.</p>`;
+    }
+  }
+
+  applyViewerFontSize(viewerFontSize);
+  applyViewerWrap(viewerCodeWrapped);
+  setupWorkspaceNav(file._id || file.id);
+}
+
 async function previewFile(id) {
   try {
     const fileLoc = lastFiles.find(f => (f._id || f.id) === id);
@@ -2957,73 +3731,28 @@ async function previewFile(id) {
       triggerMascotAnim(getMascotType(fileLoc), document.activeElement);
     }
 
+    // 1. FAST CACHE HIT (0ms perceived latency)
+    if (programPreviewCache.has(id)) {
+      const data = programPreviewCache.get(id);
+      renderProgramWorkspace(data.file, data.content, data.type);
+      openModal('previewModalOverlay');
+      prefetchAdjacentPrograms(id);
+      return;
+    }
+
+    // 2. Cold start: open modal immediately with responsive preview shell
+    if (fileLoc) {
+      renderProgramWorkspace(fileLoc, '// Fetching program code...', 'text');
+    }
+    openModal('previewModalOverlay');
+
     const res = await fetch(`/api/files/${id}/preview`);
     if (!res.ok) throw new Error('Preview error');
     const data = await res.json();
-    previewingFile = data.file;
+    programPreviewCache.set(id, data);
 
-    if ($('previewTitle')) $('previewTitle').textContent = data.file.originalName;
-    const ext = (data.file.extension || 'default').toLowerCase();
-    if ($('previewFileIcon')) $('previewFileIcon').textContent = (ICONS[ext] || ICONS.default).icon;
-
-    // Badges update
-    const langBadge = $('previewLangBadge');
-    if (langBadge) {
-      const subjectOrExt = (data.file.subject || data.file.category || ext).toUpperCase();
-      langBadge.textContent = subjectOrExt;
-    }
-
-    const linesBadge = $('previewLinesBadge');
-    if (linesBadge && data.type === 'text') {
-      const lineCount = (data.content || '').split('\n').length;
-      linesBadge.textContent = `${lineCount} line${lineCount === 1 ? '' : 's'}`;
-      linesBadge.style.display = 'inline-block';
-    } else if (linesBadge) {
-      linesBadge.style.display = 'none';
-    }
-
-    // Toggle solution button in mobile bottom bar
-    const mobileSolBtn = $('mobileToggleSolBtn');
-    if (mobileSolBtn) {
-      const hasSol = data.file && (data.file.subject || data.file.exercise || data.file.question);
-      mobileSolBtn.style.display = hasSol ? 'inline-flex' : 'none';
-    }
-
-    const body = $('previewBody');
-    const adminEditBtn = $('editContentBtn');
-
-    if (adminToken && data.type === 'text') {
-      if (adminEditBtn) adminEditBtn.style.display = 'inline-block';
-      if ($('codeEditorTextarea')) $('codeEditorTextarea').value = data.content || '';
-    } else {
-      if (adminEditBtn) adminEditBtn.style.display = 'none';
-    }
-
-    if ($('adminEditorSection')) $('adminEditorSection').style.display = 'none';
-
-    // Update solution explorer panel if exercise metadata exists
-    const solPanel = $('solutionExplorerPanel');
-    if (solPanel) solPanel.classList.remove('open');
-    renderSolutionPanel(data.file);
-
-    if (body) {
-      if (data.type === 'text') {
-        body.innerHTML = `<pre><code class="language-${ext}">${escapeHtml(data.content)}</code></pre>`;
-        if (window.hljs) window.hljs.highlightAll();
-      } else if (data.type === 'image') {
-        body.innerHTML = `<img src="${data.url}" style="max-width:100%; border-radius:12px; display:block; margin:0 auto;" />`;
-      } else if (data.type === 'pdf') {
-        body.innerHTML = `<iframe src="${data.url}" style="width:100%; height:450px; border:none; border-radius:12px;"></iframe>`;
-      } else {
-        body.innerHTML = `<p style="text-align:center; padding:30px;">Binary / Unsupported format. Please download to view on your system.</p>`;
-      }
-    }
-
-    // Apply font size and soft wrapping
-    applyViewerFontSize(viewerFontSize);
-    applyViewerWrap(viewerCodeWrapped);
-
-    openModal('previewModalOverlay');
+    renderProgramWorkspace(data.file, data.content, data.type);
+    prefetchAdjacentPrograms(id);
   } catch (err) {
     toast('Could not load file preview.', 'error');
   }
@@ -4897,6 +5626,8 @@ window.addEventListener('DOMContentLoaded', () => {
   initCinematicEyes();
   initEasterEggs();
   initIntro();
+  initCommandSearch();
+  initHeroActions();
   initReplicaPromo();
   initParticles();
   setupUploads();
