@@ -464,11 +464,64 @@ function startWelcomeJourney(isReplay = false) {
 
   initCosmicParticles();
 
-  // Screen 1 Advance logic
+  // Preload all background details (files, syllabus, settings, and high-res assets) during the 10s intro
+  preloadBackgroundDetails();
+
+  // Screen 1 Advance logic (10-Second Duration with Live Telemetry)
   let advancedFromScreen1 = false;
+  let screen1ProgressAnim = null;
+  const screen1StartTime = performance.now();
+  const screen1TotalDuration = 10000; // 10 seconds requested by user
+
+  const progressBar = $('zpwBhProgressBar');
+  const statusText = $('zpwBhStatusText');
+  const timerBadge = $('zpwBhTimer');
+
+  function updateScreen1Progress(now) {
+    if (advancedFromScreen1) return;
+    const elapsed = now - screen1StartTime;
+    const progress = Math.min(100, (elapsed / screen1TotalDuration) * 100);
+    const secondsRemaining = Math.max(0, Math.ceil((screen1TotalDuration - elapsed) / 1000));
+
+    if (progressBar) {
+      progressBar.style.width = `${progress}%`;
+    }
+
+    if (timerBadge) {
+      timerBadge.textContent = secondsRemaining > 0 ? `${secondsRemaining}s` : 'Ready';
+    }
+
+    if (statusText) {
+      if (elapsed < 2500) {
+        statusText.textContent = 'Entering cosmic horizon · Synchronizing core repository...';
+      } else if (elapsed < 5000) {
+        statusText.textContent = 'Preloading 145 lab experiments & college curriculum...';
+      } else if (elapsed < 7500) {
+        statusText.textContent = 'Caching Judge0 runtime containers (Java, Python, C, SQL)...';
+      } else if (elapsed < 9200) {
+        statusText.textContent = 'All background systems & files fully synchronized!';
+      } else {
+        statusText.textContent = 'Welcome to ZipShare · Initializing Workspace...';
+      }
+    }
+
+    if (elapsed < screen1TotalDuration) {
+      screen1ProgressAnim = requestAnimationFrame(updateScreen1Progress);
+    } else {
+      advanceFromScreen1();
+    }
+  }
+
+  screen1ProgressAnim = requestAnimationFrame(updateScreen1Progress);
+
   function advanceFromScreen1() {
     if (advancedFromScreen1) return;
     advancedFromScreen1 = true;
+
+    if (screen1ProgressAnim) {
+      cancelAnimationFrame(screen1ProgressAnim);
+      screen1ProgressAnim = null;
+    }
 
     screen1.classList.add('zpw-fade-out');
 
@@ -484,22 +537,51 @@ function startWelcomeJourney(isReplay = false) {
     }, 380);
   }
 
-  // Show intro for 1.4 seconds (approx 1-1.5s), then advance automatically
-  const screen1Timeout = setTimeout(advanceFromScreen1, 1400);
-
   const skipBtn = $('zpwSkipBhBtn');
   if (skipBtn) {
     skipBtn.onclick = (e) => {
       e.stopPropagation();
-      clearTimeout(screen1Timeout);
       advanceFromScreen1();
     };
   }
 
   screen1.onclick = () => {
-    clearTimeout(screen1Timeout);
     advanceFromScreen1();
   };
+}
+
+// ---------------- BACKGROUND DATA & ASSET PRELOADER ----------------
+function preloadBackgroundDetails() {
+  // 1. Parallel background API & data fetches
+  const filesPromise = typeof loadFiles === 'function' ? loadFiles().catch(e => console.warn('Preload files err:', e)) : Promise.resolve();
+  const syllabusPromise = typeof loadSyllabus === 'function' ? loadSyllabus().catch(e => console.warn('Preload syllabus err:', e)) : Promise.resolve();
+  const promoPromise = typeof loadPromoSettings === 'function' ? loadPromoSettings().catch(e => console.warn('Preload promo err:', e)) : Promise.resolve();
+
+  // 2. Preload high-res WebP images into browser cache so that subsequent screens have 0ms latency
+  const preloadImages = [
+    '/assets/welcome/dark-universe.webp',
+    '/assets/welcome/light-universe.webp',
+    '/assets/welcome/java-tile.webp',
+    '/assets/welcome/python-tile.webp',
+    '/assets/welcome/c-language-tile.webp',
+    '/assets/welcome/adsa-tile.webp',
+    '/assets/welcome/dbms-tile.webp',
+    '/assets/welcome/blackhole-poster.webp',
+    '/assets/zipshare/hero-blackhole-desktop.webp',
+    '/assets/zipshare/file-transfer-desktop.webp',
+    '/assets/zipshare/program-sharing-desktop.webp',
+    '/assets/zipshare/secure-storage-desktop.webp',
+    '/assets/zipshare/anywhere-access-desktop.webp',
+    '/assets/zipshare/premium-experience-desktop.webp',
+    '/assets/zipshare/final-showcase-desktop.webp'
+  ];
+
+  preloadImages.forEach(url => {
+    const img = new Image();
+    img.src = url;
+  });
+
+  return Promise.allSettled([filesPromise, syllabusPromise, promoPromise]);
 }
 
 // ---------------- SCREEN 2: THEME SELECTION ----------------
@@ -2168,7 +2250,7 @@ function switchCategory(cat, skipAnimation = false) {
   const prevCat = activeCategory;
   activeCategory = cat;
 
-  document.querySelectorAll('.chip').forEach(chip => {
+  document.querySelectorAll('.chip, .segment-btn, .filter-btn').forEach(chip => {
     chip.classList.toggle('active', chip.dataset.category === cat);
   });
 
@@ -2679,33 +2761,93 @@ function renderSyllabusFiles(data) {
 // Create an Official Experiment Card (AVAILABLE or COMING SOON)
 function createExperimentCard(item, isAdmin) {
   const card = document.createElement('div');
-  const isAvailable = item.status === 'available' && item.file;
-  const file = item.file;
-  const isPinned = Boolean(file?.pinned);
+  const filesList = Array.isArray(item.files) && item.files.length > 0 ? item.files : (item.file ? [item.file] : []);
+  const isAvailable = item.status === 'available' && filesList.length > 0;
+  const primaryFile = filesList[0] || item.file;
+  const isPinned = filesList.some(f => Boolean(f.pinned));
   const snoStr = String(item.experimentNumber).padStart(2, '0');
 
   card.className = `file-card ${isAvailable ? 'available-card' : 'coming-soon-card'} ${isPinned ? 'pinned-card' : ''}`;
 
   if (isAvailable) {
-    const fId = file._id || file.id;
-    card.addEventListener('pointerenter', () => prefetchProgram(fId), { passive: true });
-    card.addEventListener('focusin', () => prefetchProgram(fId), { passive: true });
+    filesList.forEach(f => {
+      const fId = f._id || f.id;
+      if (fId) {
+        card.addEventListener('pointerenter', () => prefetchProgram(fId), { passive: true });
+        card.addEventListener('focusin', () => prefetchProgram(fId), { passive: true });
+      }
+    });
 
-    const ext = (file.extension || 'default').toLowerCase();
-    const meta = ICONS[ext] || ICONS.default;
-    const runnable = isRunnableFile(file);
+    const isMultiFile = filesList.length > 1;
 
-    let actionBtns = `
-      <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
-      ${runnable ? `<button class="card-btn primary" onclick="runOnlineFile('${file._id || file.id}')">▶ Run Online</button>` : ''}
-      <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
-    `;
+    let filesHtml = '';
+    if (isMultiFile) {
+      filesHtml = `
+        <div class="exp-multifile-header">
+          <span class="exp-multifile-pill">📦 ${filesList.length} Files in this Experiment</span>
+        </div>
+        <div class="exp-files-list">
+          ${filesList.map(f => {
+            const ext = (f.extension || 'default').toLowerCase();
+            const meta = ICONS[ext] || ICONS.default;
+            const runnable = isRunnableFile(f);
+            const fId = f._id || f.id;
+            let fileAdminActions = '';
+            if (isAdmin) {
+              fileAdminActions = `
+                <button class="card-btn mini" onclick="openEditModal('${fId}')" title="Edit">✏️</button>
+                <button class="card-btn danger mini" onclick="confirmDeleteFile('${fId}')" title="Delete">🗑️</button>
+              `;
+            }
+            return `
+              <div class="exp-file-item">
+                <div class="exp-file-info">
+                  <span class="exp-file-icon">${meta.icon || '📄'}</span>
+                  <div class="exp-file-text">
+                    <span class="exp-file-name" title="${escapeHtml(f.originalName)}">${escapeHtml(f.originalName)}</span>
+                    <span class="exp-file-meta">${fmtSize(f.size)}</span>
+                  </div>
+                </div>
+                <div class="exp-file-actions">
+                  <button class="card-btn mini" onclick="previewFile('${fId}')">👁 View</button>
+                  ${runnable ? `<button class="card-btn primary mini" onclick="runOnlineFile('${fId}')">▶ Run</button>` : ''}
+                  <button class="card-btn mini" onclick="downloadFile('${fId}')" title="Download">⬇</button>
+                  ${fileAdminActions}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    } else {
+      const file = primaryFile;
+      const runnable = isRunnableFile(file);
+      let actionBtns = `
+        <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
+        ${runnable ? `<button class="card-btn primary" onclick="runOnlineFile('${file._id || file.id}')">▶ Run Online</button>` : ''}
+        <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
+      `;
 
-    if (isAdmin) {
-      actionBtns += `
-        <button class="card-btn" onclick="openEditModal('${file._id || file.id}')">✏️ Edit</button>
-        ${file.pinned ? `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', false)">📌 Unpin</button>` : `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', true)">📌 Pin</button>`}
-        <button class="card-btn danger" onclick="confirmDeleteFile('${file._id || file.id}')">🗑️ Delete</button>
+      if (isAdmin) {
+        actionBtns += `
+          <button class="card-btn" onclick="openEditModal('${file._id || file.id}')">✏️ Edit</button>
+          ${file.pinned ? `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', false)">📌 Unpin</button>` : `<button class="card-btn" onclick="togglePinFile('${file._id || file.id}', true)">📌 Pin</button>`}
+          <button class="card-btn danger" onclick="confirmDeleteFile('${file._id || file.id}')">🗑️ Delete</button>
+        `;
+      }
+
+      filesHtml = `
+        <div>
+          <span class="card-filename-sub" title="${escapeHtml(file.originalName)}">
+            <span class="sub-label">File:</span>${escapeHtml(file.originalName)}
+          </span>
+        </div>
+        <div class="file-meta">
+          <span>${fmtSize(file.size)}</span> · <span>${fmtDate(file.uploadDate)}</span>
+        </div>
+        <div class="card-actions" style="margin-top:14px;">
+          ${actionBtns}
+        </div>
       `;
     }
 
@@ -2718,17 +2860,7 @@ function createExperimentCard(item, isAdmin) {
         </div>
         <h3 class="experiment-title">${item.experimentNumber}. ${escapeHtml(item.experimentName)}</h3>
         <div class="card-course-tag">${escapeHtml(item.category.toUpperCase())} · ${escapeHtml(item.courseCode || '')}</div>
-        <div>
-          <span class="card-filename-sub" title="${escapeHtml(file.originalName)}">
-            <span class="sub-label">File:</span>${escapeHtml(file.originalName)}
-          </span>
-        </div>
-        <div class="file-meta">
-          <span>${fmtSize(file.size)}</span> · <span>${fmtDate(file.uploadDate)}</span>
-        </div>
-      </div>
-      <div class="card-actions" style="margin-top:14px;">
-        ${actionBtns}
+        ${filesHtml}
       </div>
     `;
   } else {
@@ -5622,12 +5754,93 @@ function initReplicaPromo() {
   });
 }
 
+// =========================================================
+// HOMEPAGE NAVIGATION, SCROLLING & VIEW MODE TOGGLE
+// =========================================================
+
+window.scrollToSection = function(sectionId) {
+  const el = typeof sectionId === 'string' ? document.getElementById(sectionId) : sectionId;
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.pageYOffset - 20;
+  window.scrollTo({
+    top: Math.max(0, top),
+    behavior: 'smooth'
+  });
+};
+
+window.filterAndScrollToSubject = function(category, experimentNumber) {
+  switchCategory(category);
+  const gridSection = document.getElementById('fileGrid') || document.getElementById('pinnedSection');
+  if (gridSection) {
+    gridSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  if (experimentNumber) {
+    setTimeout(() => {
+      const cards = document.querySelectorAll('#fileGrid .file-card');
+      const snoTarget = '#' + String(experimentNumber).padStart(2, '0');
+      for (const card of cards) {
+        const snoEl = card.querySelector('.card-sno-badge');
+        if (snoEl && snoEl.textContent.trim() === snoTarget) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.classList.add('pulse-highlight');
+          setTimeout(() => card.classList.remove('pulse-highlight'), 2400);
+          break;
+        }
+      }
+    }, 400);
+  }
+};
+
+function initViewModeToggle() {
+  const viewGridBtn = document.getElementById('viewGridBtn');
+  const viewListBtn = document.getElementById('viewListBtn');
+  const fileGrid = document.getElementById('fileGrid');
+
+  function setViewMode(mode) {
+    if (!fileGrid) return;
+    if (mode === 'list') {
+      fileGrid.classList.add('list-view');
+      if (viewListBtn) {
+        viewListBtn.classList.add('active');
+        viewListBtn.setAttribute('aria-pressed', 'true');
+      }
+      if (viewGridBtn) {
+        viewGridBtn.classList.remove('active');
+        viewGridBtn.setAttribute('aria-pressed', 'false');
+      }
+    } else {
+      fileGrid.classList.remove('list-view');
+      if (viewGridBtn) {
+        viewGridBtn.classList.add('active');
+        viewGridBtn.setAttribute('aria-pressed', 'true');
+      }
+      if (viewListBtn) {
+        viewListBtn.classList.remove('active');
+        viewListBtn.setAttribute('aria-pressed', 'false');
+      }
+    }
+    try {
+      localStorage.setItem('zipshare_view_mode', mode);
+    } catch (_) {}
+  }
+
+  if (viewGridBtn) {
+    viewGridBtn.addEventListener('click', () => setViewMode('grid'));
+  }
+  if (viewListBtn) {
+    viewListBtn.addEventListener('click', () => setViewMode('list'));
+  }
+
+  const savedViewMode = localStorage.getItem('zipshare_view_mode') || 'grid';
+  setViewMode(savedViewMode);
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initCinematicEyes();
   initEasterEggs();
   initIntro();
-  initCommandSearch();
-  initHeroActions();
+  initOpArtSphere();
   initReplicaPromo();
   initParticles();
   setupUploads();
@@ -5636,4 +5849,5 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSyllabus();
   renderSubjectAnimation('all');
   loadFiles();
+  initViewModeToggle();
 });
