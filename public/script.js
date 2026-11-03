@@ -657,7 +657,7 @@ function showScreen2Theme() {
   zpwAutoAdvanceTimer = setTimeout(advanceFromScreen2, 5000);
 }
 
-// ---------------- SCREEN 3: RESPONSIVE CATEGORY SELECTION ----------------
+// ---------------- SCREEN 3: 3D ROTATING CATEGORY SELECTION ----------------
 function showScreen3Categories() {
   const screen3 = $('zpwScreen3');
   if (!screen3) return;
@@ -666,36 +666,233 @@ function showScreen3Categories() {
   screen3.classList.add('zpw-fade-in');
 
   const cards = Array.from(document.querySelectorAll('.zpw-cat-card'));
+  const dots = Array.from(document.querySelectorAll('#zpwCarouselDots .zpw-dot'));
+  const prevBtn = $('zpwCarouselPrev');
+  const nextBtn = $('zpwCarouselNext');
   const enterBtn = $('zpwEnterZipShareBtn');
+  const stage = $('zpwCarouselStage');
+  const total = cards.length;
 
-  function selectCategory(cat) {
-    activeCategory = cat;
-    cards.forEach(c => {
-      const isSel = c.dataset.cat === cat;
-      c.classList.toggle('active', isSel);
-      c.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+  if (total === 0) return;
+
+  // Determine starting index from activeCategory
+  const catNames = ['java', 'python', 'c', 'adsa', 'dbms'];
+  const initialIndex = catNames.indexOf(activeCategory || 'java');
+  zpwCarouselIndex = initialIndex !== -1 ? initialIndex : 0;
+
+  function updateCarouselPositions() {
+    const isMobile = window.innerWidth <= 768;
+    const isTiny = window.innerWidth <= 360;
+
+    cards.forEach((card, i) => {
+      let offset = i - zpwCarouselIndex;
+      while (offset < -2) offset += total;
+      while (offset > 2) offset -= total;
+
+      let tx = 0;
+      let tz = 0;
+      let ry = 0;
+      let scale = 1;
+      let opacity = 1;
+      let zIndex = 1;
+      const isCenter = offset === 0;
+
+      if (offset === 0) {
+        tx = 0;
+        tz = isTiny ? 40 : (isMobile ? 70 : 130);
+        ry = 0;
+        scale = isTiny ? 1.0 : (isMobile ? 1.02 : 1.06);
+        opacity = 1;
+        zIndex = 30;
+      } else if (offset === 1) {
+        tx = isTiny ? 115 : (isMobile ? 145 : 280);
+        tz = isTiny ? -35 : (isMobile ? -50 : -80);
+        ry = isTiny ? -20 : (isMobile ? -24 : -30);
+        scale = isTiny ? 0.8 : (isMobile ? 0.82 : 0.85);
+        opacity = isTiny ? 0.45 : (isMobile ? 0.55 : 0.65);
+        zIndex = 15;
+      } else if (offset === -1) {
+        tx = isTiny ? -115 : (isMobile ? -145 : -280);
+        tz = isTiny ? -35 : (isMobile ? -50 : -80);
+        ry = isTiny ? 20 : (isMobile ? 24 : 30);
+        scale = isTiny ? 0.8 : (isMobile ? 0.82 : 0.85);
+        opacity = isTiny ? 0.45 : (isMobile ? 0.55 : 0.65);
+        zIndex = 15;
+      } else if (offset === 2) {
+        tx = isTiny ? 180 : (isMobile ? 240 : 460);
+        tz = isTiny ? -90 : (isMobile ? -130 : -180);
+        ry = isTiny ? -30 : (isMobile ? -36 : -48);
+        scale = isTiny ? 0.62 : (isMobile ? 0.66 : 0.7);
+        opacity = isTiny ? 0.1 : (isMobile ? 0.18 : 0.25);
+        zIndex = 5;
+      } else if (offset === -2) {
+        tx = isTiny ? -180 : (isMobile ? -240 : -460);
+        tz = isTiny ? -90 : (isMobile ? -130 : -180);
+        ry = isTiny ? 30 : (isMobile ? 36 : 48);
+        scale = isTiny ? 0.62 : (isMobile ? 0.66 : 0.7);
+        opacity = isTiny ? 0.1 : (isMobile ? 0.18 : 0.25);
+        zIndex = 5;
+      }
+
+      card.style.transform = `translate3d(${tx}px, 0, ${tz}px) rotateY(${ry}deg) scale(${scale})`;
+      card.style.opacity = opacity;
+      card.style.zIndex = zIndex;
+      card.classList.toggle('active', isCenter);
+      card.setAttribute('aria-pressed', isCenter ? 'true' : 'false');
+
+      if (isCenter) {
+        activeCategory = card.dataset.cat;
+      }
+    });
+
+    dots.forEach((dot, dotIdx) => {
+      dot.classList.toggle('active', dotIdx === zpwCarouselIndex);
     });
   }
 
-  // Pre-select current active or java
-  selectCategory(activeCategory || 'java');
+  function rotateTo(index) {
+    zpwCarouselIndex = ((index % total) + total) % total;
+    updateCarouselPositions();
+  }
 
-  cards.forEach(card => {
-    card.onclick = () => {
-      selectCategory(card.dataset.cat);
+  function rotateNext() {
+    rotateTo(zpwCarouselIndex + 1);
+  }
+
+  function rotatePrev() {
+    rotateTo(zpwCarouselIndex - 1);
+  }
+
+  function startAutoRotate() {
+    stopAutoRotate();
+    zpwCarouselTimer = setInterval(rotateNext, 3200);
+  }
+
+  function stopAutoRotate() {
+    if (zpwCarouselTimer) {
+      clearInterval(zpwCarouselTimer);
+      clearTimeout(zpwCarouselTimer);
+      zpwCarouselTimer = null;
+    }
+  }
+
+  function resetAutoRotateWithDelay() {
+    stopAutoRotate();
+    zpwCarouselTimer = setTimeout(() => {
+      startAutoRotate();
+    }, 4500);
+  }
+
+  // Initial layout calculation
+  updateCarouselPositions();
+  startAutoRotate();
+
+  // Card click to bring to center or focus
+  cards.forEach((card, idx) => {
+    card.onclick = (e) => {
+      e.stopPropagation();
+      rotateTo(idx);
+      resetAutoRotateWithDelay();
     };
     card.onkeydown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        selectCategory(card.dataset.cat);
+        rotateTo(idx);
+        resetAutoRotateWithDelay();
       }
     };
   });
+
+  // Prev / Next arrow buttons
+  if (prevBtn) {
+    prevBtn.onclick = (e) => {
+      e.stopPropagation();
+      rotatePrev();
+      resetAutoRotateWithDelay();
+    };
+  }
+  if (nextBtn) {
+    nextBtn.onclick = (e) => {
+      e.stopPropagation();
+      rotateNext();
+      resetAutoRotateWithDelay();
+    };
+  }
+
+  // Dots indicator buttons
+  dots.forEach(dot => {
+    dot.onclick = (e) => {
+      e.stopPropagation();
+      const dotIdx = parseInt(dot.dataset.index, 10);
+      if (!isNaN(dotIdx)) {
+        rotateTo(dotIdx);
+        resetAutoRotateWithDelay();
+      }
+    };
+  });
+
+  // Pause on hover
+  if (stage) {
+    stage.onmouseenter = stopAutoRotate;
+    stage.onmouseleave = startAutoRotate;
+
+    // Mobile touch swiping
+    let touchStartX = 0;
+    let touchStartY = 0;
+    stage.ontouchstart = (e) => {
+      stopAutoRotate();
+      if (e.touches && e.touches[0]) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+    stage.ontouchend = (e) => {
+      if (e.changedTouches && e.changedTouches[0]) {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+          if (dx < 0) {
+            rotateNext();
+          } else {
+            rotatePrev();
+          }
+        }
+      }
+      resetAutoRotateWithDelay();
+    };
+  }
+
+  // Keyboard navigation on Screen 3
+  function handleKeydown(e) {
+    if (screen3.style.display !== 'flex') return;
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      rotatePrev();
+      resetAutoRotateWithDelay();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      rotateNext();
+      resetAutoRotateWithDelay();
+    }
+  }
+  window.addEventListener('keydown', handleKeydown);
+
+  // Resize handler
+  function handleResize() {
+    if (screen3.style.display === 'flex') {
+      updateCarouselPositions();
+    }
+  }
+  window.addEventListener('resize', handleResize);
 
   let advancedFromScreen3 = false;
   function completeWelcomeAndOpenHome() {
     if (advancedFromScreen3) return;
     advancedFromScreen3 = true;
+
+    stopAutoRotate();
+    window.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('resize', handleResize);
 
     localStorage.setItem('zipshare_favorite_subject', activeCategory);
     localStorage.setItem('zipshare_visited', 'true');

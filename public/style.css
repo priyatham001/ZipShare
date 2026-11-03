@@ -3858,6 +3858,7 @@ input.input-error {
   transform: scale(1);
   transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
+  overflow: hidden;
 }
 
 .zpw-screen.zpw-fade-out {
@@ -4410,6 +4411,10 @@ input.input-error {
 
 .zpw-cat-card {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -190px;
+  margin-left: -155px;
   width: 310px;
   height: 380px;
   border-radius: 22px;
@@ -4422,6 +4427,7 @@ input.input-error {
   flex-direction: column;
   backdrop-filter: blur(20px);
   user-select: none;
+  transform-origin: center center;
   will-change: transform, opacity;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
 }
@@ -4603,6 +4609,8 @@ input.input-error {
   .zpw-cat-card {
     width: 275px;
     height: 350px;
+    margin-top: -175px;
+    margin-left: -137.5px;
     border-radius: 18px;
   }
   .zpw-cat-media {
@@ -4620,6 +4628,23 @@ input.input-error {
     font-size: 0.95rem;
     width: 100%;
     max-width: 320px;
+  }
+}
+
+@media (max-width: 360px) {
+  .zpw-carousel-stage {
+    height: 340px;
+    perspective: 600px;
+  }
+  .zpw-cat-card {
+    width: 240px;
+    height: 320px;
+    margin-top: -160px;
+    margin-left: -120px;
+    border-radius: 16px;
+  }
+  .zpw-cat-media {
+    height: 135px;
   }
 }
 
@@ -7945,117 +7970,8 @@ input.input-error {
   }
 }
 
-/* Responsive Category Grid */
-.zpw-categories-layout {
-  width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px 16px;
-  box-sizing: border-box;
-  overflow-y: auto;
-  max-height: 94vh;
-}
-.zpw-cat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
-  width: 100%;
-  margin: 16px 0 24px;
-}
-@media (max-width: 600px) {
-  .zpw-cat-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-}
-@media (max-width: 350px) {
-  .zpw-cat-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-}
-.zpw-cat-card {
-  position: relative;
-  background: rgba(18, 22, 34, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 14px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 110px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(14px);
-  box-sizing: border-box;
-  outline: none;
-  touch-action: manipulation;
-}
-.zpw-cat-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.4);
-}
-.zpw-cat-card.active {
-  border-color: #38bdf8;
-  box-shadow: 0 0 24px rgba(56, 189, 248, 0.4), inset 0 0 12px rgba(56, 189, 248, 0.12);
-  background: rgba(14, 165, 233, 0.12);
-}
-.zpw-cat-card.cat-java.active { border-color: #f97316; box-shadow: 0 0 24px rgba(249, 115, 22, 0.4); }
-.zpw-cat-card.cat-python.active { border-color: #38bdf8; box-shadow: 0 0 24px rgba(56, 189, 248, 0.4); }
-.zpw-cat-card.cat-c.active { border-color: #06b6d4; box-shadow: 0 0 24px rgba(6, 182, 212, 0.4); }
-.zpw-cat-card.cat-adsa.active { border-color: #a855f7; box-shadow: 0 0 24px rgba(168, 85, 247, 0.4); }
-.zpw-cat-card.cat-dbms.active { border-color: #10b981; box-shadow: 0 0 24px rgba(16, 185, 129, 0.4); }
-.zpw-cat-icon-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.zpw-cat-icon {
-  font-size: 1.8rem;
-}
-.zpw-cat-tag {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  padding: 2px 8px;
-  border-radius: 980px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-dim);
-}
-.zpw-cat-name {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin: 0 0 2px;
-  color: #ffffff;
-}
-.zpw-cat-desc {
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.65);
-  margin: 0 0 10px;
-  line-height: 1.25;
-}
-.zpw-cat-meta-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-.zpw-cat-badge {
-  color: #38bdf8;
-}
-.zpw-cat-select-indicator {
-  display: none;
-  color: #10b981;
-  font-weight: 700;
-}
-.zpw-cat-card.active .zpw-cat-select-indicator {
-  display: inline-block;
-}
+
+
 .zpw-bh-percent {
   font-size: 0.8rem;
   font-weight: 700;
