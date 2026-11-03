@@ -286,50 +286,9 @@
 <!-- Main App Container -->
 <div class="app" id="app">
 
-  <!-- Top Promotional Banner for REPLICA APK -->
-  <aside class="replica-promo-bar" id="replicaPromoBar" role="banner" aria-label="New APK Announcement">
-    <div class="promo-inner">
-      <div class="promo-left">
-        <div class="replica-app-icon" title="REPLICA APK Icon" aria-label="REPLICA App Icon">
-          <svg class="replica-icon-svg" viewBox="0 0 44 44" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="replicaIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#38bdf8"/>
-                <stop offset="50%" stop-color="#00d2ff"/>
-                <stop offset="100%" stop-color="#2563eb"/>
-              </linearGradient>
-            </defs>
-            <rect x="2" y="2" width="40" height="40" rx="10" fill="#040914" stroke="#00d2ff" stroke-width="2.2"/>
-            <rect x="4" y="4" width="36" height="36" rx="8" fill="rgba(0, 210, 255, 0.08)"/>
-            <text x="22" y="22.5" text-anchor="middle" dominant-baseline="central" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="12.5" letter-spacing="0.6" fill="url(#replicaIconGrad)">REP</text>
-            <circle cx="34" cy="10" r="2.5" fill="#00d2ff"/>
-          </svg>
-        </div>
-        <div class="promo-badge-tag">
-          <span class="promo-sparkle">✨</span>
-          <span class="promo-tag-text">TRY OUR NEW APK</span>
-        </div>
-      </div>
-      <div class="promo-content">
-        <span class="promo-headline">REPLICA: <strong class="promo-name">Keyboard Companion</strong></span>
-        <span class="promo-subtext">Try our new APK — click to install REPLICA directly on your device</span>
-      </div>
-      <div class="promo-action">
-        <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="promo-cta-btn" id="replicaInstallBtn" title="Install REPLICA APK">
-          <span class="cta-icon">📲</span>
-          <span class="cta-text">Install REPLICA APK</span>
-          <span class="cta-arrow">→</span>
-        </a>
-      </div>
-    </div>
-  </aside>
-
   <!-- Header Navigation -->
   <nav class="navbar">
     <div class="nav-left">
-      <div class="mascot-container nav-mascot" id="navMascot" title="Optical Illusion Animated Sphere">
-        <canvas id="navMascotCanvas" class="nav-mascot-canvas" width="68" height="68" aria-label="Animated Optical Illusion Sphere"></canvas>
-      </div>
       <a href="#" class="logo" id="brandLogo">ZIPSHARE</a>
     </div>
     
@@ -346,8 +305,6 @@
       <button class="nav-link-btn" id="navHomeBtn">Home</button>
       <button class="nav-link-btn" id="navRecentBtn">Recent</button>
       <button class="nav-link-btn" id="navPinnedBtn">Pinned</button>
-      <a href="https://github.com/" target="_blank" rel="noopener noreferrer" class="nav-link-btn ext-link" id="navGitBtn" title="GitHub Repository">🐙 Git</a>
-      <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="nav-link-btn ext-link" id="navApkBtn" title="Download REPLICA APK">📲 APK</a>
       <button class="nav-link-btn admin-only-inline" id="navDashboardBtn" style="display:none;">⚡ Admin Dashboard</button>
       <button class="nav-link-btn admin-only-inline" id="navRequestsBtn" style="display:none;">Requests <span class="badge-count" id="requestBadgeCount" style="display:none;">0</span></button>
       <button class="nav-link-btn" id="navAboutBtn">About</button>
@@ -1336,16 +1293,11 @@ boolean: false</pre>
 <footer class="site-footer">
   <div class="footer-container">
     <div class="footer-links-row" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:10px; flex-wrap:wrap;">
-      <a href="https://github.com/" target="_blank" rel="noopener noreferrer" class="footer-link" id="footerGitLink" title="View Source on GitHub">
-        <span>🐙</span> <span id="footerGitText">GitHub Repository</span>
-      </a>
-      <span class="footer-sep" style="opacity:0.4;">•</span>
       <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="footer-link" id="footerApkLink" title="Download REPLICA APK">
         <span>📲</span> <span id="footerApkText">REPLICA Companion APK</span>
       </a>
     </div>
     <p class="footer-copy">© 2026 ZipShare Student Hub</p>
-    <p class="footer-heart">Built for students with ❤️</p>
     <p class="footer-nomad">Developed by <span class="gradient-text-nomad">Nomad</span></p>
   </div>
 </footer>
