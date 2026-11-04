@@ -498,15 +498,15 @@ function startWelcomeJourney(isReplay = false) {
 
     if (statusText) {
       if (elapsed < 2500) {
-        statusText.textContent = 'Entering cosmic horizon · Synchronizing core repository...';
+        statusText.textContent = 'Initializing your coding universe...';
       } else if (elapsed < 5000) {
-        statusText.textContent = 'Preloading 145 lab experiments & college curriculum...';
+        statusText.textContent = 'Synchronizing official curriculum & 145 lab experiments...';
       } else if (elapsed < 7500) {
         statusText.textContent = 'Caching Judge0 runtime containers (Java, Python, C, SQL)...';
       } else if (elapsed < 9200) {
-        statusText.textContent = 'All background systems & files fully synchronized!';
+        statusText.textContent = 'Entering coding singularity horizon...';
       } else {
-        statusText.textContent = 'Welcome to ZipShare · Initializing Workspace...';
+        statusText.textContent = 'Cosmic synchronization complete!';
       }
     }
 
@@ -1951,53 +1951,125 @@ function initCosmicParticles() {
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
-  let w = canvas.width = window.innerWidth;
-  let h = canvas.height = window.innerHeight;
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let w = (canvas.width = window.innerWidth * dpr);
+  let h = (canvas.height = window.innerHeight * dpr);
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
 
   const onResize = () => {
     if (!canvas) return;
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = canvas.width = window.innerWidth * dpr;
+    h = canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
   };
   window.addEventListener('resize', onResize);
 
-  // Starfield with gravitational deflection
+  // 1. Starfield with Twinkling and Gravitational Deflection
   const stars = [];
-  const starCount = Math.min(140, Math.floor((w * h) / 10000));
+  const starCount = Math.min(220, Math.floor((window.innerWidth * window.innerHeight) / 6000));
   for (let i = 0; i < starCount; i++) {
     stars.push({
       ox: Math.random() * w,
       oy: Math.random() * h,
-      size: Math.random() * 1.8 + 0.6,
+      size: (Math.random() * 1.8 + 0.6) * dpr,
       baseAlpha: Math.random() * 0.7 + 0.3,
-      twinkleSpeed: Math.random() * 0.04 + 0.01,
-      twinklePhase: Math.random() * Math.PI * 2
+      twinkleSpeed: Math.random() * 0.04 + 0.012,
+      twinklePhase: Math.random() * Math.PI * 2,
+      hue: Math.random() < 0.25 ? '#38bdf8' : (Math.random() < 0.35 ? '#d8b4fe' : '#ffffff')
     });
   }
 
-  // Relativistic accretion disk particles
+  // 2. Relativistic Orbiting Accretion Disk Particles & Sparks
   const diskParticles = [];
-  const numDisk = w < 768 ? 160 : 280;
+  const numDisk = window.innerWidth < 768 ? 220 : 360;
   for (let i = 0; i < numDisk; i++) {
-    const orbitR = Math.random() * 0.65 + 0.35; // Normalized radius
+    const orbitR = Math.random() * 0.72 + 0.28;
     diskParticles.push({
       orbitR: orbitR,
       angle: Math.random() * Math.PI * 2,
-      speed: (0.018 / Math.sqrt(orbitR)) * (Math.random() * 0.3 + 0.85),
-      size: Math.random() * 2.8 + 1.0,
-      zOffset: (Math.random() - 0.5) * 14,
-      sparkle: Math.random() * 0.5 + 0.5
+      speed: (0.024 / Math.sqrt(orbitR)) * (Math.random() * 0.35 + 0.82),
+      size: (Math.random() * 2.8 + 1.2) * dpr,
+      zOffset: (Math.random() - 0.5) * 16 * dpr,
+      sparkle: Math.random() * 0.5 + 0.5,
+      history: []
     });
   }
 
-  // Infalling matter stream filaments
-  const streams = [];
-  for (let s = 0; s < 6; s++) {
-    streams.push({
-      angle: (s * Math.PI * 2) / 6,
-      r: 1.0,
-      speed: 0.006 + Math.random() * 0.004,
-      width: Math.random() * 2 + 1.2
+  // 3. Infalling Relativistic Plasma Streams (Spiraling Geodesics)
+  const infallingStreams = [];
+  for (let s = 0; s < 10; s++) {
+    infallingStreams.push({
+      angle: (s * Math.PI * 2) / 10 + Math.random() * 0.4,
+      r: 1.0 + Math.random() * 0.8,
+      speed: 0.007 + Math.random() * 0.006,
+      width: (Math.random() * 2.4 + 1.2) * dpr,
+      life: Math.random()
+    });
+  }
+
+  // 4. Procedural 3D Tumbling Asteroids orbiting around the black hole
+  // Icosahedron vertex & triangular face definition
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const ICO_BASE = [
+    [-1, PHI, 0], [1, PHI, 0], [-1, -PHI, 0], [1, -PHI, 0],
+    [0, -1, PHI], [0, 1, PHI], [0, -1, -PHI], [0, 1, -PHI],
+    [PHI, 0, -1], [PHI, 0, 1], [-PHI, 0, -1], [-PHI, 0, 1]
+  ];
+  const ICO_FACES = [
+    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+    [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+    [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+  ];
+
+  function createAsteroid(size, orbitRadiusRatio, initialAngle, speed) {
+    const vertices = ICO_BASE.map(([x, y, z], idx) => {
+      const len = Math.sqrt(x * x + y * y + z * z);
+      // Deterministic jaggedness for rocky boulders
+      const bump = 0.78 + 0.38 * (((idx * 17 + 5) % 11) / 11);
+      const rad = size * bump * dpr;
+      return [(x / len) * rad, (y / len) * rad, (z / len) * rad];
+    });
+
+    return {
+      size: size * dpr,
+      orbitRadiusRatio: orbitRadiusRatio,
+      orbitAngle: initialAngle,
+      orbitSpeed: speed,
+      rx: Math.random() * Math.PI * 2,
+      ry: Math.random() * Math.PI * 2,
+      rz: Math.random() * Math.PI * 2,
+      rotSpeedX: (Math.random() - 0.5) * 0.024,
+      rotSpeedY: (Math.random() - 0.5) * 0.032,
+      rotSpeedZ: (Math.random() - 0.5) * 0.016,
+      vertices: vertices,
+      faces: ICO_FACES
+    };
+  }
+
+  // 8 Asteroid Boulders with matching reference positions (large bottom-left, mid-left, etc.)
+  const asteroids = [
+    createAsteroid(34, 3.2, Math.PI * 0.95, 0.0018),  // Large bottom-left boulder
+    createAsteroid(22, 2.7, Math.PI * 0.85, 0.0022),  // Mid-left boulder
+    createAsteroid(16, 2.2, Math.PI * 0.72, 0.0028),  // Mid-left smaller rock
+    createAsteroid(14, 3.6, Math.PI * 0.55, 0.0015),  // Lower-mid asteroid
+    createAsteroid(26, 3.4, Math.PI * 1.85, 0.0019),  // Right foreground asteroid
+    createAsteroid(18, 2.5, Math.PI * 1.65, 0.0025),  // Mid-right rock
+    createAsteroid(12, 1.9, Math.PI * 0.25, 0.0032),  // Inner fast pebble
+    createAsteroid(15, 4.1, Math.PI * 1.25, 0.0012)   // Outer slow drifting boulder
+  ];
+
+  // 5. Spacetime Gravitational Pulse Waves (Expanding ripples)
+  const pulses = [];
+  function emitPulse() {
+    pulses.push({
+      rProgress: 0,
+      speed: 0.0055,
+      maxR: 4.8,
+      alpha: 0.65
     });
   }
 
@@ -2007,15 +2079,25 @@ function initCosmicParticles() {
     frame++;
     ctx.clearRect(0, 0, w, h);
 
+    // Dynamic centers and radii matching the reference artwork
+    const isMobile = window.innerWidth < 768;
     const cx = w * 0.5;
-    const cy = h * (w < 768 ? 0.44 : 0.48); // Adaptive vertical center for mobile layout
-    const baseR = Math.min(w, h) * (w < 768 ? 0.22 : 0.18); // Event horizon radius
-    const tilt = 0.28; // Accretion disk tilt factor
+    const cy = h * (isMobile ? 0.42 : 0.44);
+    const baseR = Math.min(w, h) * (isMobile ? 0.20 : 0.165);
+    const diskTilt = 0.28;
+    const diskAngle = -0.26; // -15 degrees slant matching exact reference artwork
 
-    // 1. Starfield with Gravitational Lensing Deflection
+    // Emit pulse every 200 frames (~3.3s)
+    if (frame % 200 === 0) {
+      emitPulse();
+    }
+
+    // -------------------------------------------------------------
+    // LAYER 1: Deep Starfield with Gravitational Lensing Deflection
+    // -------------------------------------------------------------
     stars.forEach(st => {
       st.twinklePhase += st.twinkleSpeed;
-      const alpha = st.baseAlpha * (0.7 + 0.3 * Math.sin(st.twinklePhase));
+      const alpha = st.baseAlpha * (0.65 + 0.35 * Math.sin(st.twinklePhase));
 
       const dx = st.ox - cx;
       const dy = st.oy - cy;
@@ -2023,121 +2105,319 @@ function initCosmicParticles() {
       let px = st.ox;
       let py = st.oy;
 
-      if (dist > baseR * 0.9 && dist < baseR * 4.2) {
-        const deflection = (baseR * baseR * 14) / (dist * dist + 100);
+      // Relativistic light deflection away from black hole singularity
+      if (dist > baseR * 0.95 && dist < baseR * 4.6) {
+        const deflection = (baseR * baseR * 12) / (dist * dist + 80 * dpr);
         px -= (dx / dist) * deflection;
         py -= (dy / dist) * deflection;
       }
 
       ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+      ctx.fillStyle = st.hue;
       ctx.beginPath();
       ctx.arc(px, py, st.size, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     });
 
-    // 2. Accretion Glow / Corona
-    const outerGlow = ctx.createRadialGradient(cx, cy, baseR * 0.9, cx, cy, baseR * 3.4);
-    outerGlow.addColorStop(0, 'rgba(251, 146, 60, 0.42)');
-    outerGlow.addColorStop(0.25, 'rgba(234, 88, 12, 0.26)');
-    outerGlow.addColorStop(0.6, 'rgba(180, 83, 9, 0.12)');
-    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = outerGlow;
-    ctx.beginPath();
-    ctx.arc(cx, cy, baseR * 3.4, 0, Math.PI * 2);
-    ctx.fill();
+    // -------------------------------------------------------------
+    // LAYER 2: Expanding Gravitational Spacetime Wave Ripples
+    // -------------------------------------------------------------
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      const p = pulses[i];
+      p.rProgress += p.speed;
+      const currentR = baseR * (1.05 + p.rProgress * p.maxR);
+      const alpha = (1 - p.rProgress) * p.alpha;
 
-    // 3. Einstein Gravitational Lensing Arcs (Gargantua curved light paths)
-    // Upper lens arc
+      if (p.rProgress >= 1) {
+        pulses.splice(i, 1);
+        continue;
+      }
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(diskAngle);
+      ctx.scale(1, diskTilt);
+
+      ctx.beginPath();
+      ctx.arc(0, 0, currentR, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 0.55})`;
+      ctx.lineWidth = 3 * dpr;
+      ctx.shadowBlur = 18 * dpr;
+      ctx.shadowColor = '#38bdf8';
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // -------------------------------------------------------------
+    // LAYER 3: Einstein Gravitational Lensing Arcs (Gargantua Warp)
+    // -------------------------------------------------------------
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(diskAngle);
+
+    // Upper Einstein Arc (Curved over the top of the event horizon)
+    const upperWarpRot = frame * 0.024;
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(cx, cy - baseR * 0.22, baseR * 1.58, baseR * 0.88, -0.06, Math.PI * 0.88, Math.PI * 2.12);
-    ctx.strokeStyle = 'rgba(253, 186, 116, 0.75)';
-    ctx.lineWidth = baseR * 0.26;
-    ctx.shadowBlur = 24;
+    ctx.ellipse(0, -baseR * 0.28, baseR * 1.58, baseR * 0.92, -0.05, Math.PI * 0.82, Math.PI * 2.18);
+    const upperGrad = ctx.createLinearGradient(-baseR * 1.5, 0, baseR * 1.5, 0);
+    upperGrad.addColorStop(0, 'rgba(255, 255, 240, 0.92)'); // Approaching hot side
+    upperGrad.addColorStop(0.35, 'rgba(251, 191, 36, 0.85)'); // Radiant gold
+    upperGrad.addColorStop(0.75, 'rgba(249, 115, 22, 0.65)'); // Fiery orange
+    upperGrad.addColorStop(1, 'rgba(220, 38, 38, 0.35)');     // Redshifted receding side
+    ctx.strokeStyle = upperGrad;
+    ctx.lineWidth = baseR * 0.28;
+    ctx.shadowBlur = 28 * dpr;
     ctx.shadowColor = '#f97316';
     ctx.stroke();
+
+    // Moving highlights along upper arc
+    for (let k = 0; k < 6; k++) {
+      const arcAng = Math.PI * 0.85 + ((upperWarpRot + k * 0.85) % (Math.PI * 1.3));
+      const hx = Math.cos(arcAng) * baseR * 1.58;
+      const hy = -baseR * 0.28 + Math.sin(arcAng) * baseR * 0.92;
+      ctx.beginPath();
+      ctx.arc(hx, hy, (Math.random() * 3 + 4) * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.shadowBlur = 14 * dpr;
+      ctx.shadowColor = '#fbbf24';
+      ctx.fill();
+    }
     ctx.restore();
 
-    // Lower lens arc
+    // Lower Einstein Arc (Curved beneath event horizon)
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(cx, cy + baseR * 0.18, baseR * 1.42, baseR * 0.55, 0.05, 0, Math.PI);
-    ctx.strokeStyle = 'rgba(234, 88, 12, 0.45)';
-    ctx.lineWidth = baseR * 0.18;
-    ctx.shadowBlur = 18;
+    ctx.ellipse(0, baseR * 0.24, baseR * 1.45, baseR * 0.58, 0.04, 0.05, Math.PI * 0.95);
+    const lowerGrad = ctx.createLinearGradient(-baseR * 1.4, 0, baseR * 1.4, 0);
+    lowerGrad.addColorStop(0, 'rgba(251, 146, 60, 0.7)');
+    lowerGrad.addColorStop(0.5, 'rgba(234, 88, 12, 0.45)');
+    lowerGrad.addColorStop(1, 'rgba(185, 28, 28, 0.2)');
+    ctx.strokeStyle = lowerGrad;
+    ctx.lineWidth = baseR * 0.22;
+    ctx.shadowBlur = 22 * dpr;
     ctx.shadowColor = '#ea580c';
     ctx.stroke();
     ctx.restore();
 
-    // 4. Infalling Gas Stream Trails
-    streams.forEach(st => {
+    ctx.restore(); // restore disk rotation
+
+    // -------------------------------------------------------------
+    // LAYER 4: Rotating Accretion Disk Multi-Layer Plasma Streams
+    // -------------------------------------------------------------
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(diskAngle);
+    ctx.scale(1, diskTilt);
+
+    // Multi-speed Keplerian rotating rings
+    const speeds = [0.038, 0.022, 0.012, 0.006];
+    const ringRadii = [
+      [baseR * 1.08, baseR * 1.45], // Inner Hot Photon Sphere
+      [baseR * 1.45, baseR * 2.4],  // Mid Fiery Plasma Torus
+      [baseR * 2.4,  baseR * 3.8],  // Outer Main Accretion Ring
+      [baseR * 3.8,  baseR * 5.4]   // Diffuse Cosmic Stream
+    ];
+
+    ringRadii.forEach(([rMin, rMax], rIdx) => {
+      const rot = frame * speeds[rIdx];
+      const numStreams = 8 + rIdx * 4;
+
+      for (let s = 0; s < numStreams; s++) {
+        const streamAngle = (s * Math.PI * 2) / numStreams + rot;
+        const arcLen = Math.PI * 0.65 + Math.sin(frame * 0.02 + s) * 0.35;
+        const rad = rMin + ((s * 13) % (rMax - rMin));
+
+        // Doppler factor: approaching (left side x < 0) vs receding (right side x > 0)
+        const midCos = Math.cos(streamAngle + arcLen * 0.5);
+        const dopplerAmp = 0.55 - midCos * 0.45; // Approaching side gets hot white-gold
+
+        let col;
+        if (rIdx === 0) {
+          col = midCos < -0.25 ? `rgba(255, 255, 240, ${dopplerAmp * 0.75})` : `rgba(251, 146, 60, ${dopplerAmp * 0.65})`;
+        } else if (rIdx === 1) {
+          col = midCos < -0.2 ? `rgba(251, 191, 36, ${dopplerAmp * 0.6})` : `rgba(234, 88, 12, ${dopplerAmp * 0.5})`;
+        } else if (rIdx === 2) {
+          col = midCos < 0 ? `rgba(249, 115, 22, ${dopplerAmp * 0.45})` : `rgba(168, 85, 247, ${dopplerAmp * 0.35})`;
+        } else {
+          col = `rgba(147, 51, 234, ${dopplerAmp * 0.28})`;
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, rad, streamAngle, streamAngle + arcLen);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = (2.5 + (3 - rIdx) * 1.5) * dpr;
+        ctx.stroke();
+      }
+    });
+
+    // Infalling Matter Spirals
+    infallingStreams.forEach(st => {
       st.r -= st.speed;
-      if (st.r < 0.2) st.r = 1.0;
-      st.angle += 0.024;
-      const strR = baseR * (1.1 + st.r * 1.8);
-      const sx = cx + Math.cos(st.angle) * strR;
-      const sy = cy + Math.sin(st.angle) * strR * tilt;
+      if (st.r < 0.25) st.r = 1.6;
+      st.angle += 0.035;
+
+      const curR = baseR * (1.05 + st.r * 2.2);
+      const sx = Math.cos(st.angle) * curR;
+      const sy = Math.sin(st.angle) * curR;
+      const ex = Math.cos(st.angle + 0.3) * (curR - 22 * dpr);
+      const ey = Math.sin(st.angle + 0.3) * (curR - 22 * dpr);
+
       ctx.save();
-      ctx.strokeStyle = `rgba(254, 215, 170, ${st.r * 0.6})`;
-      ctx.lineWidth = st.width;
       ctx.beginPath();
       ctx.moveTo(sx, sy);
-      ctx.lineTo(sx - Math.sin(st.angle) * 12, sy + Math.cos(st.angle) * 12 * tilt);
+      ctx.lineTo(ex, ey);
+      ctx.strokeStyle = `rgba(254, 215, 170, ${st.r * 0.55})`;
+      ctx.lineWidth = st.width;
       ctx.stroke();
       ctx.restore();
     });
 
-    // 5. Relativistic Orbiting Accretion Disk Particles with Doppler Beaming
+    // Relativistic Accretion Disk Particles with Depth Sorting
     diskParticles.sort((a, b) => Math.sin(a.angle) - Math.sin(b.angle));
 
     diskParticles.forEach(p => {
       p.angle += p.speed;
-      const r = baseR * (1.15 + p.orbitR * 2.1);
-      const px = cx + Math.cos(p.angle) * r;
-      const py = cy + Math.sin(p.angle) * r * tilt + p.zOffset;
+      const r = baseR * (1.12 + p.orbitR * 3.4);
+      const px = Math.cos(p.angle) * r;
+      const py = Math.sin(p.angle) * r + p.zOffset;
 
-      const dopplerFactor = Math.cos(p.angle); // -1 approaching on left, +1 receding on right
-      let brightness = 0.65 - dopplerFactor * 0.35;
-      let pColor;
-      if (dopplerFactor < -0.3) {
-        pColor = `rgba(255, 250, 230, ${brightness * 0.95})`; // Hot blue-white
-      } else if (dopplerFactor < 0.3) {
-        pColor = `rgba(251, 146, 60, ${brightness * 0.9})`; // Golden orange
+      const doppler = Math.cos(p.angle);
+      const brightness = 0.65 - doppler * 0.35;
+
+      let pCol;
+      if (doppler < -0.3) {
+        pCol = `rgba(255, 255, 255, ${brightness * 0.95})`; // Hot blue-white approaching
+      } else if (doppler < 0.3) {
+        pCol = `rgba(251, 146, 60, ${brightness * 0.85})`; // Golden amber
       } else {
-        pColor = `rgba(220, 38, 38, ${brightness * 0.75})`; // Redshifted deeper red
+        pCol = `rgba(220, 38, 38, ${brightness * 0.7})`;   // Redshifted receding
       }
 
-      ctx.save();
-      ctx.fillStyle = pColor;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = '#f97316';
       ctx.beginPath();
-      ctx.arc(px, py, p.size * (1.1 - dopplerFactor * 0.2), 0, Math.PI * 2);
+      ctx.arc(px, py, p.size * (1.1 - doppler * 0.2), 0, Math.PI * 2);
+      ctx.fillStyle = pCol;
       ctx.fill();
-      ctx.restore();
     });
 
-    // 6. Photon Ring (Razor-sharp glowing boundary)
+    ctx.restore(); // restore disk scale & rotation
+
+    // -------------------------------------------------------------
+    // LAYER 5: 3D Procedural Tumbling Asteroids
+    // -------------------------------------------------------------
+    asteroids.forEach(ast => {
+      // Update orbit position
+      ast.orbitAngle += ast.orbitSpeed;
+      const curOrbitR = baseR * ast.orbitRadiusRatio;
+
+      // Unrotated orbit coordinates
+      const unrotX = Math.cos(ast.orbitAngle) * curOrbitR;
+      const unrotY = Math.sin(ast.orbitAngle) * curOrbitR * diskTilt;
+
+      // Rotate by disk angle -15deg to match inclined disk orbit plane
+      const cosA = Math.cos(diskAngle);
+      const sinA = Math.sin(diskAngle);
+      const astX = cx + (unrotX * cosA - unrotY * sinA);
+      const astY = cy + (unrotX * sinA + unrotY * cosA);
+
+      // 3D tumble rotation around asteroid's local center
+      ast.rx += ast.rotSpeedX;
+      ast.ry += ast.rotSpeedY;
+      ast.rz += ast.rotSpeedZ;
+
+      const cx_a = Math.cos(ast.rx), sx_a = Math.sin(ast.rx);
+      const cy_a = Math.cos(ast.ry), sy_a = Math.sin(ast.ry);
+      const cz_a = Math.cos(ast.rz), sz_a = Math.sin(ast.rz);
+
+      // Light direction from central black-hole accretion disk to asteroid
+      const lx = (cx - astX);
+      const ly = (cy - astY);
+      const lDist = Math.sqrt(lx * lx + ly * ly) || 1;
+      const lnx = lx / lDist;
+      const lny = ly / lDist;
+
+      // Transform 3D vertices
+      const transformed = ast.vertices.map(([vx, vy, vz]) => {
+        // Rot Y
+        let x1 = vx * cy_a + vz * sy_a;
+        let y1 = vy;
+        let z1 = -vx * sy_a + vz * cy_a;
+        // Rot X
+        let x2 = x1;
+        let y2 = y1 * cx_a - z1 * sx_a;
+        let z2 = y1 * sx_a + z1 * cx_a;
+        // Rot Z
+        let x3 = x2 * cz_a - y2 * sz_a;
+        let y3 = x2 * sz_a + y2 * cz_a;
+        let z3 = z2;
+
+        return [astX + x3, astY + y3, z3];
+      });
+
+      // Render 3D faces with light shading
+      ast.faces.forEach(([i0, i1, i2]) => {
+        const v0 = transformed[i0];
+        const v1 = transformed[i1];
+        const v2 = transformed[i2];
+
+        // 2D Normal z for backface culling
+        const nz = (v1[0] - v0[0]) * (v2[1] - v0[1]) - (v1[1] - v0[1]) * (v2[0] - v0[0]);
+        if (nz <= 0) return; // Backface culled
+
+        // Face normal in 2D plane for lighting from accretion disk
+        const fdx = (v1[1] - v0[1]);
+        const fdy = -(v1[0] - v0[0]);
+        const fLen = Math.sqrt(fdx * fdx + fdy * fdy) || 1;
+        const fnx = fdx / fLen;
+        const fny = fdy / fLen;
+
+        const dot = Math.max(0, fnx * lnx + fny * lny);
+
+        // Light color (warm golden glow facing disk) vs shadow (deep purple-black)
+        const rShade = Math.floor(26 + dot * 185);
+        const gShade = Math.floor(18 + dot * 115);
+        const bShade = Math.floor(38 + dot * 25);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(v0[0], v0[1]);
+        ctx.lineTo(v1[0], v1[1]);
+        ctx.lineTo(v2[0], v2[1]);
+        ctx.closePath();
+        ctx.fillStyle = `rgb(${rShade}, ${gShade}, ${bShade})`;
+        ctx.strokeStyle = `rgba(0, 0, 0, 0.4)`;
+        ctx.lineWidth = 1 * dpr;
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+    });
+
+    // -------------------------------------------------------------
+    // LAYER 6: Photon Ring & Event Horizon Glow
+    // -------------------------------------------------------------
+    // Intense golden-white razor-sharp photon ring with relativistic pulse
     ctx.save();
+    const photonPulse = 0.9 + 0.1 * Math.sin(frame * 0.05);
     ctx.beginPath();
-    ctx.arc(cx, cy, baseR * 1.06, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 240, 0.95)';
-    ctx.lineWidth = Math.max(2, baseR * 0.035);
-    ctx.shadowBlur = 28;
+    ctx.arc(cx, cy, baseR * 1.05, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 255, 240, ${0.85 * photonPulse})`;
+    ctx.lineWidth = Math.max(2.2 * dpr, baseR * 0.035);
+    ctx.shadowBlur = 28 * dpr * photonPulse;
     ctx.shadowColor = '#fbbf24';
     ctx.stroke();
-    ctx.restore();
 
-    // 7. Event Horizon Shadow (Absolute Singularity)
-    ctx.save();
+    // Subtle inner accretion fringe (leaves the central artwork logo crystal clear)
     ctx.beginPath();
-    ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
-    ctx.fillStyle = '#000000';
-    ctx.shadowBlur = 0;
-    ctx.fill();
+    ctx.arc(cx, cy, baseR * 1.02, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(249, 115, 22, ${0.45 * photonPulse})`;
+    ctx.lineWidth = 4 * dpr;
+    ctx.shadowBlur = 18 * dpr;
+    ctx.shadowColor = '#ea580c';
+    ctx.stroke();
     ctx.restore();
 
     zpwCosmicCanvasAnim = requestAnimationFrame(renderCosmic);

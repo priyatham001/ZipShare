@@ -19,37 +19,37 @@
   <!-- SCREEN 1 — ANIMATED BLACK HOLE -->
   <!-- SCREEN 1 — ANIMATED BLACK HOLE (10-SECOND BACKGROUND PRELOAD) -->
   <section id="zpwScreen1" class="zpw-screen zpw-screen-blackhole active" aria-label="Black Hole Visualization">
-    <div class="zpw-bh-video-wrap">
-      <video id="zpwBlackHoleVideo" class="zpw-bh-video" autoplay muted loop playsinline poster="/assets/welcome/blackhole-poster.webp">
-        <source src="/assets/welcome/blackhole-mobile.webm" type="video/webm" media="(max-width: 768px)">
-        <source src="/assets/welcome/blackhole-desktop.webm" type="video/webm">
-        <source src="/assets/aistudio/black_hole_desktop.mp4" type="video/mp4">
-        <img src="/assets/welcome/blackhole-poster.webp" alt="Black Hole" class="zpw-bh-fallback-img">
-      </video>
+    <div class="zpw-bh-backdrop-wrap">
+      <img src="/assets/welcome/blackhole-poster.webp" alt="Cinematic Black Hole" class="zpw-bh-bg-img" id="zpwBhBgImg">
+      <canvas id="zpwCosmicCanvas" class="zpw-cosmic-canvas"></canvas>
       <div class="zpw-bh-lensing-overlay"></div>
       <div class="zpw-bh-vignette"></div>
     </div>
     
     <!-- Cinematic ZipShare Wordmark on Black Hole -->
     <div class="zpw-bh-brand" id="zpwBhBrand">
+      <div class="zpw-bh-icon" aria-hidden="true">
+        <span class="zpw-bh-icon-bracket">&lt;</span>
+        <span class="zpw-bh-icon-slash">/</span>
+        <span class="zpw-bh-icon-bracket">&gt;</span>
+      </div>
       <h1 class="zpw-bh-wordmark">ZIPSHARE</h1>
-      <span class="zpw-bh-tagline">STUDENT CODE HORIZON</span>
+      <span class="zpw-bh-tagline">CODE &middot; LEARN &middot; EXPLORE</span>
     </div>
 
-    <!-- 10-Second Live Telemetry & Background Preload Status -->
+    <!-- Glowing Cinematic Progress Bar -->
     <div class="zpw-bh-loader" id="zpwBhLoader">
-      <div class="zpw-bh-status-row">
-        <span class="zpw-bh-dot"></span>
-        <span class="zpw-bh-status" id="zpwBhStatusText">Initializing ZipShare Workspace...</span>
+      <div class="zpw-bh-loader-row">
+        <div class="zpw-bh-progress-track">
+          <div class="zpw-bh-progress-bar" id="zpwBhProgressBar">
+            <span class="zpw-bh-bar-flare"></span>
+          </div>
+        </div>
         <span class="zpw-bh-percent" id="zpwBhPercent">0%</span>
-        <span class="zpw-bh-timer" id="zpwBhTimer">10s</span>
       </div>
-      <div class="zpw-bh-progress-track">
-        <div class="zpw-bh-progress-bar" id="zpwBhProgressBar"></div>
-      </div>
+      <p class="zpw-bh-status" id="zpwBhStatusText">Initializing your coding universe...</p>
     </div>
 
-    <canvas id="zpwCosmicCanvas" class="zpw-cosmic-canvas"></canvas>
     <button id="zpwSkipBhBtn" class="zpw-skip-link" title="Skip Animation">Skip intro ➔</button>
   </section>
 
