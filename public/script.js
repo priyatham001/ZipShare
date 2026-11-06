@@ -453,13 +453,53 @@ function startWelcomeJourney(isReplay = false) {
   screen3.style.display = 'none';
   screen3.classList.remove('zpw-fade-out', 'zpw-fade-in');
 
-  // Play video with muted audio for smooth cinematic playback
+  // Adaptive video source & poster setup based on viewport aspect ratio
   if (bhVideo) {
+    const isMobile = window.innerWidth <= 768;
+    const desiredSrc = isMobile ? '/assets/welcome/blackhole-mobile.mp4' : '/assets/welcome/blackhole-desktop.mp4';
+    const desiredPoster = isMobile ? '/assets/welcome/blackhole-mobile-ref.webp' : '/assets/welcome/blackhole-desktop-ref.webp';
+
+    bhVideo.poster = desiredPoster;
+    if (bhVideo.dataset.currentSrc !== desiredSrc) {
+      bhVideo.dataset.currentSrc = desiredSrc;
+      bhVideo.src = desiredSrc;
+      bhVideo.load();
+    }
+
+    bhVideo.onplaying = () => {
+      bhVideo.classList.add('playing');
+    };
+
     bhVideo.currentTime = 0;
     const playPromise = bhVideo.play();
     if (playPromise !== undefined) {
-      playPromise.catch(() => {});
+      playPromise.then(() => {
+        bhVideo.classList.add('playing');
+      }).catch(() => {
+        // Autoplay policy or power saver: start video on first tap/interaction
+        const resumeVideoOnUserAction = () => {
+          bhVideo.play().then(() => bhVideo.classList.add('playing')).catch(() => {});
+          window.removeEventListener('pointerdown', resumeVideoOnUserAction);
+          window.removeEventListener('touchstart', resumeVideoOnUserAction);
+          window.removeEventListener('keydown', resumeVideoOnUserAction);
+        };
+        window.addEventListener('pointerdown', resumeVideoOnUserAction, { once: true });
+        window.addEventListener('touchstart', resumeVideoOnUserAction, { once: true });
+        window.addEventListener('keydown', resumeVideoOnUserAction, { once: true });
+      });
     }
+
+    // Visibility listener: pause when tab is hidden, resume when tab is visible
+    const onVisibilityChange = () => {
+      if (advancedFromScreen1) return;
+      if (document.hidden) {
+        bhVideo.pause();
+      } else if (screen1 && screen1.classList.contains('active')) {
+        bhVideo.play().catch(() => {});
+      }
+    };
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('visibilitychange', onVisibilityChange);
   }
 
   initCosmicParticles();
@@ -570,7 +610,8 @@ function preloadBackgroundDetails() {
     '/assets/welcome/python-tile.webp',
     '/assets/welcome/c-language-tile.webp',
     '/assets/welcome/adsa-tile.webp',
-    '/assets/welcome/dbms-tile.webp',
+    '/assets/welcome/blackhole-desktop-ref.webp',
+    '/assets/welcome/blackhole-mobile-ref.webp',
     '/assets/welcome/blackhole-poster.webp',
     '/assets/zipshare/hero-blackhole-desktop.webp',
     '/assets/zipshare/file-transfer-desktop.webp',
@@ -2073,6 +2114,89 @@ function initCosmicParticles() {
     });
   }
 
+  // 6. 5 Programming Subject Tiles (Java, Python, C, ADSA, DBMS) with Curved Infall Physics
+  const tilesConfig = [
+    {
+      id: 'zpwTileC',
+      subject: 'c',
+      color: '#06b6d4',
+      deskX: 0.13,
+      deskY: 0.50,
+      mobX: 0.12,
+      mobY: 0.55,
+      phase: 0.2,
+      infallStart: 2600, // Starts infall at 2.6s
+      infallDuration: 2400,
+      history: []
+    },
+    {
+      id: 'zpwTileJava',
+      subject: 'java',
+      color: '#f97316',
+      deskX: 0.29,
+      deskY: 0.20,
+      mobX: 0.25,
+      mobY: 0.24,
+      phase: 1.4,
+      infallStart: 3900, // Starts infall at 3.9s
+      infallDuration: 2500,
+      history: []
+    },
+    {
+      id: 'zpwTileDbms',
+      subject: 'dbms',
+      color: '#10b981',
+      deskX: 0.70,
+      deskY: 0.71,
+      mobX: 0.67,
+      mobY: 0.68,
+      phase: 2.8,
+      infallStart: 5200, // Starts infall at 5.2s
+      infallDuration: 2400,
+      history: []
+    },
+    {
+      id: 'zpwTileAdsa',
+      subject: 'adsa',
+      color: '#a855f7',
+      deskX: 0.81,
+      deskY: 0.46,
+      mobX: 0.88,
+      mobY: 0.54,
+      phase: 4.1,
+      infallStart: 6500, // Starts infall at 6.5s
+      infallDuration: 2300,
+      history: []
+    },
+    {
+      id: 'zpwTilePython',
+      subject: 'python',
+      color: '#38bdf8',
+      deskX: 0.64,
+      deskY: 0.17,
+      mobX: 0.76,
+      mobY: 0.25,
+      phase: 5.3,
+      infallStart: 7600, // Starts infall at 7.6s
+      infallDuration: 2200,
+      history: []
+    }
+  ];
+
+  // Make tiles interactive on click
+  tilesConfig.forEach(tile => {
+    const el = $(tile.id);
+    if (el) {
+      el.onclick = (e) => {
+        e.stopPropagation();
+        activeCategory = tile.subject;
+        localStorage.setItem('zipshare_favorite_subject', activeCategory);
+        toast(`Selected ${tile.subject.toUpperCase()} Workspace! 🚀`, 'info');
+      };
+    }
+  });
+
+  const cosmicStartTime = performance.now();
   let frame = 0;
 
   function renderCosmic() {
@@ -2142,9 +2266,9 @@ function initCosmicParticles() {
 
       ctx.beginPath();
       ctx.arc(0, 0, currentR, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 0.55})`;
-      ctx.lineWidth = 3 * dpr;
-      ctx.shadowBlur = 18 * dpr;
+      ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 0.16})`;
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.shadowBlur = 12 * dpr;
       ctx.shadowColor = '#38bdf8';
       ctx.stroke();
 
@@ -2397,28 +2521,90 @@ function initCosmicParticles() {
     });
 
     // -------------------------------------------------------------
-    // LAYER 6: Photon Ring & Event Horizon Glow
+    // LAYER 6: Central Singularity & Event Horizon
     // -------------------------------------------------------------
-    // Intense golden-white razor-sharp photon ring with relativistic pulse
-    ctx.save();
-    const photonPulse = 0.9 + 0.1 * Math.sin(frame * 0.05);
-    ctx.beginPath();
-    ctx.arc(cx, cy, baseR * 1.05, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 255, 240, ${0.85 * photonPulse})`;
-    ctx.lineWidth = Math.max(2.2 * dpr, baseR * 0.035);
-    ctx.shadowBlur = 28 * dpr * photonPulse;
-    ctx.shadowColor = '#fbbf24';
-    ctx.stroke();
+    // Preserved clear so the artwork's native high-resolution ZIPSHARE logo and accretion ring are completely unobstructed.
 
-    // Subtle inner accretion fringe (leaves the central artwork logo crystal clear)
-    ctx.beginPath();
-    ctx.arc(cx, cy, baseR * 1.02, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(249, 115, 22, ${0.45 * photonPulse})`;
-    ctx.lineWidth = 4 * dpr;
-    ctx.shadowBlur = 18 * dpr;
-    ctx.shadowColor = '#ea580c';
-    ctx.stroke();
-    ctx.restore();
+    // -------------------------------------------------------------
+    // LAYER 7: 5 Programming Subject Tiles Infall Physics & Energy Trails
+    // -------------------------------------------------------------
+    const now = performance.now();
+    const elapsed = now - cosmicStartTime;
+    const targetCenterX = cx / dpr;
+    const targetCenterY = cy / dpr;
+
+    tilesConfig.forEach(tile => {
+      const el = $(tile.id);
+      if (!el) return;
+
+      const startX = (isMobile ? tile.mobX : tile.deskX) * (w / dpr);
+      const startY = (isMobile ? tile.mobY : tile.deskY) * (h / dpr);
+
+      let screenX, screenY, scale = 1.0, opacity = 1.0;
+
+      if (elapsed < tile.infallStart) {
+        // Floating / zero-gravity organic space hover with gentle gravitational bobbing
+        const tSec = elapsed / 1000;
+        screenX = startX + Math.sin(tSec * 1.5 + tile.phase) * (4 * dpr);
+        screenY = startY + Math.cos(tSec * 1.2 + tile.phase) * (4 * dpr);
+        scale = isMobile ? 0.88 : 1.0;
+        opacity = Math.min(1.0, elapsed / 700);
+      } else {
+        // Accelerating relativistic spiral towards the central singularity
+        const progress = Math.min(1.0, (elapsed - tile.infallStart) / tile.infallDuration);
+        const ease = Math.pow(progress, 1.85);
+        const spiralRadius = 1.0 - ease;
+        const spiralAngle = progress * Math.PI * 3.2;
+
+        const dx = startX - targetCenterX;
+        const dy = startY - targetCenterY;
+
+        const cosS = Math.cos(spiralAngle);
+        const sinS = Math.sin(spiralAngle);
+        const rotX = (dx * cosS - dy * sinS) * spiralRadius;
+        const rotY = (dx * sinS * 0.45 + dy * cosS) * spiralRadius;
+
+        screenX = targetCenterX + rotX;
+        screenY = targetCenterY + rotY;
+        scale = (isMobile ? 0.88 : 1.0) * Math.max(0.08, 1.0 - ease * 0.92);
+        opacity = Math.max(0, 1.0 - Math.pow(progress, 2.2));
+      }
+
+      // Store trail history only during accelerating spiral infall
+      if (elapsed >= tile.infallStart && opacity > 0.05) {
+        tile.history.unshift({ x: screenX * dpr, y: screenY * dpr, opacity });
+        if (tile.history.length > 20) tile.history.pop();
+      } else {
+        tile.history = [];
+      }
+
+      // Draw luminous curved energy ribbon behind the tile on canvas
+      if (tile.history.length > 2 && opacity > 0.05) {
+        ctx.save();
+        for (let j = 0; j < tile.history.length - 1; j++) {
+          const pt1 = tile.history[j];
+          const pt2 = tile.history[j + 1];
+          if (Math.hypot(pt1.x - pt2.x, pt1.y - pt2.y) > 75 * dpr) continue;
+
+          const trailAlpha = (1 - j / tile.history.length) * opacity * 0.75;
+          ctx.beginPath();
+          ctx.moveTo(pt1.x, pt1.y);
+          ctx.lineTo(pt2.x, pt2.y);
+          ctx.strokeStyle = tile.color;
+          ctx.globalAlpha = trailAlpha;
+          ctx.lineWidth = Math.max(1.5, (1 - j / tile.history.length) * (isMobile ? 3 : 5) * dpr);
+          ctx.shadowBlur = (isMobile ? 10 : 16) * dpr;
+          ctx.shadowColor = tile.color;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Position the DOM tile element
+      el.style.transform = `translate3d(${screenX}px, ${screenY}px, 0) translate(-50%, -50%) scale(${scale})`;
+      el.style.opacity = opacity;
+      el.style.display = opacity <= 0.01 ? 'none' : 'flex';
+    });
 
     zpwCosmicCanvasAnim = requestAnimationFrame(renderCosmic);
   }
@@ -6070,26 +6256,12 @@ function applyPromoSettings(settings) {
   }
 
   // Update Navbar Direct Buttons
-  const navGitBtn = $('navGitBtn');
-  if (navGitBtn) {
-    navGitBtn.href = promoSettings.gitRepoLink || 'https://github.com/';
-    navGitBtn.style.display = promoSettings.gitRepoEnabled !== false ? 'inline-flex' : 'none';
-  }
   const navApkBtn = $('navApkBtn');
   if (navApkBtn) {
     navApkBtn.href = promoSettings.replicaLink || 'https://betadrop.app/i/eXW3zM';
   }
 
   // Update Site Footer Links
-  const footerGit = $('footerGitLink');
-  if (footerGit) {
-    footerGit.href = promoSettings.gitRepoLink || 'https://github.com/';
-    footerGit.style.display = promoSettings.gitRepoEnabled !== false ? 'inline-flex' : 'none';
-  }
-  const footerGitText = $('footerGitText');
-  if (footerGitText) {
-    footerGitText.textContent = promoSettings.gitRepoTitle || 'GitHub Repository';
-  }
   const footerApk = $('footerApkLink');
   if (footerApk) {
     footerApk.href = promoSettings.replicaLink || 'https://betadrop.app/i/eXW3zM';
@@ -6100,12 +6272,6 @@ function applyPromoSettings(settings) {
     footerApkText.textContent = `${apkShortName} Companion APK`;
   }
 
-  // Update About Modal Links
-  const aboutGitLink = $('aboutGitLink');
-  if (aboutGitLink) {
-    aboutGitLink.href = promoSettings.gitRepoLink || 'https://github.com/';
-    aboutGitLink.textContent = promoSettings.gitRepoLink || 'https://github.com/';
-  }
   const aboutApkLink = $('aboutApkLink');
   if (aboutApkLink) {
     aboutApkLink.href = promoSettings.replicaLink || 'https://betadrop.app/i/eXW3zM';
@@ -6143,10 +6309,6 @@ function populatePromoSettingsForm() {
   if ($('adminPromoBadgeInput')) $('adminPromoBadgeInput').value = promoSettings.replicaBadge || 'TRY OUR NEW APK';
   if ($('adminPromoBtnTextInput')) $('adminPromoBtnTextInput').value = promoSettings.replicaBtnText || 'Install REPLICA APK 📲';
   if ($('adminPromoEnabledInput')) $('adminPromoEnabledInput').checked = promoSettings.promoEnabled !== false;
-  
-  if ($('adminGitRepoLinkInput')) $('adminGitRepoLinkInput').value = promoSettings.gitRepoLink || 'https://github.com/';
-  if ($('adminGitRepoTitleInput')) $('adminGitRepoTitleInput').value = promoSettings.gitRepoTitle || 'GitHub Repository';
-  if ($('adminGitRepoEnabledInput')) $('adminGitRepoEnabledInput').checked = promoSettings.gitRepoEnabled !== false;
 }
 
 async function handleSavePromoSettings() {
@@ -6166,10 +6328,7 @@ async function handleSavePromoSettings() {
     replicaSubtext: $('adminPromoSubtextInput')?.value.trim() || 'Try our new APK — click to install REPLICA directly on your device',
     replicaBadge: $('adminPromoBadgeInput')?.value.trim() || 'TRY OUR NEW APK',
     replicaBtnText: $('adminPromoBtnTextInput')?.value.trim() || 'Install REPLICA APK 📲',
-    promoEnabled: $('adminPromoEnabledInput') ? $('adminPromoEnabledInput').checked : true,
-    gitRepoLink: $('adminGitRepoLinkInput')?.value.trim() || 'https://github.com/',
-    gitRepoTitle: $('adminGitRepoTitleInput')?.value.trim() || 'GitHub Repository',
-    gitRepoEnabled: $('adminGitRepoEnabledInput') ? $('adminGitRepoEnabledInput').checked : true
+    promoEnabled: $('adminPromoEnabledInput') ? $('adminPromoEnabledInput').checked : true
   };
 
   try {
@@ -6194,7 +6353,7 @@ async function handleSavePromoSettings() {
     try {
       localStorage.setItem('zipshare_promo_settings', JSON.stringify(newSettings));
     } catch (e) {}
-    toast('Links updated and committed to Git! 🚀', 'success');
+    toast('Settings updated successfully! 🚀', 'success');
     closeModal('promoLinksModalOverlay');
   } catch (err) {
     applyPromoSettings(payload);

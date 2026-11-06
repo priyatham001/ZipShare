@@ -16,17 +16,104 @@
 
 <!-- Sequential Animated Welcome Experience (Black Hole -> Theme Selection -> Programming Category Selection) -->
 <div id="zipshareWelcomeContainer" class="zpw-welcome-container" aria-label="ZipShare Welcome Journey">
-  <!-- SCREEN 1 — ANIMATED BLACK HOLE -->
-  <!-- SCREEN 1 — ANIMATED BLACK HOLE (10-SECOND BACKGROUND PRELOAD) -->
-  <section id="zpwScreen1" class="zpw-screen zpw-screen-blackhole active" aria-label="Black Hole Visualization">
-    <div class="zpw-bh-backdrop-wrap">
-      <img src="/assets/welcome/blackhole-poster.webp" alt="Cinematic Black Hole" class="zpw-bh-bg-img" id="zpwBhBgImg">
+  <!-- SCREEN 1 — CINEMATIC VEO BLACK HOLE & PROGRAMMING TILES -->
+  <section id="zpwScreen1" class="zpw-screen zpw-screen-blackhole active" aria-label="Cinematic Black Hole Startup">
+    <div class="zpw-bh-backdrop-wrap" id="zpwBhBackdropWrap">
+      <!-- High-Fidelity Reference Poster (Desktop Landscape & Mobile Portrait) -->
+      <picture class="zpw-bh-picture" id="zpwBhPicture">
+        <source media="(max-width: 768px)" srcset="/assets/welcome/blackhole-mobile-ref.webp">
+        <img src="/assets/welcome/blackhole-desktop-ref.webp" alt="Cinematic Black Hole Cosmos" class="zpw-bh-bg-img" id="zpwBhBgImg">
+      </picture>
+      
+      <!-- Veo 3 Cinematic Video Element (Autoplay, Muted, Loop, Playsinline) -->
+      <video id="zpwBlackHoleVideo" class="zpw-bh-video" autoplay muted loop playsinline preload="auto" poster="/assets/welcome/blackhole-desktop-ref.webp">
+        <source id="zpwBhVideoSourceMp4" src="/assets/welcome/blackhole-desktop.mp4" type="video/mp4">
+        <source id="zpwBhVideoSourceWebm" src="/assets/welcome/blackhole-desktop.webm" type="video/webm">
+      </video>
+
+      <!-- Dynamic Cosmic Canvas: Relativistic Particles, Energy Streams, Twinkling Stars & Accretion Glow -->
       <canvas id="zpwCosmicCanvas" class="zpw-cosmic-canvas"></canvas>
+
+      <!-- Gravitational Lensing & Cinematic Vignette Overlays -->
       <div class="zpw-bh-lensing-overlay"></div>
       <div class="zpw-bh-vignette"></div>
     </div>
     
-    <!-- Cinematic ZipShare Wordmark on Black Hole -->
+    <!-- 5 Programming Subject Tiles Layer (Java, Python, C, ADSA, DBMS) -->
+    <div class="zpw-bh-tiles-layer" id="zpwBhTilesLayer" aria-label="Programming Subject Tiles">
+      <!-- 1. Java Tile — Orange Coffee Cup -->
+      <div class="zpw-bh-tile zpw-tile-java" id="zpwTileJava" data-subject="java" style="--tile-color: #f97316; --tile-glow: rgba(249, 115, 22, 0.75);">
+        <div class="zpw-tile-glass">
+          <div class="zpw-tile-icon-wrap">
+            <svg class="zpw-tile-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+              <line x1="6" y1="1" x2="6" y2="4"/>
+              <line x1="10" y1="1" x2="10" y2="4"/>
+              <line x1="14" y1="1" x2="14" y2="4"/>
+            </svg>
+          </div>
+          <span class="zpw-tile-label">Java</span>
+        </div>
+      </div>
+
+      <!-- 2. Python Tile — Blue & Yellow Symbol -->
+      <div class="zpw-bh-tile zpw-tile-python" id="zpwTilePython" data-subject="python" style="--tile-color: #38bdf8; --tile-glow: rgba(56, 189, 248, 0.75);">
+        <div class="zpw-tile-glass">
+          <div class="zpw-tile-icon-wrap">
+            <svg class="zpw-tile-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2c5 0 5 3 5 3v3H9S6 8 6 13s3.5 5 3.5 5h2"/>
+              <path d="M12 22c-5 0-5-3-5-3v-3h8s3 0 3-5-3.5-5-3.5-5h-2"/>
+              <circle cx="9" cy="5.5" r="1.2" fill="currentColor"/>
+              <circle cx="15" cy="18.5" r="1.2" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="zpw-tile-label">Python</span>
+        </div>
+      </div>
+
+      <!-- 3. C Tile — Cyan Symbol -->
+      <div class="zpw-bh-tile zpw-tile-c" id="zpwTileC" data-subject="c" style="--tile-color: #06b6d4; --tile-glow: rgba(6, 182, 212, 0.8);">
+        <div class="zpw-tile-glass">
+          <div class="zpw-tile-icon-wrap">
+            <span class="zpw-tile-c-icon">C</span>
+          </div>
+          <span class="zpw-tile-label">C</span>
+        </div>
+      </div>
+
+      <!-- 4. ADSA Tile — Purple Algorithms & Graph Symbol -->
+      <div class="zpw-bh-tile zpw-tile-adsa" id="zpwTileAdsa" data-subject="adsa" style="--tile-color: #a855f7; --tile-glow: rgba(168, 85, 247, 0.8);">
+        <div class="zpw-tile-glass">
+          <div class="zpw-tile-icon-wrap">
+            <svg class="zpw-tile-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="5" r="3"/>
+              <circle cx="5" cy="19" r="3"/>
+              <circle cx="19" cy="19" r="3"/>
+              <line x1="12" y1="8" x2="5" y2="16"/>
+              <line x1="12" y1="8" x2="19" y2="16"/>
+            </svg>
+          </div>
+          <span class="zpw-tile-label">ADSA</span>
+        </div>
+      </div>
+
+      <!-- 5. DBMS Tile — Green Database Cylinder -->
+      <div class="zpw-bh-tile zpw-tile-dbms" id="zpwTileDbms" data-subject="dbms" style="--tile-color: #10b981; --tile-glow: rgba(16, 185, 129, 0.8);">
+        <div class="zpw-tile-glass">
+          <div class="zpw-tile-icon-wrap">
+            <svg class="zpw-tile-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+          </div>
+          <span class="zpw-tile-label">DBMS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Central Cinematic ZipShare Wordmark & Requested Tagline -->
     <div class="zpw-bh-brand" id="zpwBhBrand">
       <div class="zpw-bh-icon" aria-hidden="true">
         <span class="zpw-bh-icon-bracket">&lt;</span>
@@ -34,7 +121,11 @@
         <span class="zpw-bh-icon-bracket">&gt;</span>
       </div>
       <h1 class="zpw-bh-wordmark">ZIPSHARE</h1>
-      <span class="zpw-bh-tagline">CODE &middot; LEARN &middot; EXPLORE</span>
+      <div class="zpw-bh-tagline-wrap">
+        <span class="zpw-bh-tagline-line left"></span>
+        <p class="zpw-bh-tagline">YOUR CODE. YOUR WORKSPACE. YOUR UNIVERSE.</p>
+        <span class="zpw-bh-tagline-line right"></span>
+      </div>
     </div>
 
     <!-- Glowing Cinematic Progress Bar -->
@@ -756,29 +847,6 @@
         </label>
       </div>
 
-      <!-- Git / GitHub Repository Link Configuration -->
-      <div class="form-group" style="border-top:1px dashed var(--border); padding-top:14px; margin-top:4px;">
-        <label for="adminGitRepoLinkInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
-          🐙 Git / GitHub Repository Link (URL):
-        </label>
-        <input type="url" id="adminGitRepoLinkInput" class="admin-input" placeholder="https://github.com/your-username/zipshare" style="width:100%; box-sizing:border-box; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); font-family:monospace;" />
-        <span style="font-size:0.75rem; color:var(--text-muted); margin-top:2px; display:block;">Reflects across Navbar, Footer, and About modal. All changes auto-commit to local Git.</span>
-      </div>
-
-      <div class="form-group" style="display:grid; grid-template-columns: 2fr 1fr; gap:12px;">
-        <div>
-          <label for="adminGitRepoTitleInput" style="font-size:0.85rem; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
-            🏷️ Git Button / Label Title:
-          </label>
-          <input type="text" id="adminGitRepoTitleInput" class="admin-input" placeholder="GitHub Repository" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" />
-        </div>
-        <div style="display:flex; align-items:flex-end;">
-          <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; font-weight:600; color:var(--text); cursor:pointer; padding-bottom:10px;">
-            <input type="checkbox" id="adminGitRepoEnabledInput" checked style="width:18px; height:18px; cursor:pointer;" />
-            Show Git in Nav
-          </label>
-        </div>
-      </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;">
         <div style="display:flex; gap:8px;">
@@ -1303,7 +1371,7 @@ boolean: false</pre>
     <div class="about-body">
       <p><strong>Mission:</strong> To make it effortless for students to browse, preview, and download programming solutions, lab records, notes, and full project folders without zipping hurdles.</p>
       <p><strong>Features:</strong> Preserved folder uploads, in-browser syntax highlighting, real-time multi-keyword search, program requests system, Admin protected engine, and interactive subject animations.</p>
-      <p id="aboutGitRow"><strong>Source Code &amp; Git:</strong> <a href="https://github.com/" target="_blank" rel="noopener noreferrer" id="aboutGitLink" style="color:var(--accent); text-decoration:underline;">https://github.com/</a></p>
+
       <p id="aboutApkRow"><strong>Companion Android App:</strong> <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" id="aboutApkLink" style="color:var(--accent-2); text-decoration:underline;">REPLICA APK (Download Live) 📲</a></p>
       <p><strong>Developed By:</strong> NOMAD TEAM</p>
       <p><strong>Owner:</strong> Anonymous</p>

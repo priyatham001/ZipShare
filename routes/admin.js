@@ -96,9 +96,6 @@ const DEFAULT_SETTINGS = {
   replicaBadge: 'TRY OUR NEW APK',
   replicaBtnText: 'Install REPLICA APK 📲',
   promoEnabled: true,
-  gitRepoLink: 'https://github.com/',
-  gitRepoTitle: 'GitHub Repository',
-  gitRepoEnabled: true,
   updatedAt: new Date().toISOString()
 };
 
@@ -115,26 +112,11 @@ function getSettings() {
   return { ...DEFAULT_SETTINGS };
 }
 
-function commitSettingsToGit() {
-  try {
-    exec('git add data/settings.json && git commit -m "Admin updated links and settings [git]"', (err, stdout) => {
-      if (err) {
-        // Non-fatal if git clean or not available
-      } else {
-        console.log('✅ Settings committed to git:', stdout.trim());
-      }
-    });
-  } catch (e) {
-    // Ignore git execution errors
-  }
-}
-
 function saveSettings(data) {
   try {
     const dir = path.dirname(SETTINGS_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8');
-    commitSettingsToGit();
   } catch (err) {
     console.error('Failed to write settings.json:', err.message);
   }
@@ -145,7 +127,7 @@ router.get('/settings', (req, res) => {
   res.json(getSettings());
 });
 
-// PUT /api/admin/settings (Admin only: update replica download link, git link & promo details)
+// PUT /api/admin/settings (Admin only: update replica download link & promo details)
 router.put('/settings', requireAdmin, (req, res) => {
   const current = getSettings();
   const {
@@ -154,10 +136,7 @@ router.put('/settings', requireAdmin, (req, res) => {
     replicaSubtext,
     replicaBadge,
     replicaBtnText,
-    promoEnabled,
-    gitRepoLink,
-    gitRepoTitle,
-    gitRepoEnabled
+    promoEnabled
   } = req.body;
 
   const updated = {
@@ -168,9 +147,6 @@ router.put('/settings', requireAdmin, (req, res) => {
     replicaBadge: replicaBadge !== undefined && String(replicaBadge).trim() ? String(replicaBadge).trim() : current.replicaBadge,
     replicaBtnText: replicaBtnText !== undefined && String(replicaBtnText).trim() ? String(replicaBtnText).trim() : current.replicaBtnText,
     promoEnabled: promoEnabled !== undefined ? Boolean(promoEnabled) : current.promoEnabled,
-    gitRepoLink: gitRepoLink !== undefined && String(gitRepoLink).trim() ? String(gitRepoLink).trim() : (current.gitRepoLink || 'https://github.com/'),
-    gitRepoTitle: gitRepoTitle !== undefined && String(gitRepoTitle).trim() ? String(gitRepoTitle).trim() : (current.gitRepoTitle || 'GitHub Repository'),
-    gitRepoEnabled: gitRepoEnabled !== undefined ? Boolean(gitRepoEnabled) : (current.gitRepoEnabled !== false),
     updatedAt: new Date().toISOString()
   };
 
