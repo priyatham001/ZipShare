@@ -143,6 +143,9 @@ function walkFilesRecursively(dir, baseDir) {
 }
 
 async function seedLabProgramsFromZip() {
+  if (process.env.ZIPSHARE_AUTO_SEED !== 'true') {
+    return { insertedCount: 0, updatedCount: 0, removedCount: 0, fileToZipFolder: new Map() };
+  }
   const zipPath = path.join(__dirname, '..', ZIP_SOURCE_NAME);
   if (!fs.existsSync(zipPath)) {
     return { insertedCount: 0, updatedCount: 0, removedCount: 0, fileToZipFolder: new Map() };

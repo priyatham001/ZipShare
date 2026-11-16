@@ -4829,7 +4829,11 @@ async function togglePinFile(id, pinned) {
     if (file) file.pinned = pinned;
 
     renderPinnedSection(lastFiles);
-    renderFiles(lastFiles);
+    if (['all', 'java', 'python', 'adsa', 'dbms'].includes(activeCategory) && currentSyllabusViewData) {
+      renderSyllabusFiles(currentSyllabusViewData);
+    } else {
+      renderFiles(lastFiles);
+    }
   } catch (err) {
     toast('Failed to update pin status.', 'error');
   }
@@ -4910,7 +4914,13 @@ function updateSessionBadge() {
     el.style.display = isAdmin ? 'flex' : 'none';
   });
 
-  renderFiles(lastFiles);
+  if (['all', 'java', 'python', 'adsa', 'dbms'].includes(activeCategory)) {
+    if (currentSyllabusViewData) {
+      renderSyllabusFiles(currentSyllabusViewData);
+    }
+  } else if (lastFiles.length > 0) {
+    renderFiles(lastFiles);
+  }
   renderPinnedSection(lastFiles);
   if (isAdmin) checkPendingRequests();
 }
@@ -5051,14 +5061,17 @@ function setupDashboardBindings() {
   if (dashFileInput) {
     dashFileInput.addEventListener('change', () => {
       closeModal('dashboardModalOverlay');
-      handleUpload(dashFileInput.files, []);
+      const selected = Array.from(dashFileInput.files || []);
+      dashFileInput.value = '';
+      handleUpload(selected, []);
     });
   }
   if (dashFolderInput) {
     dashFolderInput.addEventListener('change', () => {
       closeModal('dashboardModalOverlay');
-      const files = dashFolderInput.files;
-      const paths = Array.from(files).map(f => f.webkitRelativePath || f.name);
+      const files = Array.from(dashFolderInput.files || []);
+      const paths = files.map(f => f.webkitRelativePath || f.name);
+      dashFolderInput.value = '';
       handleUpload(files, paths);
     });
   }
@@ -5246,16 +5259,27 @@ function uploadWithProgress(formData) {
   });
 }
 
+let isUploadInProgress = false;
+
 function setupUploads() {
   const fileInput = $('fileInput');
   const folderInput = $('folderInput');
 
-  if (fileInput) fileInput.addEventListener('change', () => handleUpload(fileInput.files, []));
-  if (folderInput) folderInput.addEventListener('change', () => {
-    const files = folderInput.files;
-    const paths = Array.from(files).map(f => f.webkitRelativePath || f.name);
-    handleUpload(files, paths);
-  });
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      const selected = Array.from(fileInput.files || []);
+      fileInput.value = '';
+      handleUpload(selected, []);
+    });
+  }
+  if (folderInput) {
+    folderInput.addEventListener('change', () => {
+      const files = Array.from(folderInput.files || []);
+      const paths = files.map(f => f.webkitRelativePath || f.name);
+      folderInput.value = '';
+      handleUpload(files, paths);
+    });
+  }
 }
 
 let targetUploadExp = null;
@@ -5268,6 +5292,10 @@ function triggerUploadForExperiment(cat, expNum) {
 
 async function handleUpload(fileList, pathsList = []) {
   if (!fileList || fileList.length === 0) return;
+  if (isUploadInProgress) {
+    toast('An upload is already in progress. Please wait.', 'warning');
+    return;
+  }
 
   if (!adminToken) {
     toast('Admin authorization required to upload files or folders.', 'warning');
@@ -5275,6 +5303,7 @@ async function handleUpload(fileList, pathsList = []) {
     return;
   }
 
+  isUploadInProgress = true;
   const formData = new FormData();
   for (let i = 0; i < fileList.length; i++) {
     const file = fileList[i];
@@ -5295,6 +5324,8 @@ async function handleUpload(fileList, pathsList = []) {
     loadFiles(true);
   } catch (err) {
     toast(err.message || 'Upload failed. Please check file sizes.', 'error');
+  } finally {
+    isUploadInProgress = false;
   }
 }
 

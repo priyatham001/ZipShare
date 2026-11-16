@@ -295,43 +295,8 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         }
       }
 
-      docs.push({
-        originalName: file.originalname,
-        storedName: file.filename,
-        relativePath: relPath,
-        folderName: topFolder || (ext === 'zip' ? path.basename(file.originalname, '.zip') : null),
-        zipFolder: ext === 'zip' ? path.basename(file.originalname, '.zip') : null,
-        zipSource: ext === 'zip' ? file.originalname : null,
-        batchId: topFolder ? batchId : (ext === 'zip' ? crypto.randomUUID() : null),
-        extension: ext,
-        category: ext === 'zip' ? 'zip' : assignedCategory,
-        course: ext === 'zip' ? null : fileCourse,
-        courseCode: ext === 'zip' ? null : fileCourseCode,
-        experimentNumber: ext === 'zip' ? null : fileExpNumber,
-        experimentName: ext === 'zip' ? null : fileExpName,
-        matchConfidence: ext === 'zip' ? 'high' : fileMatchConfidence,
-        status: ext === 'zip' ? 'available' : fileStatus,
-        reviewReason: ext === 'zip' ? null : fileReviewReason,
-        subject: fileCourse || fileSubject,
-        exercise: fileExercise,
-        question: fileQuestion,
-        expectedOutput: fileExpectedOutput,
-        size: file.size,
-        mimeType: file.mimetype,
-        content: fileContent,
-        cloudinaryUrl: cloudUrl,
-        cloudinaryPublicId: cloudPublicId,
-        assetId: assetId,
-        uploadedBy: 'admin',
-        tags: Array.from(new Set([ext, ext === 'zip' ? 'zip' : assignedCategory, fileSubject, topFolder].filter(Boolean))),
-        description: fileExpName ? `${fileExpNumber ? `#${fileExpNumber} ` : ''}${fileExpName}` : fileDesc,
-        pinned: false,
-        downloads: 0,
-        uploadDate: new Date(),
-        updatedAt: new Date()
-      });
-
       // Automatically extract and index code programs inside uploaded .zip archives
+      const zipExtractedDocs = [];
       if (ext === 'zip' && fs.existsSync(file.path)) {
         const zipBase = path.basename(file.originalname, '.zip');
         const zipBatchId = `zip-${crypto.randomUUID()}`;
@@ -364,7 +329,7 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
                   category: bodySubject || innerCat
                 });
                 const innerAssignedCat = innerMatch.category || innerCat;
-                docs.push({
+                zipExtractedDocs.push({
                   originalName: entry.name,
                   storedName: storedEntry,
                   relativePath: relInside,
@@ -403,10 +368,112 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
           try { fs.rmSync(tmpExtractDir, { recursive: true, force: true }); } catch (e) {}
         }
       }
+
+      if (ext === 'zip' && zipExtractedDocs.length > 0) {
+        // Drop redundant outer .zip wrapper when individual code files were extracted
+        try { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); } catch (e) {}
+        docs.push(...zipExtractedDocs);
+      } else {
+        docs.push({
+          originalName: file.originalname,
+          storedName: file.filename,
+          relativePath: relPath,
+          folderName: topFolder || (ext === 'zip' ? path.basename(file.originalname, '.zip') : null),
+          zipFolder: ext === 'zip' ? path.basename(file.originalname, '.zip') : null,
+          zipSource: ext === 'zip' ? file.originalname : null,
+          batchId: topFolder ? batchId : (ext === 'zip' ? crypto.randomUUID() : null),
+          extension: ext,
+          category: ext === 'zip' ? 'zip' : assignedCategory,
+          course: ext === 'zip' ? null : fileCourse,
+          courseCode: ext === 'zip' ? null : fileCourseCode,
+          experimentNumber: ext === 'zip' ? null : fileExpNumber,
+          experimentName: ext === 'zip' ? null : fileExpName,
+          matchConfidence: ext === 'zip' ? 'high' : fileMatchConfidence,
+          status: ext === 'zip' ? 'available' : fileStatus,
+          reviewReason: ext === 'zip' ? null : fileReviewReason,
+          subject: fileCourse || fileSubject,
+          exercise: fileExercise,
+          question: fileQuestion,
+          expectedOutput: fileExpectedOutput,
+          size: file.size,
+          mimeType: file.mimetype,
+          content: fileContent,
+          cloudinaryUrl: cloudUrl,
+          cloudinaryPublicId: cloudPublicId,
+          assetId: assetId,
+          uploadedBy: 'admin',
+          tags: Array.from(new Set([ext, ext === 'zip' ? 'zip' : assignedCategory, fileSubject, topFolder].filter(Boolean))),
+          description: fileExpName ? `${fileExpNumber ? `#${fileExpNumber} ` : ''}${fileExpName}` : fileDesc,
+          pinned: false,
+          downloads: 0,
+          uploadDate: new Date(),
+          updatedAt: new Date()
+        });
+      }
     }
 
-    const saved = await filesDB.insertMany(docs);
-    res.status(201).json({ message: 'Upload Successful', files: saved.map(toSummaryFile) });
+    // Deduplicate within current batch and update existing matching DB records instead of duplicating
+    const existingFiles = await filesDB.find({}, {}, 10000);
+    const byRelPath = new Map();
+    const byCatName = new Map();
+    for (const ef of existingFiles) {
+      if (ef.relativePath) byRelPath.set(String(ef.relativePath).toLowerCase().trim(), ef);
+      if (ef.originalName) {
+        const key = `${String(ef.category || '').toLowerCase().trim()}::${String(ef.originalName).toLowerCase().trim()}`;
+        byCatName.set(key, ef);
+      }
+    }
+
+    const dedupedBatchMap = new Map();
+    for (const d of docs) {
+      const k = d.relativePath
+        ? `rel:${String(d.relativePath).toLowerCase().trim()}`
+        : `cn:${String(d.category || '').toLowerCase().trim()}::${String(d.originalName || '').toLowerCase().trim()}`;
+      const prev = dedupedBatchMap.get(k);
+      if (prev && prev.storedName && prev.storedName !== d.storedName) {
+        try {
+          const oldPath = path.join(UPLOAD_DIR, prev.storedName);
+          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        } catch (e) {}
+      }
+      dedupedBatchMap.set(k, d);
+    }
+
+    const toInsert = [];
+    const toUpdate = [];
+    const updatedResults = [];
+
+    for (const d of dedupedBatchMap.values()) {
+      const relKey = d.relativePath ? String(d.relativePath).toLowerCase().trim() : '';
+      const cnKey = `${String(d.category || '').toLowerCase().trim()}::${String(d.originalName || '').toLowerCase().trim()}`;
+      const matchExisting = (relKey && byRelPath.get(relKey)) || byCatName.get(cnKey);
+
+      if (matchExisting) {
+        if (matchExisting.storedName && matchExisting.storedName !== d.storedName) {
+          try {
+            const oldPath = path.join(UPLOAD_DIR, matchExisting.storedName);
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+          } catch (e) {}
+        }
+        const existingId = matchExisting._id || matchExisting.id;
+        toUpdate.push({ id: existingId, update: d });
+        updatedResults.push({ ...matchExisting, ...d, _id: existingId });
+      } else {
+        toInsert.push(d);
+      }
+    }
+
+    if (toUpdate.length > 0) {
+      await filesDB.bulkUpdate(toUpdate);
+    }
+    const saved = toInsert.length > 0 ? await filesDB.insertMany(toInsert) : [];
+    const combined = [...updatedResults, ...saved];
+    res.status(201).json({
+      message: 'Upload Successful',
+      files: combined.map(toSummaryFile),
+      insertedCount: saved.length,
+      updatedCount: updatedResults.length
+    });
   } catch (err) {
     console.error('Upload error:', err.message);
     res.status(500).json({ error: 'Upload failed. Please try again.' });
@@ -650,6 +717,34 @@ router.get('/previews/batch', async (req, res) => {
     res.json({ previews });
   } catch (err) {
     res.status(500).json({ error: 'Batch preview failed.' });
+  }
+});
+
+// DELETE /api/files/all - Admin only: remove all files from DB & disk
+router.delete('/all', requireAdmin, async (req, res) => {
+  try {
+    const allFiles = await filesDB.find({}, {}, 50000);
+    const ids = allFiles.map(f => f._id || f.id).filter(Boolean);
+    for (const f of allFiles) {
+      if (f.cloudinaryPublicId) {
+        try {
+          const ext = (f.extension || '').toLowerCase();
+          const resType = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(ext) ? 'image' : 'raw';
+          await deleteFromCloudinary(f.cloudinaryPublicId, resType);
+        } catch (cErr) {}
+      }
+      if (f.storedName) {
+        const fullPath = path.join(UPLOAD_DIR, f.storedName);
+        if (fs.existsSync(fullPath)) {
+          try { fs.unlinkSync(fullPath); } catch (e) {}
+        }
+      }
+    }
+    const deletedCount = ids.length > 0 ? await filesDB.deleteManyByIds(ids) : 0;
+    res.json({ message: 'All files removed successfully.', deletedCount });
+  } catch (err) {
+    console.error('Delete all files error:', err.message);
+    res.status(500).json({ error: 'Failed to remove all files.' });
   }
 });
 
