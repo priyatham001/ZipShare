@@ -1,0 +1,39 @@
+const mongoose = require('mongoose');
+
+const fileSchema = new mongoose.Schema({
+  originalName: { type: String, required: true },
+  storedName: { type: String, required: true },     // actual name on disk
+  relativePath: { type: String, required: true },    // e.g. "AVL_Project/src/Main.java"
+  folderName: { type: String, default: null },        // top-level folder this file belongs to, if any
+  batchId: { type: String, default: null },           // groups files uploaded together as one folder
+  extension: { type: String, default: '' },
+  size: { type: Number, default: 0 },
+  description: { type: String, default: '' },
+  tags: { type: [String], default: [] },
+  category: { type: String, default: 'other' },
+  course: { type: String, default: null },
+  courseCode: { type: String, default: null },
+  experimentNumber: { type: Number, default: null },
+  experimentName: { type: String, default: null },
+  matchConfidence: { type: String, default: 'high' },
+  status: { type: String, default: 'available' },
+  assignmentType: { type: String, default: 'global' }, // 'global' or 'individual'
+  assignedUsers: { type: [String], default: [] },
+  reviewReason: { type: String, default: null },
+  subject: { type: String, default: null },
+  exercise: { type: String, default: null },
+  question: { type: String, default: null },
+  expectedOutput: { type: String, default: null },
+  content: { type: String, default: null },
+  cloudinaryUrl: { type: String, default: null },
+  cloudinaryPublicId: { type: String, default: null },
+  assetId: { type: String, default: null },
+  mimeType: { type: String, default: null },
+  uploadedBy: { type: String, default: 'admin' },
+  pinned: { type: Boolean, default: false },
+  downloads: { type: Number, default: 0 },
+  uploadDate: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.models.File || mongoose.model('File', fileSchema);

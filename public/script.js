@@ -2987,7 +2987,7 @@ const CATEGORY_STAGE_INFO = {
   c: { icon: '💻', title: 'C Language Programming', desc: 'Core C language lab exercises, pointers, matrix operations, and algorithms.' },
   dbms: { icon: '🗄️', title: 'Database Management Systems (DBMS)', desc: 'Database Management Systems Lab ( CSE, AIML, CSIT & CSG) · B23CS2104: 54 Official Lab Experiments.' },
   adsa: { icon: '🌳', title: 'Advanced Data Structures & Algorithms (ADSA)', desc: 'AVL Trees, Graphs, Hash Tables, and Red-Black Tree implementations.' },
-  folders: { icon: '📁', title: 'Folders & Zip Packages', desc: 'Downloadable program zip folders (java programs, python code, SQL Lab Programs, DS code) & uploaded archives.' },
+  folders: { icon: '📁', title: 'Folders & Zip Packages', desc: 'Downloadable program zip folders & uploaded archives.' },
   pinned: { icon: '📌', title: 'Pinned Highlights', desc: 'Important administrative releases and starred lab code.' }
 };
 
@@ -4140,10 +4140,10 @@ async function loadStats(force = false) {
     const statsBar = $('statsBar');
     if (!statsBar) return;
 
-    const totalOfficial = syl ? (syl.totalOfficial || 145) : 145;
-    const availableNow = syl ? (syl.totalAvailable || 124) : 124;
-    const comingSoon = syl ? (syl.totalComingSoon || 21) : 21;
-    const downloads = s.totalDownloads || 61;
+    const totalOfficial = syl?.totalOfficial ?? 145;
+    const availableNow = syl?.totalAvailable ?? 0;
+    const comingSoon = syl?.totalComingSoon ?? totalOfficial;
+    const downloads = s.totalDownloads ?? 0;
 
     statsBar.innerHTML = `
       <div class="bento-stats-grid">

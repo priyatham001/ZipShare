@@ -4,14 +4,17 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
-const archiver = require('archiver');
 const { execFileSync } = require('child_process');
 const router = express.Router();
-const { filesDB, suggestionsDB } = require('../db');
+const { filesDB, suggestionsDB, getDataVersion } = require('../db');
 const { requireAdmin, verifyAdminToken } = require('../middleware/auth');
 const { isCloudinaryConfigured, uploadToCloudinary, deleteFromCloudinary, fetchRemoteContent } = require('../services/cloudinary');
 const { matchFileToSyllabus, detectContentLanguage } = require('../services/syllabusMatcher');
 const { getCourseByKey } = require('../services/syllabusData');
+
+let fileStatsCache = { version: -1, data: null };
+let fileSuggestionsCache = { version: -1, data: null };
+const fileListCache = { version: -1, entries: new Map() };
 
 function toSummaryFile(f) {
   if (!f || typeof f !== 'object') return f;
@@ -292,43 +295,8 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         }
       }
 
-      docs.push({
-        originalName: file.originalname,
-        storedName: file.filename,
-        relativePath: relPath,
-        folderName: topFolder || (ext === 'zip' ? path.basename(file.originalname, '.zip') : null),
-        zipFolder: ext === 'zip' ? path.basename(file.originalname, '.zip') : null,
-        zipSource: ext === 'zip' ? file.originalname : null,
-        batchId: topFolder ? batchId : (ext === 'zip' ? crypto.randomUUID() : null),
-        extension: ext,
-        category: ext === 'zip' ? 'zip' : assignedCategory,
-        course: ext === 'zip' ? null : fileCourse,
-        courseCode: ext === 'zip' ? null : fileCourseCode,
-        experimentNumber: ext === 'zip' ? null : fileExpNumber,
-        experimentName: ext === 'zip' ? null : fileExpName,
-        matchConfidence: ext === 'zip' ? 'high' : fileMatchConfidence,
-        status: ext === 'zip' ? 'available' : fileStatus,
-        reviewReason: ext === 'zip' ? null : fileReviewReason,
-        subject: fileCourse || fileSubject,
-        exercise: fileExercise,
-        question: fileQuestion,
-        expectedOutput: fileExpectedOutput,
-        size: file.size,
-        mimeType: file.mimetype,
-        content: fileContent,
-        cloudinaryUrl: cloudUrl,
-        cloudinaryPublicId: cloudPublicId,
-        assetId: assetId,
-        uploadedBy: 'admin',
-        tags: Array.from(new Set([ext, ext === 'zip' ? 'zip' : assignedCategory, fileSubject, topFolder].filter(Boolean))),
-        description: fileExpName ? `${fileExpNumber ? `#${fileExpNumber} ` : ''}${fileExpName}` : fileDesc,
-        pinned: false,
-        downloads: 0,
-        uploadDate: new Date(),
-        updatedAt: new Date()
-      });
-
       // Automatically extract and index code programs inside uploaded .zip archives
+      const zipExtractedDocs = [];
       if (ext === 'zip' && fs.existsSync(file.path)) {
         const zipBase = path.basename(file.originalname, '.zip');
         const zipBatchId = `zip-${crypto.randomUUID()}`;
@@ -361,7 +329,7 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
                   category: bodySubject || innerCat
                 });
                 const innerAssignedCat = innerMatch.category || innerCat;
-                docs.push({
+                zipExtractedDocs.push({
                   originalName: entry.name,
                   storedName: storedEntry,
                   relativePath: relInside,
@@ -400,10 +368,112 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
           try { fs.rmSync(tmpExtractDir, { recursive: true, force: true }); } catch (e) {}
         }
       }
+
+      if (ext === 'zip' && zipExtractedDocs.length > 0) {
+        // Drop redundant outer .zip wrapper when individual code files were extracted
+        try { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); } catch (e) {}
+        docs.push(...zipExtractedDocs);
+      } else {
+        docs.push({
+          originalName: file.originalname,
+          storedName: file.filename,
+          relativePath: relPath,
+          folderName: topFolder || (ext === 'zip' ? path.basename(file.originalname, '.zip') : null),
+          zipFolder: ext === 'zip' ? path.basename(file.originalname, '.zip') : null,
+          zipSource: ext === 'zip' ? file.originalname : null,
+          batchId: topFolder ? batchId : (ext === 'zip' ? crypto.randomUUID() : null),
+          extension: ext,
+          category: ext === 'zip' ? 'zip' : assignedCategory,
+          course: ext === 'zip' ? null : fileCourse,
+          courseCode: ext === 'zip' ? null : fileCourseCode,
+          experimentNumber: ext === 'zip' ? null : fileExpNumber,
+          experimentName: ext === 'zip' ? null : fileExpName,
+          matchConfidence: ext === 'zip' ? 'high' : fileMatchConfidence,
+          status: ext === 'zip' ? 'available' : fileStatus,
+          reviewReason: ext === 'zip' ? null : fileReviewReason,
+          subject: fileCourse || fileSubject,
+          exercise: fileExercise,
+          question: fileQuestion,
+          expectedOutput: fileExpectedOutput,
+          size: file.size,
+          mimeType: file.mimetype,
+          content: fileContent,
+          cloudinaryUrl: cloudUrl,
+          cloudinaryPublicId: cloudPublicId,
+          assetId: assetId,
+          uploadedBy: 'admin',
+          tags: Array.from(new Set([ext, ext === 'zip' ? 'zip' : assignedCategory, fileSubject, topFolder].filter(Boolean))),
+          description: fileExpName ? `${fileExpNumber ? `#${fileExpNumber} ` : ''}${fileExpName}` : fileDesc,
+          pinned: false,
+          downloads: 0,
+          uploadDate: new Date(),
+          updatedAt: new Date()
+        });
+      }
     }
 
-    const saved = await filesDB.insertMany(docs);
-    res.status(201).json({ message: 'Upload Successful', files: saved.map(toSummaryFile) });
+    // Deduplicate within current batch and update existing matching DB records instead of duplicating
+    const existingFiles = await filesDB.find({}, {}, 10000);
+    const byRelPath = new Map();
+    const byCatName = new Map();
+    for (const ef of existingFiles) {
+      if (ef.relativePath) byRelPath.set(String(ef.relativePath).toLowerCase().trim(), ef);
+      if (ef.originalName) {
+        const key = `${String(ef.category || '').toLowerCase().trim()}::${String(ef.originalName).toLowerCase().trim()}`;
+        byCatName.set(key, ef);
+      }
+    }
+
+    const dedupedBatchMap = new Map();
+    for (const d of docs) {
+      const k = d.relativePath
+        ? `rel:${String(d.relativePath).toLowerCase().trim()}`
+        : `cn:${String(d.category || '').toLowerCase().trim()}::${String(d.originalName || '').toLowerCase().trim()}`;
+      const prev = dedupedBatchMap.get(k);
+      if (prev && prev.storedName && prev.storedName !== d.storedName) {
+        try {
+          const oldPath = path.join(UPLOAD_DIR, prev.storedName);
+          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        } catch (e) {}
+      }
+      dedupedBatchMap.set(k, d);
+    }
+
+    const toInsert = [];
+    const toUpdate = [];
+    const updatedResults = [];
+
+    for (const d of dedupedBatchMap.values()) {
+      const relKey = d.relativePath ? String(d.relativePath).toLowerCase().trim() : '';
+      const cnKey = `${String(d.category || '').toLowerCase().trim()}::${String(d.originalName || '').toLowerCase().trim()}`;
+      const matchExisting = (relKey && byRelPath.get(relKey)) || byCatName.get(cnKey);
+
+      if (matchExisting) {
+        if (matchExisting.storedName && matchExisting.storedName !== d.storedName) {
+          try {
+            const oldPath = path.join(UPLOAD_DIR, matchExisting.storedName);
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+          } catch (e) {}
+        }
+        const existingId = matchExisting._id || matchExisting.id;
+        toUpdate.push({ id: existingId, update: d });
+        updatedResults.push({ ...matchExisting, ...d, _id: existingId });
+      } else {
+        toInsert.push(d);
+      }
+    }
+
+    if (toUpdate.length > 0) {
+      await filesDB.bulkUpdate(toUpdate);
+    }
+    const saved = toInsert.length > 0 ? await filesDB.insertMany(toInsert) : [];
+    const combined = [...updatedResults, ...saved];
+    res.status(201).json({
+      message: 'Upload Successful',
+      files: combined.map(toSummaryFile),
+      insertedCount: saved.length,
+      updatedCount: updatedResults.length
+    });
   } catch (err) {
     console.error('Upload error:', err.message);
     res.status(500).json({ error: 'Upload failed. Please try again.' });
@@ -508,6 +578,16 @@ router.get('/', async (req, res) => {
     const isAdmin = verifyAdminToken(req);
     const userEmail = (req.query.userEmail || req.headers['x-user-email'] || '').toLowerCase().trim();
 
+    const version = getDataVersion();
+    if (fileListCache.version !== version) {
+      fileListCache.version = version;
+      fileListCache.entries.clear();
+    }
+    const listCacheKey = `${isAdmin ? 1 : 0}|${userEmail}|${q || ''}|${activeCategory || ''}|${subject || ''}|${exercise || ''}|${question || ''}|${sort || ''}`;
+    if (fileListCache.entries.has(listCacheKey)) {
+      return res.json(fileListCache.entries.get(listCacheKey));
+    }
+
     if (!isAdmin) {
       andConditions.push({ status: { $ne: 'draft' } });
     }
@@ -538,7 +618,10 @@ router.get('/', async (req, res) => {
       });
     }
 
-    res.json(filteredFiles.map(toSummaryFile));
+    const resultPayload = filteredFiles.map(toSummaryFile);
+    if (fileListCache.entries.size >= 80) fileListCache.entries.clear();
+    fileListCache.entries.set(listCacheKey, resultPayload);
+    res.json(resultPayload);
   } catch (err) {
     console.error('List files error:', err.message);
     res.status(500).json({ error: 'Could not load file list.' });
@@ -548,18 +631,25 @@ router.get('/', async (req, res) => {
 // GET /api/files/stats
 router.get('/stats', async (req, res) => {
   try {
+    const version = getDataVersion();
+    if (fileStatsCache.version === version && fileStatsCache.data) {
+      return res.json(fileStatsCache.data);
+    }
+
     const [totalFiles, pinned, agg] = await Promise.all([
       filesDB.countDocuments(),
       filesDB.countDocuments({ pinned: true }),
       filesDB.aggregate([])
     ]);
-    res.json({
+    const data = {
       totalFiles,
       pinned,
       todayUploads: totalFiles,
       totalDownloads: agg[0]?.totalDownloads || 0,
       storageUsed: agg[0]?.totalSize || 0
-    });
+    };
+    fileStatsCache = { version, data };
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Could not load stats.' });
   }
@@ -568,75 +658,101 @@ router.get('/stats', async (req, res) => {
 // GET /api/files/suggestions
 router.get('/suggestions', async (req, res) => {
   try {
+    const version = getDataVersion();
+    if (fileSuggestionsCache.version === version && fileSuggestionsCache.data) {
+      return res.json(fileSuggestionsCache.data);
+    }
+
     const manual = await suggestionsDB.find();
     const recentCode = await filesDB.find({ extension: { $in: CODE_EXTENSIONS } }, { uploadDate: -1 }, 6);
 
-    res.json({
+    const data = {
       trending: manual.map(s => s.text),
       recent: recentCode.map(f => f.originalName)
-    });
+    };
+    fileSuggestionsCache = { version, data };
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Could not load suggestions.' });
   }
 });
 
-// GET /api/files/folder/:identifier/download - Zips uploaded folder
-router.get('/folder/:identifier/download', async (req, res) => {
+// GET /api/files/previews/batch - Fast bulk preview prefetch for instant code viewing
+router.get('/previews/batch', async (req, res) => {
   try {
-    const rawIdentifier = req.params.identifier;
-    const identifier = decodeURIComponent(rawIdentifier);
+    const rawIds = String(req.query.ids || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 40);
+    const category = (req.query.category || '').toLowerCase().trim();
+    let targets = [];
 
-    let files = await filesDB.find({ batchId: identifier });
-    if ((!files || !files.length) && identifier.startsWith('zipfolder:')) {
-      const zf = identifier.slice('zipfolder:'.length);
-      files = await filesDB.find({ zipFolder: zf });
+    if (rawIds.length > 0) {
+      const idSet = new Set(rawIds);
+      const all = await filesDB.find({}, {}, 10000);
+      targets = all.filter(f => idSet.has(f._id || f.id));
+    } else if (category) {
+      const all = await filesDB.find({}, { experimentNumber: 1 }, 10000);
+      targets = all
+        .filter(f => f.status === 'available' && (category === 'all' || (f.category || '').toLowerCase() === category))
+        .slice(0, 40);
     }
-    if (!files || !files.length) {
-      files = await filesDB.find({ folderName: identifier });
-    }
-    if (!files || !files.length) {
-      files = await filesDB.find({ zipFolder: identifier });
-    }
-    if (!files || !files.length) {
-      files = await filesDB.find({ batchId: rawIdentifier });
-      if (!files || !files.length) {
-        files = await filesDB.find({ folderName: rawIdentifier });
-      }
-    }
-    if (!files || !files.length) return res.status(404).json({ error: 'Folder not found.' });
 
-    const folderName = files[0].folderName || files[0].zipFolder || 'folder';
-    res.attachment(`${folderName}.zip`);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.pipe(res);
-
-    for (const f of files) {
-      let appended = false;
-      if (f.cloudinaryUrl) {
-        try {
-          const buf = await fetchRemoteContent(f.cloudinaryUrl);
-          archive.append(buf, { name: f.relativePath || f.originalName });
-          appended = true;
-        } catch (e) {
-          console.error(`Failed to fetch ${f.originalName} from Cloudinary for zip:`, e.message);
+    const isAdmin = verifyAdminToken(req);
+    const previews = {};
+    for (const file of targets) {
+      if (!isAdmin && (file.status === 'draft' || file.assignmentType === 'individual')) continue;
+      const ext = (file.extension || '').toLowerCase();
+      if (!CODE_EXTENSIONS.includes(ext)) continue;
+      let content = file.content;
+      if ((content === null || content === undefined) && file.storedName) {
+        const fullPath = path.join(UPLOAD_DIR, file.storedName);
+        if (fs.existsSync(fullPath)) {
+          try { content = fs.readFileSync(fullPath, 'utf-8').slice(0, 200000); } catch (e) {}
         }
       }
-      if (!appended) {
+      if (content !== null && content !== undefined) {
+        const id = file._id || file.id;
+        previews[id] = { type: 'text', extension: file.extension, content, file };
+      }
+    }
+
+    res.json({ previews });
+  } catch (err) {
+    res.status(500).json({ error: 'Batch preview failed.' });
+  }
+});
+
+// DELETE /api/files/all - Admin only: remove all files from DB & disk
+router.delete('/all', requireAdmin, async (req, res) => {
+  try {
+    const allFiles = await filesDB.find({}, {}, 50000);
+    const ids = allFiles.map(f => f._id || f.id).filter(Boolean);
+    for (const f of allFiles) {
+      if (f.cloudinaryPublicId) {
+        try {
+          const ext = (f.extension || '').toLowerCase();
+          const resType = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'].includes(ext) ? 'image' : 'raw';
+          await deleteFromCloudinary(f.cloudinaryPublicId, resType);
+        } catch (cErr) {}
+      }
+      if (f.storedName) {
         const fullPath = path.join(UPLOAD_DIR, f.storedName);
         if (fs.existsSync(fullPath)) {
-          archive.file(fullPath, { name: f.relativePath || f.originalName });
-          appended = true;
+          try { fs.unlinkSync(fullPath); } catch (e) {}
         }
       }
-      if (appended) {
-        await filesDB.findByIdAndUpdate(f._id || f.id, { downloads: (f.downloads || 0) + 1 });
-      }
     }
-    archive.finalize();
+    const deletedCount = ids.length > 0 ? await filesDB.deleteManyByIds(ids) : 0;
+    res.json({ message: 'All files removed successfully.', deletedCount });
   } catch (err) {
-    console.error('Folder download failed:', err.message);
-    res.status(500).json({ error: 'Folder download failed.' });
+    console.error('Delete all files error:', err.message);
+    res.status(500).json({ error: 'Failed to remove all files.' });
   }
+});
+
+// GET /api/files/folder/:identifier/download - Disabled (Individual file downloads only)
+router.get('/folder/:identifier/download', (req, res) => {
+  return res.status(403).json({
+    error: 'Group, folder, and bulk downloads are disabled. Please download individual files instead.'
+  });
 });
 
 // DELETE /api/files/folder/:identifier - Admin only
@@ -747,11 +863,29 @@ router.post('/folders/delete-batch', requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/files/:id/download
+// GET /api/files/:id/download - Individual file downloads only
 router.get('/:id/download', async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found.' });
+
+    const isAdmin = verifyAdminToken(req);
+    if (!isAdmin && file.status === 'draft') {
+      return res.status(403).json({ error: 'This program is currently in draft status.' });
+    }
+
+    const ext = (file.extension || '').toLowerCase();
+    const isCollectionArchive =
+      ext === 'zip' ||
+      file.category === 'zip' ||
+      file.batchId === 'zip-root-lab-programs' ||
+      /zipshare\.zip$/i.test(file.originalName || '');
+
+    if (isCollectionArchive) {
+      return res.status(403).json({
+        error: 'Collection and bulk archive downloads are disabled. Please download individual program files instead.'
+      });
+    }
 
     file.downloads = (file.downloads || 0) + 1;
     await filesDB.findByIdAndUpdate(file._id || file.id, { downloads: file.downloads });
@@ -773,13 +907,6 @@ router.get('/:id/download', async (req, res) => {
       return res.download(fullPath, file.originalName);
     }
 
-    if (file.extension === 'zip' && file.originalName) {
-      const rootZipPath = path.join(__dirname, '..', path.basename(file.originalName));
-      if (fs.existsSync(rootZipPath)) {
-        return res.download(rootZipPath, file.originalName);
-      }
-    }
-
     if (file.content) {
       res.setHeader('Content-Type', file.mimeType || 'text/plain; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.originalName)}"`);
@@ -797,6 +924,9 @@ router.get('/:id/preview', async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found.' });
+    if (!verifyAdminToken(req) && file.status === 'draft') {
+      return res.status(403).json({ error: 'This program is currently in draft status.' });
+    }
 
     if (CODE_EXTENSIONS.includes((file.extension || '').toLowerCase())) {
       let content = file.content;
@@ -839,6 +969,9 @@ router.get('/:id/raw', async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).end();
+    if (!verifyAdminToken(req) && file.status === 'draft') {
+      return res.status(403).json({ error: 'This program is currently in draft status.' });
+    }
 
     if (file.cloudinaryUrl) {
       return res.redirect(file.cloudinaryUrl);
