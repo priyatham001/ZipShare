@@ -7,12 +7,10 @@
 <meta name="description" content="ZipShare Student Hub - Production Online Coding Platform" />
 <meta property="og:title" content="ZipShare" />
 <meta property="og:description" content="ZipShare Student Hub - Production Online Coding Platform" />
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
-<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
 <link rel="stylesheet" href="style.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 </head>
 <body data-theme="dark">
 
@@ -412,34 +410,35 @@
   </div>
 
   <!-- Header Navigation -->
-  <nav class="navbar" aria-label="Main Navigation">
+  <nav class="navbar">
     <div class="nav-left">
       <a href="#" class="logo" id="brandLogo">ZIPSHARE</a>
+      <div class="nav-mobile-quick">
+        <button class="icon-btn nav-mob-theme-btn" id="mobileThemeToggle" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle Light or Dark Theme">🌙</button>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open Menu" aria-expanded="false" aria-controls="mobileNavDrawer">
+          <span class="hamburger-lines" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+      </div>
     </div>
     
     <div class="nav-center">
       <div class="search-wrap">
-        <span class="search-icon" aria-hidden="true">🔍</span>
-        <input type="text" id="searchInput" placeholder="Search Python, Java, C, AVL, DBMS, Notes..." autocomplete="off" aria-label="Search programs" />
-        <button type="button" class="search-clear-btn" id="searchClearBtn" style="display:none;" aria-label="Clear search">✕</button>
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search Python, Java, C, AVL, DBMS, Notes..." autocomplete="off" />
+        <button class="search-clear-btn" id="searchClearBtn" style="display:none;">✕</button>
         <div class="suggestions-panel" id="suggestionsPanel"></div>
       </div>
     </div>
 
     <div class="nav-right">
-      <div class="nav-desktop-links">
-        <button type="button" class="nav-link-btn active" id="navHomeBtn">Home</button>
-        <button type="button" class="nav-link-btn" id="navRecentBtn">Recent</button>
-        <button type="button" class="nav-link-btn" id="navPinnedBtn">Pinned</button>
-        <button type="button" class="nav-link-btn admin-only-inline" id="navDashboardBtn" style="display:none;">⚡ Admin Dashboard</button>
-        <button type="button" class="nav-link-btn admin-only-inline" id="navRequestsBtn" style="display:none;">Requests <span class="badge-count" id="requestBadgeCount" style="display:none;">0</span></button>
-        <button type="button" class="nav-link-btn" id="navAboutBtn">About</button>
-      </div>
-      <button type="button" class="icon-btn" id="themeToggle" title="Toggle Light/Dark Theme" aria-label="Toggle Light or Dark Theme">🌙</button>
-      <button type="button" class="text-btn primary nav-admin-cta" id="adminLoginBtn">Admin Login</button>
-      <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open Navigation Menu" aria-expanded="false" aria-controls="mobileNavDrawer">
-        <span class="hamburger-lines" aria-hidden="true"><span></span><span></span><span></span></span>
-      </button>
+      <button class="nav-link-btn" id="navHomeBtn">Home</button>
+      <button class="nav-link-btn" id="navRecentBtn">Recent</button>
+      <button class="nav-link-btn" id="navPinnedBtn">Pinned</button>
+      <button class="nav-link-btn admin-only-inline" id="navDashboardBtn" style="display:none;">⚡ Admin Dashboard</button>
+      <button class="nav-link-btn admin-only-inline" id="navRequestsBtn" style="display:none;">Requests <span class="badge-count" id="requestBadgeCount" style="display:none;">0</span></button>
+      <button class="nav-link-btn" id="navAboutBtn">About</button>
+      <button class="icon-btn" id="themeToggle" title="Toggle Light/Dark Theme">🌙</button>
+      <button class="text-btn primary" id="adminLoginBtn">Admin Login</button>
     </div>
   </nav>
 
@@ -451,7 +450,7 @@
       <button type="button" class="mobile-nav-close-btn" id="mobileNavCloseBtn" aria-label="Close Menu">✕</button>
     </div>
     <div class="mobile-nav-drawer-list">
-      <button type="button" class="mob-drawer-item active" id="mobDrawerHomeBtn"><span>🏠</span><span>Home</span></button>
+      <button type="button" class="mob-drawer-item" id="mobDrawerHomeBtn"><span>🏠</span><span>Home</span></button>
       <button type="button" class="mob-drawer-item" id="mobDrawerRecentBtn"><span>🕒</span><span>Recent Uploads</span></button>
       <button type="button" class="mob-drawer-item" id="mobDrawerPinnedBtn"><span>📌</span><span>Pinned Programs</span></button>
       <button type="button" class="mob-drawer-item" id="mobDrawerSyllabusBtn"><span>📑</span><span>Syllabus Explorer</span></button>
@@ -464,7 +463,6 @@
 
   <!-- Homepage Hero Section -->
   <header class="hero">
-    <div class="hero-ambient-glow" aria-hidden="true"></div>
     <div class="hero-badge">🚀 ZipShare V3</div>
     <h1 class="hero-title">ZIPSHARE</h1>
     <p class="hero-subtitle">Student-Friendly File Sharing Platform</p>
@@ -508,14 +506,14 @@
   <!-- Category Interactive Tabs -->
   <section class="filters-section">
     <div class="filters" id="filters">
-      <button type="button" class="chip active" data-category="all">⭐ All</button>
-      <button type="button" class="chip" data-category="java">☕ Java</button>
-      <button type="button" class="chip" data-category="python">🐍 Python</button>
-      <button type="button" class="chip" data-category="c">💻 C Language</button>
-      <button type="button" class="chip" data-category="dbms">🗄️ DBMS</button>
-      <button type="button" class="chip" data-category="adsa">🌳 ADSA</button>
-      <button type="button" class="chip" data-category="folders">📁 Folders</button>
-      <button type="button" class="chip" data-category="pinned">📌 Pinned</button>
+      <button class="chip active" data-category="all">⭐ All</button>
+      <button class="chip" data-category="java">☕ Java</button>
+      <button class="chip" data-category="python">🐍 Python</button>
+      <button class="chip" data-category="c">💻 C Language</button>
+      <button class="chip" data-category="dbms">🗄️ DBMS</button>
+      <button class="chip" data-category="adsa">🌳 ADSA</button>
+      <button class="chip" data-category="folders">📁 Folders &amp; Zip</button>
+      <button class="chip" data-category="pinned">📌 Pinned</button>
     </div>
   </section>
 
@@ -735,16 +733,12 @@
 
   <!-- Site Footer -->
   <footer class="site-footer">
-    <div class="footer-container">
+    <div class="footer-content">
       <h3 class="footer-title">💠 ZIPSHARE</h3>
       <p class="footer-tagline">Student-Friendly File Sharing Platform</p>
-      <div class="footer-links-row" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:10px; flex-wrap:wrap;">
-        <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="footer-link" id="footerApkLink" title="Download REPLICA APK">
-          <span>📲</span> <span id="footerApkText">REPLICA Companion APK</span>
-        </a>
-      </div>
       <div class="footer-credits">
-        <p>Developed by <span class="gradient-text-nomad">NOMAD TEAM</span> · Owner: <strong>Anonymous</strong></p>
+        <p>Developed by <strong>NOMAD TEAM</strong></p>
+        <p>Owner: <strong>Anonymous</strong></p>
       </div>
       <p class="footer-copy">&copy; 2026 ZipShare V3 · Powered by Node.js, Express &amp; MongoDB</p>
     </div>
@@ -823,8 +817,8 @@
 
       <div class="dashboard-card" style="border-color: rgba(99, 102, 241, 0.4);">
         <h4>📚 Official Syllabus Matrix</h4>
-        <p>Track all 145 experiments across Java (35), Python (40), DBMS (54), and ADSA (16). Manage mappings.</p>
-        <button class="dash-btn primary" id="dashSyllabusBtn">Open Syllabus Matrix (145)</button>
+        <p>Track all 91 experiments across Java (35), Python (40), and DSA (16). Manage mappings.</p>
+        <button class="dash-btn primary" id="dashSyllabusBtn">Open Syllabus Matrix (91)</button>
       </div>
 
       <div class="dashboard-card" style="border-color: rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.04);">
@@ -1423,6 +1417,19 @@ boolean: false</pre>
     </div>
   </div>
 </div>
+
+<!-- Site Footer -->
+<footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-links-row" style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:10px; flex-wrap:wrap;">
+      <a href="https://betadrop.app/i/eXW3zM" target="_blank" rel="noopener noreferrer" class="footer-link" id="footerApkLink" title="Download REPLICA APK">
+        <span>📲</span> <span id="footerApkText">REPLICA Companion APK</span>
+      </a>
+    </div>
+    <p class="footer-copy">© 2026 ZipShare Student Hub</p>
+    <p class="footer-nomad">Developed by <span class="gradient-text-nomad">Nomad</span></p>
+  </div>
+</footer>
 
 <!-- Mobile Syllabus Backdrop -->
 <div class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop" aria-hidden="true"></div>

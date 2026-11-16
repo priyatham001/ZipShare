@@ -167,19 +167,6 @@ router.get('/programs', requireAdmin, async (req, res) => {
   }
 });
 
-function normalizeAssignedUsers(raw) {
-  const list = Array.isArray(raw)
-    ? raw
-    : (typeof raw === 'string' ? raw.split(',') : []);
-  return Array.from(new Set(list.map(u => String(u).trim().toLowerCase()).filter(Boolean)));
-}
-
-function appendProgramHistory(existingHistory, entry) {
-  const arr = Array.isArray(existingHistory) ? [...existingHistory] : [];
-  arr.push({ ...entry, timestamp: new Date().toISOString() });
-  return arr.slice(-20);
-}
-
 // POST /api/admin/programs - create new program with global or individual assignment
 router.post('/programs', requireAdmin, async (req, res) => {
   try {
@@ -191,8 +178,7 @@ router.post('/programs', requireAdmin, async (req, res) => {
       status = 'published',
       assignmentType = 'global',
       assignedUsers = [],
-      pinned = false,
-      overrideDuplicate = false
+      pinned = false
     } = req.body;
 
     if (!title || !title.trim()) {
@@ -204,34 +190,10 @@ router.post('/programs', requireAdmin, async (req, res) => {
     const extension = extMap[cleanCategory] || 'txt';
     const cleanTitle = title.trim();
     const filename = cleanTitle.includes('.') ? cleanTitle : `${cleanTitle}.${extension}`;
-    const cleanAssignType = assignmentType === 'individual' ? 'individual' : 'global';
-    const cleanStatus = status === 'draft' ? 'draft' : 'published';
-    const parsedUsers = cleanAssignType === 'individual' ? normalizeAssignedUsers(assignedUsers) : [];
 
-    if (cleanAssignType === 'individual' && parsedUsers.length === 0) {
-      return res.status(400).json({ error: 'At least one assigned user is required for individual assignment.' });
-    }
-
-    const existingSameCat = await filesDB.find({ category: cleanCategory }, {}, 1000);
-    const duplicate = existingSameCat.find(
-      f => (f.originalName || '').toLowerCase().trim() === filename.toLowerCase()
-    );
-    if (duplicate && !overrideDuplicate) {
-      return res.status(409).json({
-        conflict: true,
-        error: `Program "${filename}" already exists in category "${cleanCategory}".`
-      });
-    }
-
-    const now = new Date();
-    const history = appendProgramHistory([], {
-      action: 'created',
-      category: cleanCategory,
-      status: cleanStatus,
-      assignmentType: cleanAssignType,
-      assignedUsers: parsedUsers,
-      assignedBy: 'admin'
-    });
+    const parsedUsers = Array.isArray(assignedUsers)
+      ? assignedUsers.map(u => String(u).trim()).filter(Boolean)
+      : (typeof assignedUsers === 'string' ? assignedUsers.split(',').map(u => u.trim()).filter(Boolean) : []);
 
     const newProgram = await filesDB.create({
       originalName: filename,
@@ -244,26 +206,23 @@ router.post('/programs', requireAdmin, async (req, res) => {
       subject: cleanCategory.toUpperCase(),
       exercise: 'Admin Assigned Experiment',
       question: cleanTitle,
-      status: cleanStatus,
-      assignmentType: cleanAssignType,
+      status: status === 'draft' ? 'draft' : 'published',
+      assignmentType: assignmentType === 'individual' ? 'individual' : 'global',
       assignedUsers: parsedUsers,
-      assignedBy: 'admin',
-      assignedAt: now.toISOString(),
-      assignmentHistory: history,
-      description: String(description || '').trim(),
+      description: description.trim(),
       content: code,
       size: Buffer.byteLength(code || '', 'utf8'),
-      tags: [cleanCategory, 'program', cleanAssignType === 'global' ? 'global' : 'individual-assignment'],
+      tags: [cleanCategory, 'program', assignmentType === 'global' ? 'global' : 'individual-assignment'],
       pinned: Boolean(pinned),
       downloads: 0,
       uploadedBy: 'admin',
-      uploadDate: now,
-      updatedAt: now
+      uploadDate: new Date(),
+      updatedAt: new Date()
     });
 
     res.status(201).json({
       success: true,
-      message: cleanAssignType === 'global' ? 'Program created & published globally to all users! 🌐' : 'Program created & assigned individually. 👤',
+      message: assignmentType === 'global' ? 'Program created & published globally to all users! 🌐' : 'Program created & assigned individually. 👤',
       program: newProgram
     });
   } catch (err) {
@@ -275,9 +234,6 @@ router.post('/programs', requireAdmin, async (req, res) => {
 // PUT /api/admin/programs/:id - edit program, update assignment type or details
 router.put('/programs/:id', requireAdmin, async (req, res) => {
   try {
-    const existing = await filesDB.findById(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Program not found.' });
-
     const {
       title,
       category,
@@ -291,17 +247,16 @@ router.put('/programs/:id', requireAdmin, async (req, res) => {
 
     const update = { updatedAt: new Date() };
 
-    if (title !== undefined && String(title).trim()) {
-      const cleanTitle = String(title).trim();
-      update.originalName = cleanTitle;
-      update.relativePath = cleanTitle;
-      update.question = cleanTitle;
+    if (title !== undefined && title.trim()) {
+      update.originalName = title.trim();
+      update.relativePath = title.trim();
+      update.question = title.trim();
     }
-    if (category !== undefined && String(category).trim()) {
-      update.category = String(category).toLowerCase().trim();
-      update.subject = String(category).toUpperCase().trim();
+    if (category !== undefined) {
+      update.category = category.toLowerCase().trim();
+      update.subject = category.toUpperCase().trim();
     }
-    if (description !== undefined) update.description = String(description).trim();
+    if (description !== undefined) update.description = description.trim();
     if (code !== undefined) {
       update.content = code;
       update.size = Buffer.byteLength(code || '', 'utf8');
@@ -313,38 +268,15 @@ router.put('/programs/:id', requireAdmin, async (req, res) => {
       update.assignmentType = assignmentType === 'individual' ? 'individual' : 'global';
     }
     if (assignedUsers !== undefined) {
-      update.assignedUsers = normalizeAssignedUsers(assignedUsers);
+      update.assignedUsers = Array.isArray(assignedUsers)
+        ? assignedUsers.map(u => String(u).trim()).filter(Boolean)
+        : (typeof assignedUsers === 'string' ? assignedUsers.split(',').map(u => u.trim()).filter(Boolean) : []);
     }
     if (pinned !== undefined) update.pinned = Boolean(pinned);
 
-    const nextAssignType = update.assignmentType || existing.assignmentType || 'global';
-    const nextUsers = update.assignedUsers !== undefined ? update.assignedUsers : (existing.assignedUsers || []);
-    if (nextAssignType === 'global') {
-      update.assignedUsers = [];
-    } else if (nextAssignType === 'individual' && nextUsers.length === 0) {
-      return res.status(400).json({ error: 'At least one assigned user is required for individual assignment.' });
-    }
-
-    const nextCategory = update.category || existing.category;
-    const nextName = (update.originalName || existing.originalName || '').toLowerCase().trim();
-    const catPeers = await filesDB.find({ category: nextCategory }, {}, 1000);
-    const conflictPeer = catPeers.find(
-      f => (f._id || f.id) !== req.params.id && (f.originalName || '').toLowerCase().trim() === nextName
-    );
-    if (conflictPeer) {
-      return res.status(409).json({ error: `Another program named "${nextName}" already exists in "${nextCategory}".` });
-    }
-
-    update.assignmentHistory = appendProgramHistory(existing.assignmentHistory, {
-      action: 'updated',
-      category: nextCategory,
-      status: update.status || existing.status,
-      assignmentType: nextAssignType,
-      assignedUsers: nextAssignType === 'individual' ? nextUsers : [],
-      assignedBy: 'admin'
-    });
-
     const updated = await filesDB.findByIdAndUpdate(req.params.id, update);
+    if (!updated) return res.status(404).json({ error: 'Program not found.' });
+
     res.json({ success: true, message: 'Program updated successfully.', program: updated });
   } catch (err) {
     console.error('Error updating program:', err);
@@ -355,21 +287,12 @@ router.put('/programs/:id', requireAdmin, async (req, res) => {
 // POST /api/admin/programs/:id/publish - publish globally
 router.post('/programs/:id/publish', requireAdmin, async (req, res) => {
   try {
-    const existing = await filesDB.findById(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Program not found.' });
     const updated = await filesDB.findByIdAndUpdate(req.params.id, {
       status: 'published',
       assignmentType: 'global',
-      assignedUsers: [],
-      assignmentHistory: appendProgramHistory(existing.assignmentHistory, {
-        action: 'published_global',
-        category: existing.category,
-        status: 'published',
-        assignmentType: 'global',
-        assignedBy: 'admin'
-      }),
       updatedAt: new Date()
     });
+    if (!updated) return res.status(404).json({ error: 'Program not found.' });
     res.json({ success: true, message: 'Program published globally to all users! 🌐', program: updated });
   } catch (err) {
     res.status(500).json({ error: 'Failed to publish program.' });
@@ -379,19 +302,11 @@ router.post('/programs/:id/publish', requireAdmin, async (req, res) => {
 // POST /api/admin/programs/:id/unpublish - unpublish to draft
 router.post('/programs/:id/unpublish', requireAdmin, async (req, res) => {
   try {
-    const existing = await filesDB.findById(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Program not found.' });
     const updated = await filesDB.findByIdAndUpdate(req.params.id, {
       status: 'draft',
-      assignmentHistory: appendProgramHistory(existing.assignmentHistory, {
-        action: 'unpublished_draft',
-        category: existing.category,
-        status: 'draft',
-        assignmentType: existing.assignmentType || 'global',
-        assignedBy: 'admin'
-      }),
       updatedAt: new Date()
     });
+    if (!updated) return res.status(404).json({ error: 'Program not found.' });
     res.json({ success: true, message: 'Program unpublished and moved to draft.', program: updated });
   } catch (err) {
     res.status(500).json({ error: 'Failed to unpublish program.' });

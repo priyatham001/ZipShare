@@ -112,15 +112,6 @@ function isRunnableFile(file) {
   return RUNNABLE_EXTENSIONS.has(ext) || file.category === 'adsa' || file.category === 'dbms';
 }
 
-function isCollectionZipArchive(file) {
-  if (!file) return false;
-  const ext = getFileExtension(file.extension || file.originalName || file.relativePath || '');
-  return ext === 'zip' ||
-    (file.category || '').toLowerCase() === 'zip' ||
-    file.batchId === 'zip-root-lab-programs' ||
-    /zipshare\.zip$/i.test(file.originalName || '');
-}
-
 // ---------------- Theme & Welcome Intro ----------------
 function applyTheme(theme) {
   activeTheme = theme;
@@ -128,12 +119,8 @@ function applyTheme(theme) {
   document.body.setAttribute('data-theme', theme);
   const toggleBtn = $('themeToggle');
   if (toggleBtn) {
-    const isDark = theme === 'dark';
-    const label = isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme';
-    toggleBtn.textContent = isDark ? '🌙' : '☀️';
-    toggleBtn.title = label;
-    toggleBtn.setAttribute('aria-label', label);
-    toggleBtn.setAttribute('aria-pressed', isDark ? 'false' : 'true');
+    toggleBtn.textContent = theme === 'dark' ? '🌙' : '☀️';
+    toggleBtn.title = theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme';
   }
   localStorage.setItem('zipshare_theme', theme);
 
@@ -321,10 +308,6 @@ function initWelcomeIllusion() {
   let time = 0;
 
   function renderTunnel() {
-    const welcomeContainer = $('zipshareWelcomeContainer');
-    if (welcomeContainer && (welcomeContainer.classList.contains('hidden') || welcomeContainer.style.display === 'none')) {
-      return;
-    }
     time += 0.038 * speed;
     if (speed > 1.0) {
       speed += (1.0 - speed) * 0.05;
@@ -352,7 +335,9 @@ function initWelcomeIllusion() {
           const dist = Math.sqrt(dx * dx + dy * dy);
           const angle = Math.atan2(dy, dx);
 
+          // Deep perspective reciprocal tunnel coordinate matching Image 3
           const z = 1.0 / (dist + 0.1);
+          // Concentric spiral tunnel stripes zooming inward
           const wave = Math.sin(z * 7.5 - time * 2.2 + angle * 3.0);
 
           const edgeWidth = 0.22;
@@ -482,11 +467,11 @@ function startWelcomeJourney(isReplay = false) {
   // Preload all background details (files, syllabus, settings, and high-res assets) during the 10s intro
   preloadBackgroundDetails();
 
-  // Screen 1 Advance logic (fast 2.2s reveal synchronized with background preload)
+  // Screen 1 Advance logic (10-Second Duration with Live Telemetry)
   let advancedFromScreen1 = false;
   let screen1ProgressAnim = null;
   const screen1StartTime = performance.now();
-  const screen1TotalDuration = 2200;
+  const screen1TotalDuration = 10000; // 10 seconds requested by user
 
   const progressBar = $('zpwBhProgressBar');
   const statusText = $('zpwBhStatusText');
@@ -512,14 +497,16 @@ function startWelcomeJourney(isReplay = false) {
     }
 
     if (statusText) {
-      if (elapsed < 600) {
+      if (elapsed < 2500) {
         statusText.textContent = 'Initializing your coding universe...';
-      } else if (elapsed < 1300) {
+      } else if (elapsed < 5000) {
         statusText.textContent = 'Synchronizing official curriculum & 145 lab experiments...';
-      } else if (elapsed < 1900) {
-        statusText.textContent = 'Preparing Java, Python, C & SQL workspaces...';
+      } else if (elapsed < 7500) {
+        statusText.textContent = 'Caching Judge0 runtime containers (Java, Python, C, SQL)...';
+      } else if (elapsed < 9200) {
+        statusText.textContent = 'Entering coding singularity horizon...';
       } else {
-        statusText.textContent = 'Workspace ready!';
+        statusText.textContent = 'Cosmic synchronization complete!';
       }
     }
 
@@ -552,7 +539,7 @@ function startWelcomeJourney(isReplay = false) {
       screen1.classList.remove('active');
 
       showScreen2Theme();
-    }, 240);
+    }, 380);
   }
 
   const skipBtn = $('zpwSkipBhBtn');
@@ -655,7 +642,7 @@ function showScreen2Theme() {
       screen2.style.display = 'none';
       screen2.classList.remove('zpw-fade-in');
       showScreen3Categories();
-    }, 240);
+    }, 400);
   }
 
   const continueBtn = $('zpwThemeContinueBtn');
@@ -917,7 +904,7 @@ function showScreen3Categories() {
       screen3.style.display = 'none';
       screen3.classList.remove('zpw-fade-in');
       launchLanguageTransition(activeCategory);
-    }, 220);
+    }, 350);
   }
 
   if (enterBtn) {
@@ -1275,20 +1262,9 @@ SELECT * FROM zipshare_records WHERE subject_code = 'DBMS' ORDER BY created_at D
   initTransCanvas(category);
 
   let startTime = performance.now();
-  const duration = 550;
-  let finished = false;
-
-  const triggerFinish = () => {
-    if (finished) return;
-    finished = true;
-    transScreen.onclick = null;
-    finalizeHomeOpening(category);
-  };
-
-  transScreen.onclick = triggerFinish;
+  const duration = 2300;
 
   function stepProgress(now) {
-    if (finished) return;
     const elapsed = now - startTime;
     const progress = Math.min(100, (elapsed / duration) * 100);
     if (barEl) barEl.style.width = progress + '%';
@@ -1296,7 +1272,9 @@ SELECT * FROM zipshare_records WHERE subject_code = 'DBMS' ORDER BY created_at D
     if (progress < 100) {
       requestAnimationFrame(stepProgress);
     } else {
-      setTimeout(triggerFinish, 80);
+      setTimeout(() => {
+        finalizeHomeOpening(category);
+      }, 250);
     }
   }
   requestAnimationFrame(stepProgress);
@@ -1331,9 +1309,9 @@ function finalizeHomeOpening(category) {
       appEl.classList.add('show');
     }
 
-    switchCategory(category, true);
+    switchCategory(category);
     toast(`${category.toUpperCase()} Workspace Active! 🚀`, 'success');
-  }, 220);
+  }, 350);
 }
 
 function initTransCanvas(category) {
@@ -1954,8 +1932,8 @@ function initHeroActions() {
   const exploreBtn = $('heroExploreBtn');
   if (exploreBtn) {
     exploreBtn.addEventListener('click', () => {
-      const target = $('filters') || $('labLayoutWrapper') || $('fileGrid');
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const target = $('labLayoutWrapper') || $('fileGrid');
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
     });
   }
 
@@ -1963,7 +1941,7 @@ function initHeroActions() {
   if (browseBtn) {
     browseBtn.addEventListener('click', () => {
       const target = $('filters');
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
     });
   }
 }
@@ -2747,49 +2725,13 @@ function renderSubjectAnimation(cat) {
   animate();
 }
 
-function setActiveTopNav(activeKey = 'home') {
-  const desktopMap = {
-    home: 'navHomeBtn',
-    recent: 'navRecentBtn',
-    pinned: 'navPinnedBtn',
-    about: 'navAboutBtn'
-  };
-  const drawerMap = {
-    home: 'mobDrawerHomeBtn',
-    recent: 'mobDrawerRecentBtn',
-    pinned: 'mobDrawerPinnedBtn',
-    syllabus: 'mobDrawerSyllabusBtn',
-    about: 'mobDrawerAboutBtn'
-  };
-  const bottomMap = {
-    home: 'mobNavHomeBtn',
-    search: 'mobNavSearchBtn',
-    syllabus: 'mobNavSyllabusBtn',
-    pinned: 'mobNavPinnedBtn'
-  };
-
-  Object.entries(desktopMap).forEach(([k, id]) => {
-    const el = $(id);
-    if (el) el.classList.toggle('active', k === activeKey);
-  });
-  Object.entries(drawerMap).forEach(([k, id]) => {
-    const el = $(id);
-    if (el) el.classList.toggle('active', k === activeKey);
-  });
-  Object.entries(bottomMap).forEach(([k, id]) => {
-    const el = $(id);
-    if (el) el.classList.toggle('active', k === activeKey);
-  });
-}
-
 // ---------------- Category Switcher ----------------
 function switchCategory(cat, skipAnimation = false) {
+  const prevCat = activeCategory;
   activeCategory = cat;
 
   document.querySelectorAll('#filters .chip, .segment-btn, .filter-btn').forEach(chip => {
-    const isMatch = chip.dataset.category === cat;
-    chip.classList.toggle('active', isMatch);
-    chip.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+    chip.classList.toggle('active', chip.dataset.category === cat);
   });
 
   const filtersBar = $('filters');
@@ -2819,14 +2761,18 @@ function switchCategory(cat, skipAnimation = false) {
   if ($('stageIcon')) $('stageIcon').textContent = s.icon;
   if ($('stageTitle')) $('stageTitle').textContent = s.title;
   if ($('stageDesc')) $('stageDesc').textContent = s.desc;
-  if ($('gridSectionTitle')) $('gridSectionTitle').textContent = `${s.title} (…)`;
-
-  const sortVal = $('sortSelect')?.value;
-  setActiveTopNav(cat === 'pinned' ? 'pinned' : (sortVal === 'recent' ? 'recent' : 'home'));
+  if ($('gridSectionTitle')) $('gridSectionTitle').textContent = `${s.title} (${lastFiles.length})`;
 
   renderSubjectAnimation(cat);
   renderBreadcrumbs();
-  loadFiles();
+
+  const isLangSubject = ['java', 'python', 'c', 'adsa', 'dbms'].includes(cat);
+  if (isLangSubject && !skipAnimation && prevCat !== cat) {
+    const loadPromise = loadFiles();
+    triggerLanguageLoadingTransition(cat, loadPromise);
+  } else {
+    loadFiles();
+  }
 }
 
 function setSyllabusFilter(subject, exercise = null, question = null) {
@@ -2835,7 +2781,7 @@ function setSyllabusFilter(subject, exercise = null, question = null) {
   activeSyllabusQuestion = question;
 
   const badge = $('activeSyllabusFilterBadge');
-  const textEl = $('filterBadgeText') || $('syllabusFilterText');
+  const textEl = $('syllabusFilterText');
 
   if (subject || exercise || question) {
     if (badge) badge.style.display = 'inline-flex';
@@ -2930,16 +2876,12 @@ if (searchClearBtn) {
   });
 }
 
-let cachedSuggestionsData = null;
-
-async function loadSuggestions(force = false) {
+async function loadSuggestions() {
   if (!suggestionsPanel) return;
   try {
-    if (!force && cachedSuggestionsData) return;
     const res = await fetch('/api/files/suggestions');
     if (!res.ok) return;
     const data = await res.json();
-    cachedSuggestionsData = data;
 
     let html = '';
     if (data.trending?.length) {
@@ -3058,34 +3000,14 @@ function renderSidebar() {
   treeContainer.innerHTML = html;
 }
 
-function openMobileSidebar() {
-  const labSidebar = $('labSidebar');
-  const backdrop = $('mobileSidebarBackdrop');
-  if (labSidebar) labSidebar.classList.add('mobile-open', 'show-mobile');
-  if (backdrop) {
-    backdrop.classList.add('show');
-    backdrop.setAttribute('aria-hidden', 'false');
-  }
-}
-
-function closeMobileSidebar() {
-  const labSidebar = $('labSidebar');
-  const backdrop = $('mobileSidebarBackdrop');
-  if (labSidebar) labSidebar.classList.remove('mobile-open', 'show-mobile');
-  if (backdrop) {
-    backdrop.classList.remove('show');
-    backdrop.setAttribute('aria-hidden', 'true');
-  }
-}
-
 function selectSyllabusExperiment(cat, num, rawTitle) {
+  switchCategory(cat);
   searchSearchQuery = rawTitle || '';
   const searchInput = $('searchInput');
-  if (searchInput) searchInput.value = searchSearchQuery;
+  if (searchInput) searchInput.value = rawTitle || '';
   const clearBtn = $('searchClearBtn');
-  if (clearBtn) clearBtn.style.display = searchSearchQuery ? 'inline-flex' : 'none';
-  closeMobileSidebar();
-  switchCategory(cat);
+  if (clearBtn) clearBtn.style.display = searchSearchQuery ? 'block' : 'none';
+  loadFiles();
 }
 
 function toggleSyllabusSubject(subKey) {
@@ -3107,8 +3029,6 @@ if (syllabusSearchInput) {
 const sidebarToggleBtn = $('sidebarToggleBtn');
 const sidebarCollapseBtn = $('sidebarCollapseBtn');
 const mobileSidebarTrigger = $('mobileSidebarTrigger');
-const sidebarMobileCloseBtn = $('sidebarMobileCloseBtn');
-const mobileSidebarBackdrop = $('mobileSidebarBackdrop');
 const labSidebar = $('labSidebar');
 
 if (sidebarToggleBtn && labSidebar) {
@@ -3125,180 +3045,13 @@ if (sidebarCollapseBtn && labSidebar) {
 
 if (mobileSidebarTrigger && labSidebar) {
   mobileSidebarTrigger.addEventListener('click', () => {
-    const isOpen = labSidebar.classList.contains('mobile-open') || labSidebar.classList.contains('show-mobile');
-    if (isOpen) closeMobileSidebar();
-    else openMobileSidebar();
+    labSidebar.classList.toggle('show-mobile');
   });
 }
 
-if (sidebarMobileCloseBtn) {
-  sidebarMobileCloseBtn.addEventListener('click', closeMobileSidebar);
-}
-
-if (mobileSidebarBackdrop) {
-  mobileSidebarBackdrop.addEventListener('click', closeMobileSidebar);
-}
-
-// ---------------- Fast Client Caches & Race-Free Loader ----------------
-const syllabusViewCache = new Map();
-const filesQueryCache = new Map();
-let cachedPinnedFiles = null;
-let cachedStatsData = null;
-let activeFilesRequestId = 0;
-let activeFilesAbortController = null;
-let batchPrefetchTimer = null;
-
-function invalidateClientCaches() {
-  syllabusViewCache.clear();
-  filesQueryCache.clear();
-  cachedPinnedFiles = null;
-  cachedStatsData = null;
-  cachedSuggestionsData = null;
-  if (typeof programPreviewCache !== 'undefined') {
-    programPreviewCache.clear();
-  }
-}
-
-function updateGridSectionCount(count) {
-  const el = $('gridSectionTitle');
-  if (!el) return;
-  const stageTitles = {
-    all: 'All Files & Folders',
-    java: 'Java Projects',
-    python: 'Python Programs',
-    c: 'C Language Programming',
-    dbms: 'Database Management Systems (DBMS)',
-    adsa: 'Advanced Data Structures & Algorithms (ADSA)',
-    folders: 'Project Folders',
-    pinned: 'Pinned Highlights'
-  };
-  const title = stageTitles[activeCategory] || 'All Files & Folders';
-  el.textContent = `${title} (${count})`;
-}
-
-function scheduleBatchPreviewPrefetch(filesList) {
-  if (batchPrefetchTimer) clearTimeout(batchPrefetchTimer);
-  const idsToFetch = [];
-  const seen = new Set();
-  for (const f of filesList) {
-    if (!f) continue;
-    const id = f._id || f.id;
-    if (!id || seen.has(id)) continue;
-    if (typeof programPreviewCache !== 'undefined' && programPreviewCache.has(id)) continue;
-    const ext = (f.extension || '').toLowerCase();
-    if (!ext || ext === 'zip' || ext === 'pdf' || ext === 'png' || ext === 'jpg') continue;
-    seen.add(id);
-    idsToFetch.push(id);
-    if (idsToFetch.length >= 25) break;
-  }
-  if (idsToFetch.length === 0) return;
-
-  const runPrefetch = () => {
-    fetch(`/api/files/previews/batch?ids=${encodeURIComponent(idsToFetch.join(','))}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data && data.previews && typeof programPreviewCache !== 'undefined') {
-          for (const [id, preview] of Object.entries(data.previews)) {
-            programPreviewCache.set(id, preview);
-          }
-        }
-      })
-      .catch(() => {});
-  };
-
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(runPrefetch, { timeout: 600 });
-  } else {
-    batchPrefetchTimer = setTimeout(runPrefetch, 80);
-  }
-}
-
-function deriveSyllabusSliceFromAll(allData, cat) {
-  if (!allData || !Array.isArray(allData.items)) return null;
-  const items = cat === 'all' ? allData.items : allData.items.filter(it => it.category === cat);
-  return {
-    items,
-    needsReviewCount: cat === 'all' ? (allData.needsReviewCount || 0) : 0,
-    needsReviewFiles: cat === 'all' ? (allData.needsReviewFiles || []) : [],
-    otherFiles: cat === 'all' ? (allData.otherFiles || []) : []
-  };
-}
-
-function renderFileGridSkeleton(count = 6) {
-  const grid = $('fileGrid');
-  const empty = $('emptyState');
-  if (!grid) return;
-  if (empty) empty.style.display = 'none';
-
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < count; i++) {
-    const sk = document.createElement('div');
-    sk.className = 'skeleton-card';
-    sk.setAttribute('aria-hidden', 'true');
-    sk.innerHTML = `
-      <div class="skeleton-line short"></div>
-      <div class="skeleton-line title"></div>
-      <div class="skeleton-line medium"></div>
-      <div class="skeleton-line short" style="margin-top:auto;"></div>
-    `;
-    frag.appendChild(sk);
-  }
-  grid.replaceChildren(frag);
-}
-
-function renderFileGridError(message = 'Could not load programs from the server.') {
-  const grid = $('fileGrid');
-  const empty = $('emptyState');
-  if (!grid) return;
-  if (empty) empty.style.display = 'none';
-
-  const box = document.createElement('div');
-  box.className = 'grid-error-state';
-  box.innerHTML = `
-    <div style="font-size:2rem; margin-bottom:10px;">⚠️</div>
-    <h3 style="margin:0 0 6px; font-size:1.1rem;">Unable to Load Programs</h3>
-    <p style="margin:0 0 16px; color:var(--text-dim); font-size:0.9rem;">${escapeHtml(message)}</p>
-    <button type="button" class="card-btn primary" onclick="loadFiles(true)">🔄 Retry</button>
-  `;
-  grid.replaceChildren(box);
-}
-
-function updateEmptyStateCopy(isEmpty) {
-  const empty = $('emptyState');
-  if (!empty) return;
-  if (!isEmpty) {
-    empty.style.display = 'none';
-    return;
-  }
-  empty.style.display = 'block';
-  const titleEl = empty.querySelector('h3');
-  const descEl = empty.querySelector('p');
-  if (titleEl) {
-    titleEl.textContent = searchSearchQuery
-      ? `No matching programs for "${searchSearchQuery}"`
-      : 'No programs in this category yet';
-  }
-  if (descEl) {
-    descEl.textContent = searchSearchQuery
-      ? 'Try clearing your search filter or picking another category.'
-      : 'Select another subject chip above or browse topics in the Syllabus Explorer.';
-  }
-}
-
 // ---------------- Load & Render Files ----------------
-async function loadFiles(forceRefresh = false) {
-  const reqId = ++activeFilesRequestId;
-  if (activeFilesAbortController) {
-    try { activeFilesAbortController.abort(); } catch (e) {}
-  }
-  const controller = new AbortController();
-  activeFilesAbortController = controller;
-
+async function loadFiles() {
   try {
-    if (forceRefresh === true) {
-      invalidateClientCaches();
-    }
-
     const params = new URLSearchParams();
     if (searchSearchQuery) params.set('q', searchSearchQuery);
     if (activeCategory !== 'all') params.set('category', activeCategory);
@@ -3307,86 +3060,43 @@ async function loadFiles(forceRefresh = false) {
     if (activeSyllabusQuestion) params.set('question', activeSyllabusQuestion);
 
     const sortEl = $('sortSelect');
-    const sortVal = sortEl ? sortEl.value : 'default';
-    if (sortEl) params.set('sort', sortVal);
+    if (sortEl) params.set('sort', sortEl.value);
 
-    // Fetch pinned files once (cached until invalidated)
-    if (cachedPinnedFiles) {
-      renderPinnedSection(cachedPinnedFiles);
-    } else {
-      fetch('/api/files?filter=pinned')
-        .then(r => r.json())
-        .then(pFiles => {
-          cachedPinnedFiles = pFiles;
-          renderPinnedSection(pFiles);
-        })
-        .catch(() => {});
-    }
+    // Fetch pinned files for top pinned highlight section
+    fetch('/api/files?filter=pinned')
+      .then(r => r.json())
+      .then(pFiles => renderPinnedSection(pFiles))
+      .catch(() => {});
 
     const isSyllabusCat = ['all', 'java', 'python', 'adsa', 'dbms'].includes(activeCategory);
-    const cacheKey = params.toString();
 
     if (isSyllabusCat && !activeSyllabusExercise && !activeSyllabusQuestion) {
-      let data = syllabusViewCache.get(cacheKey);
-      // Fast synchronous slice from cached 'all' view when default sort & no search/subject filter
-      if (!data && !searchSearchQuery && !activeSyllabusSubject && (!sortEl || sortVal === 'default' || sortVal === 'sno')) {
-        const allKey = new URLSearchParams(sortEl ? { sort: sortVal } : {}).toString();
-        const cachedAll = syllabusViewCache.get(allKey);
-        if (cachedAll) {
-          data = deriveSyllabusSliceFromAll(cachedAll, activeCategory);
-          if (data) syllabusViewCache.set(cacheKey, data);
-        }
-      }
-
-      if (!data) {
-        renderFileGridSkeleton(6);
-        const res = await fetch(`/api/syllabus/view?${cacheKey}`, { signal: controller.signal });
-        if (!res.ok) throw new Error('Failed to load syllabus view');
-        data = await res.json();
-        if (reqId !== activeFilesRequestId) return;
-        syllabusViewCache.set(cacheKey, data);
-      }
-
-      if (reqId !== activeFilesRequestId) return;
+      const res = await fetch(`/api/syllabus/view?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to load syllabus view');
+      const data = await res.json();
       currentSyllabusViewData = data;
       lastFiles = data.items.map(it => it.file).filter(Boolean);
       renderSyllabusFiles(data);
-      updateGridSectionCount(data.items.length);
-      scheduleBatchPreviewPrefetch(lastFiles);
     } else {
-      let files = filesQueryCache.get(cacheKey);
-      if (!files) {
-        renderFileGridSkeleton(6);
-        const res = await fetch(`/api/files?${cacheKey}`, { signal: controller.signal });
-        if (!res.ok) throw new Error('Failed to load files from server');
-        files = await res.json();
-        if (reqId !== activeFilesRequestId) return;
-        filesQueryCache.set(cacheKey, files);
-      }
-
-      if (reqId !== activeFilesRequestId) return;
+      const res = await fetch(`/api/files?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to load files from server');
+      const files = await res.json();
       lastFiles = files;
       renderFiles(files);
-      updateGridSectionCount(files.length);
-      scheduleBatchPreviewPrefetch(files);
     }
 
     renderBreadcrumbs();
-    loadStats(forceRefresh === true);
-    loadSuggestions(forceRefresh === true);
+    loadStats();
+    loadSuggestions();
     renderSidebar();
   } catch (err) {
-    if (err && err.name === 'AbortError') return;
-    if (reqId !== activeFilesRequestId) return;
     console.error('loadFiles error:', err);
-    updateGridSectionCount('!');
-    renderFileGridError(err.message || 'Could not connect to server file index.');
     toast('Could not connect to server file index.', 'error');
   }
 }
 
 const sortSelect = $('sortSelect');
-if (sortSelect) sortSelect.addEventListener('change', () => loadFiles(false));
+if (sortSelect) sortSelect.addEventListener('change', loadFiles);
 
 // Render Pinned Highlight Section at the Top (Always real files)
 function renderPinnedSection(files) {
@@ -3441,6 +3151,7 @@ function renderSyllabusFiles(data) {
   const grid = $('fileGrid');
   const empty = $('emptyState');
   if (!grid) return;
+  grid.innerHTML = '';
 
   const items = data.items || [];
   const needsReview = data.needsReviewFiles || [];
@@ -3448,13 +3159,10 @@ function renderSyllabusFiles(data) {
   const isAdmin = Boolean(adminToken);
 
   if (items.length === 0 && needsReview.length === 0 && otherFiles.length === 0) {
-    grid.innerHTML = '';
-    updateEmptyStateCopy(true);
+    if (empty) empty.style.display = 'block';
     return;
   }
-  updateEmptyStateCopy(false);
-
-  const frag = document.createDocumentFragment();
+  if (empty) empty.style.display = 'none';
 
   // 1. Needs Review / Unmapped Banner
   if (needsReview.length > 0) {
@@ -3481,7 +3189,7 @@ function renderSyllabusFiles(data) {
         `).join('')}
       </div>
     `;
-    frag.appendChild(banner);
+    grid.appendChild(banner);
   }
 
   // 2. Syllabus items: if 'all', group by course retaining each course's numbering
@@ -3513,15 +3221,16 @@ function renderSyllabusFiles(data) {
           <span style="color:#10b981; font-weight:700;">${availCount}</span> / ${cg.total} Available
         </div>
       `;
-      frag.appendChild(header);
+      grid.appendChild(header);
 
       courseItems.forEach(item => {
-        frag.appendChild(createExperimentCard(item, isAdmin));
+        grid.appendChild(createExperimentCard(item, isAdmin));
       });
     });
   } else {
+    // Single course view (e.g. Java 1..35, Python 1..40, DSA 1..16)
     items.forEach(item => {
-      frag.appendChild(createExperimentCard(item, isAdmin));
+      grid.appendChild(createExperimentCard(item, isAdmin));
     });
   }
 
@@ -3533,14 +3242,12 @@ function renderSyllabusFiles(data) {
       <h3><span>📁</span> Other Files &amp; Resources</h3>
       <div class="course-section-badge">${otherFiles.length} item(s)</div>
     `;
-    frag.appendChild(otherHeader);
+    grid.appendChild(otherHeader);
 
     otherFiles.forEach(file => {
-      frag.appendChild(createStandaloneFileCard(file, isAdmin));
+      grid.appendChild(createStandaloneFileCard(file, isAdmin));
     });
   }
-
-  grid.replaceChildren(frag);
 }
 
 // Create an Official Experiment Card (AVAILABLE or COMING SOON)
@@ -3555,15 +3262,13 @@ function createExperimentCard(item, isAdmin) {
   card.className = `file-card ${isAvailable ? 'available-card' : 'coming-soon-card'} ${isPinned ? 'pinned-card' : ''}`;
 
   if (isAvailable) {
-    const prefetchAllCardFiles = () => {
-      filesList.forEach(f => {
-        const fId = f._id || f.id;
-        if (fId) prefetchProgram(fId);
-      });
-    };
-    card.addEventListener('pointerenter', prefetchAllCardFiles, { passive: true });
-    card.addEventListener('pointerdown', prefetchAllCardFiles, { passive: true });
-    card.addEventListener('focusin', prefetchAllCardFiles, { passive: true });
+    filesList.forEach(f => {
+      const fId = f._id || f.id;
+      if (fId) {
+        card.addEventListener('pointerenter', () => prefetchProgram(fId), { passive: true });
+        card.addEventListener('focusin', () => prefetchProgram(fId), { passive: true });
+      }
+    });
 
     const isMultiFile = filesList.length > 1;
 
@@ -3598,7 +3303,7 @@ function createExperimentCard(item, isAdmin) {
                 <div class="exp-file-actions">
                   <button class="card-btn mini" onclick="previewFile('${fId}')">👁 View</button>
                   ${runnable ? `<button class="card-btn primary mini" onclick="runOnlineFile('${fId}')">▶ Run</button>` : ''}
-                  ${!isCollectionZipArchive(f) ? `<button class="card-btn mini" onclick="downloadFile('${fId}')" title="Download">⬇</button>` : ''}
+                  <button class="card-btn mini" onclick="downloadFile('${fId}')" title="Download">⬇</button>
                   ${fileAdminActions}
                 </div>
               </div>
@@ -3612,7 +3317,7 @@ function createExperimentCard(item, isAdmin) {
       let actionBtns = `
         <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
         ${runnable ? `<button class="card-btn primary" onclick="runOnlineFile('${file._id || file.id}')">▶ Run Online</button>` : ''}
-        ${!isCollectionZipArchive(file) ? `<button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>` : ''}
+        <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
       `;
 
       if (isAdmin) {
@@ -3692,13 +3397,12 @@ function createStandaloneFileCard(file, isAdmin) {
 
   const fId = file._id || file.id;
   card.addEventListener('pointerenter', () => prefetchProgram(fId), { passive: true });
-  card.addEventListener('pointerdown', () => prefetchProgram(fId), { passive: true });
   card.addEventListener('focusin', () => prefetchProgram(fId), { passive: true });
 
   let actionBtns = `
     <button class="card-btn" onclick="previewFile('${file._id || file.id}')">👁 View</button>
     ${runnable ? `<button class="card-btn primary" onclick="runOnlineFile('${file._id || file.id}')">▶ Run Online</button>` : ''}
-    ${!isCollectionZipArchive(file) ? `<button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>` : ''}
+    <button class="card-btn" onclick="downloadFile('${file._id || file.id}')">⬇ Download</button>
   `;
 
   if (isAdmin) {
@@ -3744,16 +3448,15 @@ function renderFiles(files) {
   const grid = $('fileGrid');
   const empty = $('emptyState');
   if (!grid) return;
+  grid.innerHTML = '';
 
   if (!files || files.length === 0) {
-    grid.innerHTML = '';
-    updateEmptyStateCopy(true);
+    if (empty) empty.style.display = 'block';
     return;
   }
-  updateEmptyStateCopy(false);
+  if (empty) empty.style.display = 'none';
 
   const isAdmin = Boolean(adminToken);
-  const frag = document.createDocumentFragment();
 
   // Group items by batchId if present
   const folderBatches = new Map();
@@ -3770,7 +3473,7 @@ function renderFiles(files) {
     }
   });
 
-  // Render folder batch cards (individual file access inside; bulk zip download disabled)
+  // Render folder batch cards
   folderBatches.forEach((batchFiles, batchId) => {
     const topFolder = batchFiles[0].folderName || 'Uploaded Folder';
     const totalSize = batchFiles.reduce((acc, f) => acc + (f.size || 0), 0);
@@ -3781,7 +3484,8 @@ function renderFiles(files) {
     card.className = `file-card ${isPinned ? 'pinned-card' : ''}`;
 
     let actionBtns = `
-      <button class="card-btn primary" onclick="toggleFolderDetails('${batchId}')">📁 View Files (${batchFiles.length})</button>
+      <button class="card-btn" onclick="downloadFolder('${batchId}')">⬇ Download Zip</button>
+      <button class="card-btn" onclick="toggleFolderDetails('${batchId}')">📁 View Files (${batchFiles.length})</button>
     `;
 
     if (isAdmin) {
@@ -3793,14 +3497,13 @@ function renderFiles(files) {
 
     const filesListHtml = batchFiles.map(f => {
       const runnable = isRunnableFile(f);
-      const canDownloadSingle = !isCollectionZipArchive(f);
       return `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--card-border); font-size:0.82rem;">
           <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:50%;" title="${escapeHtml(f.relativePath || f.originalName)}">📄 ${escapeHtml(f.relativePath || f.originalName)}</span>
           <div style="display:flex; gap:4px;">
             <button class="card-btn" style="padding:2px 6px; font-size:0.75rem;" onclick="previewFile('${f._id || f.id}')">👁 View</button>
             ${runnable ? `<button class="card-btn primary" style="padding:2px 6px; font-size:0.75rem;" onclick="runOnlineFile('${f._id || f.id}')">▶ Run</button>` : ''}
-            ${canDownloadSingle ? `<button class="card-btn" style="padding:2px 6px; font-size:0.75rem;" onclick="downloadFile('${f._id || f.id}')" title="Download single file">⬇</button>` : ''}
+            <button class="card-btn" style="padding:2px 6px; font-size:0.75rem;" onclick="downloadFile('${f._id || f.id}')">⬇</button>
           </div>
         </div>
       `;
@@ -3818,8 +3521,8 @@ function renderFiles(files) {
             </div>
           </div>
         </div>
-        <p class="file-desc">Folder containing ${batchFiles.length} file(s) — open to view or download individual files</p>
-        <div class="file-tags"><span class="tag-pill">#folder</span></div>
+        <p class="file-desc">Folder containing ${batchFiles.length} file(s)</p>
+        <div class="file-tags"><span class="tag-pill">#folder</span><span class="tag-pill">#zip</span></div>
         <div id="folder_files_${batchId}" style="display:none; margin-top:12px; background:var(--card); padding:10px; border-radius:10px; max-height:200px; overflow-y:auto;">
           ${filesListHtml}
         </div>
@@ -3829,14 +3532,13 @@ function renderFiles(files) {
       </div>
     `;
 
-    frag.appendChild(card);
+    grid.appendChild(card);
   });
 
+  // Render standalone files
   standaloneFiles.forEach(file => {
-    frag.appendChild(createStandaloneFileCard(file, isAdmin));
+    grid.appendChild(createStandaloneFileCard(file, isAdmin));
   });
-
-  grid.replaceChildren(frag);
 }
 
 function toggleFolderDetails(batchId) {
@@ -3862,7 +3564,8 @@ async function deleteFolderBatch(batchId) {
     if ($('folderManagementModalOverlay')?.classList.contains('active')) {
       renderFolderManagementList();
     }
-    loadFiles(true);
+    loadStats();
+    loadFiles();
   } catch (err) {
     toast('Failed to delete folder.', 'error');
   }
@@ -3915,6 +3618,7 @@ function renderFolderManagementList() {
           </div>
         </div>
         <div style="display:flex; gap:8px; flex-shrink:0;">
+          <button class="card-btn" style="padding:4px 10px; font-size:0.8rem;" onclick="downloadFolder('${escapeHtml(batchId)}')">⬇ Download</button>
           <button class="card-btn danger" style="padding:4px 10px; font-size:0.8rem;" onclick="deleteFolderBatch('${escapeHtml(batchId)}')">🗑 Delete</button>
         </div>
       </div>
@@ -3981,27 +3685,22 @@ async function togglePinFolder(batchId, pinned) {
 }
 
 // ---------------- Apple Bento Stats ----------------
-async function loadStats(force = false) {
+async function loadStats() {
   try {
-    let s, syl;
-    if (!force && cachedStatsData) {
-      return;
-    }
     const [statsRes, sylRes] = await Promise.all([
       fetch('/api/files/stats'),
       fetch('/api/syllabus/stats')
     ]);
-    s = statsRes.ok ? await statsRes.json() : {};
-    syl = sylRes.ok ? await sylRes.json() : null;
-    cachedStatsData = { s, syl };
+    const s = statsRes.ok ? await statsRes.json() : {};
+    const syl = sylRes.ok ? await sylRes.json() : null;
 
     const statsBar = $('statsBar');
     if (!statsBar) return;
 
-    const totalOfficial = syl && typeof syl.totalOfficial === 'number' ? syl.totalOfficial : 145;
-    const availableNow = syl && typeof syl.totalAvailable === 'number' ? syl.totalAvailable : 0;
-    const comingSoon = syl && typeof syl.totalComingSoon === 'number' ? syl.totalComingSoon : 0;
-    const downloads = typeof s.totalDownloads === 'number' ? s.totalDownloads : 0;
+    const totalOfficial = syl ? (syl.totalOfficial || 145) : 145;
+    const availableNow = syl ? (syl.totalAvailable || 124) : 124;
+    const comingSoon = syl ? (syl.totalComingSoon || 21) : 21;
+    const downloads = s.totalDownloads || 61;
 
     statsBar.innerHTML = `
       <div class="bento-stats-grid">
@@ -4404,19 +4103,25 @@ function triggerMascotAnim(type, targetEl) {
   } catch (err) { /* silent fallback */ }
 }
 
-// ---------------- File Downloads & Previews (Individual Files Only) ----------------
+// ---------------- File Downloads & Previews ----------------
 function downloadFile(id, evt) {
-  const file = lastFiles.find(f => (f._id || f.id) === id);
-  if (file && isCollectionZipArchive(file)) {
-    toast('Collection and folder archive downloads are disabled. Download individual program files instead.', 'warning');
-    return;
-  }
   const target = evt ? (evt.target || evt) : null;
   triggerMascotAnim('download', target);
+  const file = lastFiles.find(f => (f._id || f.id) === id);
   if (file) {
     triggerMascotAnim(getMascotType(file), target);
   }
   window.open(`/api/files/${id}/download`, '_blank');
+}
+
+function downloadFolder(batchId, evt) {
+  const target = evt ? (evt.target || evt) : null;
+  triggerMascotAnim('download', target);
+  const file = lastFiles.find(f => f.batchId === batchId);
+  if (file) {
+    triggerMascotAnim(getMascotType(file), target);
+  }
+  window.open(`/api/files/folder/${batchId}/download`, '_blank');
 }
 
 // Viewer reading state
@@ -4638,11 +4343,6 @@ function renderProgramWorkspace(file, content, type) {
     }
   }
 
-  const dlBtn = $('downloadPreviewBtn');
-  if (dlBtn) {
-    dlBtn.style.display = isCollectionZipArchive(file) ? 'none' : 'inline-flex';
-  }
-
   applyViewerFontSize(viewerFontSize);
   applyViewerWrap(viewerCodeWrapped);
   setupWorkspaceNav(file._id || file.id);
@@ -4807,7 +4507,7 @@ if (saveContentBtn) {
       if (!res.ok) throw new Error('Save failed');
       toast('Code content updated successfully! 💾');
       closeModal('previewModalOverlay');
-      loadFiles(true);
+      loadFiles();
     } catch (err) {
       toast('Failed to save code content.', 'error');
     }
@@ -4829,11 +4529,7 @@ async function togglePinFile(id, pinned) {
     if (file) file.pinned = pinned;
 
     renderPinnedSection(lastFiles);
-    if (['all', 'java', 'python', 'adsa', 'dbms'].includes(activeCategory) && currentSyllabusViewData) {
-      renderSyllabusFiles(currentSyllabusViewData);
-    } else {
-      renderFiles(lastFiles);
-    }
+    renderFiles(lastFiles);
   } catch (err) {
     toast('Failed to update pin status.', 'error');
   }
@@ -4899,7 +4595,6 @@ function updateSessionBadge() {
   const isAdmin = Boolean(adminToken);
   if ($('sessionBadge')) $('sessionBadge').textContent = isAdmin ? 'Welcome Admin' : 'Welcome Anonymous';
   if ($('adminLoginBtn')) $('adminLoginBtn').textContent = isAdmin ? '⚡ Admin Dashboard' : 'Admin Login';
-  if ($('mobDrawerLoginLabel')) $('mobDrawerLoginLabel').textContent = isAdmin ? 'Admin Dashboard' : 'Admin Login';
 
   document.querySelectorAll('.admin-only-inline').forEach(el => {
     el.style.display = isAdmin ? 'inline-block' : 'none';
@@ -4910,17 +4605,8 @@ function updateSessionBadge() {
   document.querySelectorAll('.admin-only-block').forEach(el => {
     el.style.display = isAdmin ? 'block' : 'none';
   });
-  document.querySelectorAll('.admin-only-drawer').forEach(el => {
-    el.style.display = isAdmin ? 'flex' : 'none';
-  });
 
-  if (['all', 'java', 'python', 'adsa', 'dbms'].includes(activeCategory)) {
-    if (currentSyllabusViewData) {
-      renderSyllabusFiles(currentSyllabusViewData);
-    }
-  } else if (lastFiles.length > 0) {
-    renderFiles(lastFiles);
-  }
+  renderFiles(lastFiles);
   renderPinnedSection(lastFiles);
   if (isAdmin) checkPendingRequests();
 }
@@ -5061,17 +4747,14 @@ function setupDashboardBindings() {
   if (dashFileInput) {
     dashFileInput.addEventListener('change', () => {
       closeModal('dashboardModalOverlay');
-      const selected = Array.from(dashFileInput.files || []);
-      dashFileInput.value = '';
-      handleUpload(selected, []);
+      handleUpload(dashFileInput.files, []);
     });
   }
   if (dashFolderInput) {
     dashFolderInput.addEventListener('change', () => {
       closeModal('dashboardModalOverlay');
-      const files = Array.from(dashFolderInput.files || []);
-      const paths = files.map(f => f.webkitRelativePath || f.name);
-      dashFolderInput.value = '';
+      const files = dashFolderInput.files;
+      const paths = Array.from(files).map(f => f.webkitRelativePath || f.name);
       handleUpload(files, paths);
     });
   }
@@ -5189,7 +4872,7 @@ function setupDashboardBindings() {
         closeModal('folderManagementModalOverlay');
         selectedFolderBatches.clear();
 
-        await loadFiles(true);
+        await fetchFiles();
       } catch (err) {
         console.error('Batch delete error:', err);
         toast('Failed to delete selected folders.', 'error');
@@ -5259,27 +4942,16 @@ function uploadWithProgress(formData) {
   });
 }
 
-let isUploadInProgress = false;
-
 function setupUploads() {
   const fileInput = $('fileInput');
   const folderInput = $('folderInput');
 
-  if (fileInput) {
-    fileInput.addEventListener('change', () => {
-      const selected = Array.from(fileInput.files || []);
-      fileInput.value = '';
-      handleUpload(selected, []);
-    });
-  }
-  if (folderInput) {
-    folderInput.addEventListener('change', () => {
-      const files = Array.from(folderInput.files || []);
-      const paths = files.map(f => f.webkitRelativePath || f.name);
-      folderInput.value = '';
-      handleUpload(files, paths);
-    });
-  }
+  if (fileInput) fileInput.addEventListener('change', () => handleUpload(fileInput.files, []));
+  if (folderInput) folderInput.addEventListener('change', () => {
+    const files = folderInput.files;
+    const paths = Array.from(files).map(f => f.webkitRelativePath || f.name);
+    handleUpload(files, paths);
+  });
 }
 
 let targetUploadExp = null;
@@ -5292,10 +4964,6 @@ function triggerUploadForExperiment(cat, expNum) {
 
 async function handleUpload(fileList, pathsList = []) {
   if (!fileList || fileList.length === 0) return;
-  if (isUploadInProgress) {
-    toast('An upload is already in progress. Please wait.', 'warning');
-    return;
-  }
 
   if (!adminToken) {
     toast('Admin authorization required to upload files or folders.', 'warning');
@@ -5303,7 +4971,6 @@ async function handleUpload(fileList, pathsList = []) {
     return;
   }
 
-  isUploadInProgress = true;
   const formData = new FormData();
   for (let i = 0; i < fileList.length; i++) {
     const file = fileList[i];
@@ -5321,11 +4988,9 @@ async function handleUpload(fileList, pathsList = []) {
   try {
     const data = await uploadWithProgress(formData);
     toast(`Successfully uploaded ${data.files ? data.files.length : fileList.length} item(s)! 🚀`);
-    loadFiles(true);
+    loadFiles();
   } catch (err) {
     toast(err.message || 'Upload failed. Please check file sizes.', 'error');
-  } finally {
-    isUploadInProgress = false;
   }
 }
 
@@ -5485,7 +5150,7 @@ if (editSaveBtn) {
       if (!res.ok) throw new Error('Update failed');
       toast('File details updated successfully!');
       closeModal('editModalOverlay');
-      loadFiles(true);
+      loadFiles();
     } catch (err) {
       toast('Failed to update file details.', 'error');
     }
@@ -5517,7 +5182,8 @@ if (deleteConfirmBtn) {
       lastFiles = lastFiles.filter(f => (f._id || f.id) !== pendingDeleteId);
       renderFiles(lastFiles);
       renderPinnedSection(lastFiles);
-      loadFiles(true);
+      loadStats();
+      loadFiles();
     } catch (err) {
       toast('Failed to delete file.', 'error');
     }
@@ -5533,181 +5199,22 @@ document.querySelectorAll('.modal-close').forEach(btn => {
 });
 
 const navAboutBtn = $('navAboutBtn');
-if (navAboutBtn) navAboutBtn.addEventListener('click', () => {
-  setActiveTopNav('about');
-  openModal('aboutModalOverlay');
-});
+if (navAboutBtn) navAboutBtn.addEventListener('click', () => openModal('aboutModalOverlay'));
 
 const navHomeBtn = $('navHomeBtn');
 if (navHomeBtn) navHomeBtn.addEventListener('click', () => {
-  if ($('sortSelect')) $('sortSelect').value = 'sno';
   clearSyllabusFilter();
   switchCategory('all');
-  setActiveTopNav('home');
 });
 
 const navRecentBtn = $('navRecentBtn');
 if (navRecentBtn) navRecentBtn.addEventListener('click', () => {
   if ($('sortSelect')) $('sortSelect').value = 'recent';
-  if (activeCategory === 'pinned') {
-    switchCategory('all');
-  } else {
-    loadFiles();
-  }
-  setActiveTopNav('recent');
+  loadFiles();
 });
 
 const navPinnedBtn = $('navPinnedBtn');
-if (navPinnedBtn) navPinnedBtn.addEventListener('click', () => {
-  switchCategory('pinned');
-  setActiveTopNav('pinned');
-});
-
-function initMobileNavigation() {
-  const menuBtn = $('mobileMenuBtn');
-  const drawer = $('mobileNavDrawer');
-  const backdrop = $('mobileNavBackdrop');
-  const closeBtn = $('mobileNavCloseBtn');
-
-  function openDrawer() {
-    if (drawer) {
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-    }
-    if (backdrop) {
-      backdrop.classList.add('show');
-      backdrop.setAttribute('aria-hidden', 'false');
-    }
-    if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
-  }
-
-  function closeDrawer() {
-    if (drawer) {
-      drawer.classList.remove('open');
-      drawer.setAttribute('aria-hidden', 'true');
-    }
-    if (backdrop) {
-      backdrop.classList.remove('show');
-      backdrop.setAttribute('aria-hidden', 'true');
-    }
-    if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
-  }
-
-  if (menuBtn) {
-    menuBtn.addEventListener('click', () => {
-      if (drawer && drawer.classList.contains('open')) closeDrawer();
-      else openDrawer();
-    });
-  }
-  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-  if (backdrop) backdrop.addEventListener('click', closeDrawer);
-
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      closeDrawer();
-      closeMobileSidebar();
-    }
-  });
-
-  const mobHome = $('mobDrawerHomeBtn');
-  if (mobHome) mobHome.addEventListener('click', () => {
-    closeDrawer();
-    if ($('sortSelect')) $('sortSelect').value = 'sno';
-    clearSyllabusFilter();
-    switchCategory('all');
-    setActiveTopNav('home');
-  });
-
-  const mobRecent = $('mobDrawerRecentBtn');
-  if (mobRecent) mobRecent.addEventListener('click', () => {
-    closeDrawer();
-    if ($('sortSelect')) $('sortSelect').value = 'recent';
-    if (activeCategory === 'pinned') switchCategory('all');
-    else loadFiles();
-    setActiveTopNav('recent');
-  });
-
-  const mobPinned = $('mobDrawerPinnedBtn');
-  if (mobPinned) mobPinned.addEventListener('click', () => {
-    closeDrawer();
-    switchCategory('pinned');
-    setActiveTopNav('pinned');
-  });
-
-  const mobSyllabus = $('mobDrawerSyllabusBtn');
-  if (mobSyllabus) mobSyllabus.addEventListener('click', () => {
-    closeDrawer();
-    openMobileSidebar();
-    setActiveTopNav('syllabus');
-  });
-
-  const mobAbout = $('mobDrawerAboutBtn');
-  if (mobAbout) mobAbout.addEventListener('click', () => {
-    closeDrawer();
-    setActiveTopNav('about');
-    openModal('aboutModalOverlay');
-  });
-
-  const mobDash = $('mobDrawerDashboardBtn');
-  if (mobDash) mobDash.addEventListener('click', () => {
-    closeDrawer();
-    if (adminToken) openModal('dashboardModalOverlay');
-    else openModal('loginModalOverlay');
-  });
-
-  const mobReqs = $('mobDrawerRequestsBtn');
-  if (mobReqs) mobReqs.addEventListener('click', () => {
-    closeDrawer();
-    if (!adminToken) {
-      openModal('loginModalOverlay');
-      return;
-    }
-    loadAdminRequestsList();
-    openModal('requestsModalOverlay');
-  });
-
-  const mobLogin = $('mobDrawerLoginBtn');
-  if (mobLogin) mobLogin.addEventListener('click', () => {
-    closeDrawer();
-    if (adminToken) openModal('dashboardModalOverlay');
-    else openModal('loginModalOverlay');
-  });
-
-  // Mobile thumb-zone bottom bar
-  const bHome = $('mobNavHomeBtn');
-  if (bHome) bHome.addEventListener('click', () => {
-    clearSyllabusFilter();
-    switchCategory('all');
-    setActiveTopNav('home');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
-  const bSearch = $('mobNavSearchBtn');
-  if (bSearch) bSearch.addEventListener('click', () => {
-    setActiveTopNav('search');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => {
-      const si = $('searchInput');
-      if (si) si.focus();
-    }, 220);
-  });
-
-  const bSyllabus = $('mobNavSyllabusBtn');
-  if (bSyllabus) bSyllabus.addEventListener('click', () => {
-    setActiveTopNav('syllabus');
-    const isOpen = $('labSidebar')?.classList.contains('mobile-open');
-    if (isOpen) closeMobileSidebar();
-    else openMobileSidebar();
-  });
-
-  const bPinned = $('mobNavPinnedBtn');
-  if (bPinned) bPinned.addEventListener('click', () => {
-    switchCategory('pinned');
-    setActiveTopNav('pinned');
-    const target = $('pinnedSection') || $('labLayoutWrapper');
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-}
+if (navPinnedBtn) navPinnedBtn.addEventListener('click', () => switchCategory('pinned'));
 
 // ---------------- Monaco Editor & Online Code Compiler Integration ----------------
 function detectMonacoLang(extOrName) {
@@ -5780,15 +5287,9 @@ function initMonacoEditor(code = '', lang = 'python') {
 
 async function runOnlineFile(id) {
   try {
-    let data = programPreviewCache.get(id);
-    if (!data) {
-      const res = await fetch(`/api/files/${id}/preview`);
-      if (!res.ok) throw new Error('Could not fetch file content');
-      data = await res.json();
-      if (data && data.file) {
-        programPreviewCache.set(id, data);
-      }
-    }
+    const res = await fetch(`/api/files/${id}/preview`);
+    if (!res.ok) throw new Error('Could not fetch file content');
+    const data = await res.json();
     const file = data.file;
     const code = data.content || '';
     const lang = detectMonacoLang(file.extension || file.originalName || file.category);
@@ -6143,7 +5644,7 @@ if (compSaveBtn) {
       if (!res.ok) throw new Error('Save failed');
       currentCompilerFile.originalCode = code;
       toast('File updated permanently in database! 💾');
-      loadFiles(true);
+      loadFiles();
     } catch (err) {
       toast('Failed to save file changes.', 'error');
     }
@@ -6401,7 +5902,7 @@ if (assignExperimentForm) {
             if (!overrideRes.ok) throw new Error('Override failed');
             toast('Experiment mapping successfully updated! 🎯');
             closeModal('assignExperimentModalOverlay');
-            loadFiles(true);
+            loadFiles();
             return;
           }
           return;
@@ -6411,7 +5912,7 @@ if (assignExperimentForm) {
 
       toast(data.message || 'Experiment assigned successfully! 🎯');
       closeModal('assignExperimentModalOverlay');
-      loadFiles(true);
+      loadFiles();
     } catch (err) {
       toast(err.message || 'Failed to assign experiment.', 'error');
     }
@@ -6831,8 +6332,6 @@ window.addEventListener('DOMContentLoaded', () => {
   initCinematicEyes();
   initEasterEggs();
   initIntro();
-  initHeroActions();
-  initMobileNavigation();
   initOpArtSphere();
   initReplicaPromo();
   initParticles();
@@ -6840,21 +6339,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupDashboardBindings();
   updateSessionBadge();
   loadSyllabus();
-  renderSubjectAnimation(activeCategory || 'all');
+  renderSubjectAnimation('all');
+  loadFiles();
   initViewModeToggle();
-
-  // Warm Monaco editor bundle quietly in background so "Run Online" opens immediately
-  const warmMonaco = () => {
-    if (window.require && !window.monaco) {
-      try {
-        window.require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
-        window.require(['vs/editor/editor.main'], () => {});
-      } catch (e) {}
-    }
-  };
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(warmMonaco, { timeout: 2000 });
-  } else {
-    setTimeout(warmMonaco, 1200);
-  }
 });

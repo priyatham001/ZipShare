@@ -49,7 +49,9 @@ const fileSchema = new mongoose.Schema({
   mimeType: { type: String, default: null },
   uploadedBy: { type: String, default: 'admin' },
   publicationStatus: { type: String, default: 'published' }, // 'draft' or 'published'
+  assignmentType: { type: String, default: 'global' }, // 'global' or 'individual'
   isGloballyAssigned: { type: Boolean, default: true },
+  assignedUsers: [{ type: String }],
   pinned: { type: Boolean, default: false },
   downloads: { type: Number, default: 0 },
   uploadDate: { type: Date, default: Date.now },
@@ -76,25 +78,8 @@ const MongoFile = mongoose.models.File || mongoose.model('File', fileSchema);
 const MongoSuggestion = mongoose.models.Suggestion || mongoose.model('Suggestion', suggestionSchema);
 const MongoUserRequest = mongoose.models.UserRequest || mongoose.models.Request || mongoose.model('UserRequest', userRequestSchema);
 
-// In-memory cache & version counter for ultra-fast reads
-let memoryDB = null;
-let dataVersion = 1;
-
-function getDataVersion() {
-  return dataVersion;
-}
-
-function bumpDataVersion() {
-  dataVersion++;
-  return dataVersion;
-}
-
-// JSON Fallback Store (cached in memory after initial load)
-function loadJsonDB(forceReload = false) {
-  if (memoryDB && !forceReload) {
-    return memoryDB;
-  }
-
+// JSON Fallback Store
+function loadJsonDB() {
   if (!fs.existsSync(DB_FILE)) {
     const initial = {
       files: [
@@ -213,35 +198,34 @@ function loadJsonDB(forceReload = false) {
       ]
     };
 
+    // Ensure sample upload files exist in UPLOAD_DIR (best effort)
     try {
       const isVercel = Boolean(process.env.VERCEL);
       const os = require('os');
       const uploadsDir = isVercel ? path.join(os.tmpdir(), 'zipshare_uploads') : path.join(__dirname, 'uploads');
       if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+      fs.writeFileSync(path.join(uploadsDir, 'demo_py1.py'), `def greatest_of_three(a, b, c):\n    if a >= b and a >= c:\n        return a\n    elif b >= a and b >= c:\n        return b\n    else:\n        return c\n\nif __name__ == "__main__":\n    num1 = float(input("Enter first number: "))\n    num2 = float(input("Enter second number: "))\n    num3 = float(input("Enter third number: "))\n    print("Greatest number is:", greatest_of_three(num1, num2, num3))\n`);
+      fs.writeFileSync(path.join(uploadsDir, 'demo_java1.java'), `class Node {\n    int key;\n    Node left, right;\n\n    public Node(int item) {\n        key = item;\n        left = right = null;\n    }\n}\n\npublic class BinarySearchTree {\n    Node root;\n\n    BinarySearchTree() {\n        root = null;\n    }\n\n    void insert(int key) {\n        root = insertRec(root, key);\n    }\n\n    Node insertRec(Node root, int key) {\n        if (root == null) {\n            root = new Node(key);\n            return root;\n        }\n        if (key < root.key)\n            root.left = insertRec(root.left, key);\n        else if (key > root.key)\n            root.right = insertRec(root.right, key);\n        return root;\n    }\n\n    public static void main(String[] args) {\n        BinarySearchTree tree = new BinarySearchTree();\n        tree.insert(50);\n        tree.insert(30);\n        tree.insert(20);\n        tree.insert(40);\n        System.out.println("BST Created successfully!");\n    }\n}\n`);
+      fs.writeFileSync(path.join(uploadsDir, 'demo_c1.c'), `#include <stdio.h>\n\nint main() {\n    int a[2][2] = {{1, 2}, {3, 4}};\n    int b[2][2] = {{5, 6}, {7, 8}};\n    int c[2][2] = {0};\n\n    for (int i = 0; i < 2; i++) {\n        for (int j = 0; j < 2; j++) {\n            for (int k = 0; k < 2; k++) {\n                c[i][j] += a[i][k] * b[k][j];\n            }\n        }\n    }\n\n    printf("Result matrix:\\n");\n    for (int i = 0; i < 2; i++) {\n        for (int j = 0; j < 2; j++) {\n            printf("%d ", c[i][j]);\n        }\n        printf("\\n");\n    }\n    return 0;\n}\n`);
+      fs.writeFileSync(path.join(uploadsDir, 'demo_cpp1.cpp'), `#include <iostream>\nusing namespace std;\n\nstruct Node {\n    int key;\n    Node *left, *right;\n    int height;\n};\n\nint height(Node *N) {\n    if (N == NULL) return 0;\n    return N->height;\n}\n\nint max(int a, int b) {\n    return (a > b) ? a : b;\n}\n\nint main() {\n    cout << "AVL Tree Module Ready" << endl;\n    return 0;\n}\n`);
+      fs.writeFileSync(path.join(uploadsDir, 'demo_sql1.sql'), `-- Student DBMS Schema\nCREATE TABLE Students (\n    student_id INT PRIMARY KEY,\n    name VARCHAR(100),\n    course VARCHAR(50),\n    gpa DECIMAL(3,2)\n);\n\nINSERT INTO Students VALUES (101, 'Alex Smith', 'Computer Science', 3.85);\nINSERT INTO Students VALUES (102, 'Priya Sharma', 'Data Science', 3.92);\n\nSELECT * FROM Students WHERE gpa > 3.5;\n`);
       fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
     } catch (e) {
       // Ignore write errors in read-only environments
     }
-    memoryDB = initial;
-    return memoryDB;
+    return initial;
   }
   try {
-    memoryDB = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
-    if (!memoryDB.files) memoryDB.files = [];
-    if (!memoryDB.suggestions) memoryDB.suggestions = [];
-    if (!memoryDB.requests) memoryDB.requests = [];
-    return memoryDB;
+    return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
   } catch (err) {
-    memoryDB = { files: [], suggestions: [], requests: [] };
-    return memoryDB;
+    return { files: [], suggestions: [], requests: [] };
   }
 }
 
 function saveJsonDB(data) {
-  memoryDB = data;
-  bumpDataVersion();
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data));
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
   } catch (err) {
     // Read-only filesystem safe
   }
@@ -285,9 +269,7 @@ async function connectDB() {
       console.warn('MongoDB connection failed. Falling back to local JSON database store:', err.message);
     }
   } else {
-    if (!memoryDB) {
-      console.log('No MONGODB_URI set. Operating on local JSON file database store.');
-    }
+    console.log('No MONGODB_URI set. Operating on local JSON file database store.');
   }
   loadJsonDB();
 }
@@ -349,6 +331,7 @@ const filesDB = {
       return true;
     }
 
+    // Filter logic
     if (filter.$and && Array.isArray(filter.$and)) {
       list = list.filter(item => matchCond(item, filter));
     } else if (filter.$or && Array.isArray(filter.$or)) {
@@ -371,30 +354,29 @@ const filesDB = {
       list = list.filter(f => f.batchId === filter.batchId);
     }
 
-    if (sort && Object.keys(sort).length > 0) {
-      list.sort((a, b) => {
-        if (sort.pinned) {
-          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-        }
-        if (sort.experimentNumber) {
-          const ea = a.experimentNumber != null ? a.experimentNumber : 99999;
-          const eb = b.experimentNumber != null ? b.experimentNumber : 99999;
-          if (ea !== eb) return sort.experimentNumber < 0 ? eb - ea : ea - eb;
-        }
-        if (sort.uploadDate) {
-          const da = new Date(a.uploadDate || 0);
-          const dbTime = new Date(b.uploadDate || 0);
-          return sort.uploadDate < 0 ? dbTime - da : da - dbTime;
-        }
-        if (sort.downloads) {
-          return (b.downloads || 0) - (a.downloads || 0);
-        }
-        if (sort.originalName) {
-          return a.originalName.localeCompare(b.originalName);
-        }
-        return 0;
-      });
-    }
+    // Sort logic
+    list.sort((a, b) => {
+      if (sort.pinned) {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      }
+      if (sort.experimentNumber) {
+        const ea = a.experimentNumber != null ? a.experimentNumber : 99999;
+        const eb = b.experimentNumber != null ? b.experimentNumber : 99999;
+        if (ea !== eb) return sort.experimentNumber < 0 ? eb - ea : ea - eb;
+      }
+      if (sort.uploadDate) {
+        const da = new Date(a.uploadDate || 0);
+        const dbTime = new Date(b.uploadDate || 0);
+        return sort.uploadDate < 0 ? dbTime - da : da - dbTime;
+      }
+      if (sort.downloads) {
+        return (b.downloads || 0) - (a.downloads || 0);
+      }
+      if (sort.originalName) {
+        return a.originalName.localeCompare(b.originalName);
+      }
+      return 0;
+    });
 
     return list.slice(0, limit);
   },
@@ -415,21 +397,14 @@ const filesDB = {
   },
 
   async insertMany(docs) {
-    if (isMongo) {
-      const res = await MongoFile.insertMany(docs);
-      bumpDataVersion();
-      return res;
-    }
+    if (isMongo) return await MongoFile.insertMany(docs);
     const db = loadJsonDB();
-    const now = new Date().toISOString();
     const created = docs.map(d => ({
       _id: crypto.randomUUID(),
       originalName: d.originalName,
       storedName: d.storedName,
       relativePath: d.relativePath || d.originalName,
       folderName: d.folderName || null,
-      zipFolder: d.zipFolder || null,
-      zipSource: d.zipSource || null,
       batchId: d.batchId || null,
       extension: d.extension || 'txt',
       category: d.category || 'all',
@@ -440,7 +415,6 @@ const filesDB = {
       matchConfidence: d.matchConfidence || 'high',
       status: d.status || 'available',
       assignmentType: d.assignmentType || 'global',
-      isGloballyAssigned: d.isGloballyAssigned !== false,
       assignedUsers: Array.isArray(d.assignedUsers) ? d.assignedUsers : [],
       reviewReason: d.reviewReason || null,
       subject: d.subject || null,
@@ -457,10 +431,13 @@ const filesDB = {
       tags: d.tags || [],
       description: d.description || '',
       publicationStatus: d.publicationStatus || 'published',
+      assignmentType: d.assignmentType || 'global',
+      isGloballyAssigned: d.isGloballyAssigned !== false,
+      assignedUsers: Array.isArray(d.assignedUsers) ? d.assignedUsers : [],
       pinned: Boolean(d.pinned),
       downloads: d.downloads || 0,
-      uploadDate: d.uploadDate || now,
-      updatedAt: now
+      uploadDate: d.uploadDate || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }));
     db.files.push(...created);
     saveJsonDB(db);
@@ -468,89 +445,33 @@ const filesDB = {
   },
 
   async create(doc) {
-    if (isMongo) {
-      const res = await MongoFile.create(doc);
-      bumpDataVersion();
-      return res;
-    }
+    if (isMongo) return await MongoFile.create(doc);
     const created = (await this.insertMany([doc]))[0];
     return created;
   },
 
   async findByIdAndUpdate(id, update, options = {}) {
-    if (isMongo) {
-      const res = await MongoFile.findByIdAndUpdate(id, update, options);
-      bumpDataVersion();
-      return res;
-    }
+    if (isMongo) return await MongoFile.findByIdAndUpdate(id, update, options);
     const db = loadJsonDB();
-    const idx = db.files.findIndex(f => f._id === id || f.id === id);
+    const idx = db.files.findIndex(f => f._id === id);
     if (idx === -1) return null;
     db.files[idx] = { ...db.files[idx], ...update };
     saveJsonDB(db);
     return db.files[idx];
   },
 
-  async bulkUpdate(updates = []) {
-    if (!updates.length) return 0;
-    if (isMongo) {
-      const ops = updates.map(u => ({
-        updateOne: { filter: { _id: u.id }, update: { $set: u.update } }
-      }));
-      await MongoFile.bulkWrite(ops);
-      bumpDataVersion();
-      return updates.length;
-    }
-    const db = loadJsonDB();
-    const idxMap = new Map();
-    db.files.forEach((f, i) => idxMap.set(f._id || f.id, i));
-    let count = 0;
-    for (const u of updates) {
-      const idx = idxMap.get(u.id);
-      if (idx !== undefined) {
-        db.files[idx] = { ...db.files[idx], ...u.update };
-        count++;
-      }
-    }
-    if (count > 0) saveJsonDB(db);
-    return count;
-  },
-
-  async deleteManyByIds(ids = []) {
-    if (!ids.length) return 0;
-    if (isMongo) {
-      const res = await MongoFile.deleteMany({ _id: { $in: ids } });
-      bumpDataVersion();
-      return res.deletedCount || 0;
-    }
-    const db = loadJsonDB();
-    const idSet = new Set(ids);
-    const before = db.files.length;
-    db.files = db.files.filter(f => !idSet.has(f._id || f.id));
-    const removed = before - db.files.length;
-    if (removed > 0) saveJsonDB(db);
-    return removed;
-  },
-
   async findByIdAndDelete(id) {
-    if (isMongo) {
-      const res = await MongoFile.findByIdAndDelete(id);
-      bumpDataVersion();
-      return res;
-    }
+    if (isMongo) return await MongoFile.findByIdAndDelete(id);
     const db = loadJsonDB();
-    const doc = db.files.find(f => f._id === id || f.id === id);
+    const doc = db.files.find(f => f._id === id);
     if (!doc) return null;
-    db.files = db.files.filter(f => (f._id || f.id) !== id);
+    db.files = db.files.filter(f => f._id !== id);
     saveJsonDB(db);
     return doc;
   },
 
   async countDocuments(filter = {}) {
     if (isMongo) return await MongoFile.countDocuments(filter);
-    if (!filter || Object.keys(filter).length === 0) {
-      return loadJsonDB().files.length;
-    }
     const list = await this.find(filter, {}, 100000);
     return list.length;
   },
@@ -560,10 +481,10 @@ const filesDB = {
     const db = loadJsonDB();
     let totalSize = 0;
     let totalDownloads = 0;
-    for (const f of db.files) {
+    db.files.forEach(f => {
       totalSize += f.size || 0;
       totalDownloads += f.downloads || 0;
-    }
+    });
     return [{ _id: null, totalSize, totalDownloads }];
   }
 };
@@ -582,11 +503,7 @@ const suggestionsDB = {
   },
 
   async create(data) {
-    if (isMongo) {
-      const res = await MongoSuggestion.create(data);
-      bumpDataVersion();
-      return res;
-    }
+    if (isMongo) return await MongoSuggestion.create(data);
     const db = loadJsonDB();
     if (!db.suggestions) db.suggestions = [];
     const created = {
@@ -603,11 +520,7 @@ const suggestionsDB = {
   },
 
   async findByIdAndUpdate(id, update) {
-    if (isMongo) {
-      const res = await MongoSuggestion.findByIdAndUpdate(id, update, { new: true });
-      bumpDataVersion();
-      return res;
-    }
+    if (isMongo) return await MongoSuggestion.findByIdAndUpdate(id, update, { new: true });
     const db = loadJsonDB();
     if (!db.suggestions) db.suggestions = [];
     const idx = db.suggestions.findIndex(s => s._id === id);
@@ -618,11 +531,7 @@ const suggestionsDB = {
   },
 
   async findByIdAndDelete(id) {
-    if (isMongo) {
-      const res = await MongoSuggestion.findByIdAndDelete(id);
-      bumpDataVersion();
-      return res;
-    }
+    if (isMongo) return await MongoSuggestion.findByIdAndDelete(id);
     const db = loadJsonDB();
     if (!db.suggestions) db.suggestions = [];
     const doc = db.suggestions.find(s => s._id === id);
@@ -686,8 +595,6 @@ const requestsDB = {
 
 module.exports = {
   connectDB,
-  getDataVersion,
-  bumpDataVersion,
   filesDB,
   suggestionsDB,
   requestsDB

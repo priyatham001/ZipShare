@@ -11,20 +11,10 @@ function cleanString(str) {
     .trim();
 }
 
-function extractNumber(filename, relPath = '') {
-  const candidates = [];
-  if (filename) candidates.push(filename);
-  if (relPath) {
-    const parts = String(relPath).replace(/\\/g, '/').split('/').filter(Boolean);
-    // Walk parent directory segments from innermost to outermost
-    for (let i = parts.length - 2; i >= 0; i--) {
-      const seg = parts[i];
-      if (!/^(zipshare|java programs|python code|sql lab programs|ds code|mypack|src)$/i.test(seg)) {
-        candidates.push(seg);
-      }
-    }
-  }
-
+function extractNumber(filename) {
+  if (!filename) return null;
+  const base = filename.replace(/\.[^/.]+$/, '');
+  // Matches: exp10, exp_10, lab10, lab_07, p1, program1, 10_hashmap, 10-binary
   const patterns = [
     /(?:exp|lab|experiment|prog|program|ex|p)[_\-\s]*0*(\d+)\b/i,
     /^0*(\d+)[_\-\s]/,
@@ -32,14 +22,11 @@ function extractNumber(filename, relPath = '') {
     /^0*(\d+)$/
   ];
 
-  for (const target of candidates) {
-    const base = String(target).replace(/\.[^/.]+$/, '');
-    for (const pat of patterns) {
-      const m = base.match(pat);
-      if (m && m[1]) {
-        const n = parseInt(m[1], 10);
-        if (n > 0 && n <= 100) return n;
-      }
+  for (const pat of patterns) {
+    const m = base.match(pat);
+    if (m && m[1]) {
+      const n = parseInt(m[1], 10);
+      if (n > 0 && n <= 100) return n;
     }
   }
   return null;
@@ -100,7 +87,7 @@ function detectCourseKey(ext, filename = '', relPath = '', categoryHint = null, 
   if (pathLower.includes('dbms') || pathLower.includes('sql')) {
     return 'dbms';
   }
-  if (pathLower.includes('adsa') || pathLower.includes('dsa') || pathLower.includes('ds code') || pathLower.includes('tree') || pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('heap')) {
+  if (pathLower.includes('adsa') || pathLower.includes('dsa') || pathLower.includes('tree') || pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('heap')) {
     return 'adsa';
   }
   if (pathLower.includes('java')) {
@@ -162,7 +149,7 @@ function matchFileToSyllabus(fileObj) {
 
   const cleanedFilename = cleanString(filename);
   const fileWords = new Set(cleanedFilename.split(/\s+/).filter(w => w.length > 1));
-  const explicitNumber = extractNumber(filename, relPath);
+  const explicitNumber = extractNumber(filename);
 
   // Special ambiguous cases check:
   // "Operators_demonstrate.py" demonstrates multiple Python operators and cannot be uniquely mapped without explicit choice.
