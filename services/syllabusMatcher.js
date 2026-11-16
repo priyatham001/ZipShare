@@ -11,10 +11,20 @@ function cleanString(str) {
     .trim();
 }
 
-function extractNumber(filename) {
-  if (!filename) return null;
-  const base = filename.replace(/\.[^/.]+$/, '');
-  // Matches: exp10, exp_10, lab10, lab_07, p1, program1, 10_hashmap, 10-binary
+function extractNumber(filename, relPath = '') {
+  const candidates = [];
+  if (filename) candidates.push(filename);
+  if (relPath) {
+    const parts = String(relPath).replace(/\\/g, '/').split('/').filter(Boolean);
+    // Walk parent directory segments from innermost to outermost
+    for (let i = parts.length - 2; i >= 0; i--) {
+      const seg = parts[i];
+      if (!/^(zipshare|java programs|python code|sql lab programs|ds code|mypack|src)$/i.test(seg)) {
+        candidates.push(seg);
+      }
+    }
+  }
+
   const patterns = [
     /(?:exp|lab|experiment|prog|program|ex|p)[_\-\s]*0*(\d+)\b/i,
     /^0*(\d+)[_\-\s]/,
@@ -22,17 +32,58 @@ function extractNumber(filename) {
     /^0*(\d+)$/
   ];
 
-  for (const pat of patterns) {
-    const m = base.match(pat);
-    if (m && m[1]) {
-      const n = parseInt(m[1], 10);
-      if (n > 0 && n <= 100) return n;
+  for (const target of candidates) {
+    const base = String(target).replace(/\.[^/.]+$/, '');
+    for (const pat of patterns) {
+      const m = base.match(pat);
+      if (m && m[1]) {
+        const n = parseInt(m[1], 10);
+        if (n > 0 && n <= 100) return n;
+      }
     }
   }
   return null;
 }
 
-function detectCourseKey(ext, filename = '', relPath = '', categoryHint = null) {
+function detectContentLanguage(content) {
+  if (!content || typeof content !== 'string') return null;
+  const c = content.trim();
+  if (!c) return null;
+
+  const isJava = /\bpublic\s+class\b|\bSystem\.out\.print|\bimport\s+java\.|\bpublic\s+static\s+void\s+main\b/.test(c);
+  const isPython = /(?:^|\n)\s*def\s+\w+\s*\([^)]*\)\s*:|(?:^|\n)\s*elif\s+|(?:^|\n)\s*if\s+__name__\s*==|print\s*\([^)]*f["']/.test(c);
+  const isC = /#include\s*<\s*(?:stdio|stdlib|string|math|limits|stdbool|iostream)[^>]*>|\bint\s+main\s*\(|\bprintf\s*\(|\bscanf\s*\(/.test(c);
+  const isSQL = /\b(?:CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+TABLE|SELECT\s+.+\s+FROM|INSERT\s+INTO|CREATE\s+OR\s+REPLACE\s+(?:PROCEDURE|FUNCTION|TRIGGER)|DBMS_OUTPUT\.PUT_LINE)\b/i.test(c);
+
+  const hits = [];
+  if (isJava) hits.push('java');
+  if (isPython) hits.push('python');
+  if (isC) hits.push('c');
+  if (isSQL) hits.push('dbms');
+
+  if (hits.length === 1) return hits[0];
+  return null;
+}
+
+function isCourseLanguageCompatible(courseKey, ext, content) {
+  const e = (ext || '').toLowerCase().replace('.', '');
+  if (courseKey === 'java' && ['py', 'c', 'cpp', 'cc', 'cxx', 'sql'].includes(e)) return false;
+  if (courseKey === 'python' && ['java', 'c', 'cpp', 'cc', 'cxx', 'sql'].includes(e)) return false;
+  if (courseKey === 'dbms' && ['java', 'py', 'c', 'cpp', 'cc', 'cxx'].includes(e)) return false;
+  if (courseKey === 'adsa' && ['sql', 'py', 'java'].includes(e)) return false;
+  if (courseKey === 'c' && ['java', 'py', 'sql'].includes(e)) return false;
+
+  const detected = detectContentLanguage(content);
+  if (detected) {
+    if (courseKey === 'java' && detected !== 'java') return false;
+    if (courseKey === 'python' && detected !== 'python') return false;
+    if (courseKey === 'dbms' && detected !== 'dbms') return false;
+    if ((courseKey === 'adsa' || courseKey === 'c') && detected !== 'c') return false;
+  }
+  return true;
+}
+
+function detectCourseKey(ext, filename = '', relPath = '', categoryHint = null, content = '') {
   const e = (ext || '').toLowerCase().replace('.', '');
 
   // Strict rule: .java to Java, .py to Python, .sql to DBMS, .c/.cpp to ADSA. A .sql file must never go to ADSA.
@@ -41,12 +92,15 @@ function detectCourseKey(ext, filename = '', relPath = '', categoryHint = null) 
   if (e === 'py') return 'python';
   if (e === 'c' || e === 'cpp') return 'adsa';
 
+  const detected = detectContentLanguage(content);
+  if (detected) return detected === 'c' ? 'adsa' : detected;
+
   const pathLower = (relPath + ' ' + filename + ' ' + (categoryHint || '')).toLowerCase();
 
   if (pathLower.includes('dbms') || pathLower.includes('sql')) {
     return 'dbms';
   }
-  if (pathLower.includes('adsa') || pathLower.includes('dsa') || pathLower.includes('tree') || pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('heap')) {
+  if (pathLower.includes('adsa') || pathLower.includes('dsa') || pathLower.includes('ds code') || pathLower.includes('tree') || pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('heap')) {
     return 'adsa';
   }
   if (pathLower.includes('java')) {
@@ -74,7 +128,7 @@ function matchFileToSyllabus(fileObj) {
   const relPath = fileObj.relativePath || '';
   const categoryHint = fileObj.category || null;
 
-  const courseKey = detectCourseKey(ext, filename, relPath, categoryHint);
+  const courseKey = detectCourseKey(ext, filename, relPath, categoryHint, content);
   const course = getCourseByKey(courseKey);
 
   if (!course) {
@@ -90,9 +144,25 @@ function matchFileToSyllabus(fileObj) {
     };
   }
 
+  // Guard: If file content clearly belongs to another programming language than extension/course, never map as available
+  const detectedContentLang = detectContentLanguage(content);
+  if (!isCourseLanguageCompatible(course.key, ext, content)) {
+    return {
+      courseKey: course.key,
+      course: course.course,
+      courseCode: course.courseCode,
+      category: course.category,
+      experimentNumber: null,
+      experimentName: null,
+      matchConfidence: 'low',
+      status: 'needs_review',
+      reviewReason: `Language mismatch: file (.${ext || 'unknown'}) appears to contain ${(detectedContentLang || 'other').toUpperCase()} code.`
+    };
+  }
+
   const cleanedFilename = cleanString(filename);
   const fileWords = new Set(cleanedFilename.split(/\s+/).filter(w => w.length > 1));
-  const explicitNumber = extractNumber(filename);
+  const explicitNumber = extractNumber(filename, relPath);
 
   // Special ambiguous cases check:
   // "Operators_demonstrate.py" demonstrates multiple Python operators and cannot be uniquely mapped without explicit choice.
@@ -114,8 +184,6 @@ function matchFileToSyllabus(fileObj) {
   if (explicitNumber && explicitNumber <= course.totalExperiments) {
     const exp = course.experiments.find(e => e.number === explicitNumber);
     if (exp) {
-      // Check if filename contradicts
-      const expClean = cleanString(exp.name);
       return {
         courseKey: course.key,
         course: course.course,
@@ -226,6 +294,8 @@ function matchFileToSyllabus(fileObj) {
 module.exports = {
   cleanString,
   extractNumber,
+  detectContentLanguage,
+  isCourseLanguageCompatible,
   detectCourseKey,
   matchFileToSyllabus
 };

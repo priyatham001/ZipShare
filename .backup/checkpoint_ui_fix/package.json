@@ -1,0 +1,28 @@
+{
+  "name": "zipshare",
+  "version": "3.0.0",
+  "description": "ZipShare - A Student Friendly File Sharing Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "node --check server.js && node --check db.js && node --check routes/syllabus.js && node --check routes/files.js && node --check services/syllabusMatcher.js && node --check services/syllabusMigration.js && node --check public/script.js",
+    "lint": "echo 'No lint errors'"
+  },
+  "dependencies": {
+    "@google/genai": "^2.32.0",
+    "@react-spring/web": "^10.1.2",
+    "archiver": "^7.0.1",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.0",
+    "multer": "^1.4.5-lts.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "spring-text-engine": "0.1.5",
+    "three": "^0.187.0"
+  }
+}

@@ -4,13 +4,23 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
-const archiver = require('archiver');
+const { execFileSync } = require('child_process');
 const router = express.Router();
-const { filesDB, suggestionsDB } = require('../db');
+const { filesDB, suggestionsDB, getDataVersion } = require('../db');
 const { requireAdmin, verifyAdminToken } = require('../middleware/auth');
 const { isCloudinaryConfigured, uploadToCloudinary, deleteFromCloudinary, fetchRemoteContent } = require('../services/cloudinary');
-const { matchFileToSyllabus } = require('../services/syllabusMatcher');
+const { matchFileToSyllabus, detectContentLanguage } = require('../services/syllabusMatcher');
 const { getCourseByKey } = require('../services/syllabusData');
+
+let fileStatsCache = { version: -1, data: null };
+let fileSuggestionsCache = { version: -1, data: null };
+const fileListCache = { version: -1, entries: new Map() };
+
+function toSummaryFile(f) {
+  if (!f || typeof f !== 'object') return f;
+  const { content, ...rest } = f;
+  return rest;
+}
 
 const isVercel = Boolean(process.env.VERCEL);
 // Safe upload directory: on Vercel use /tmp to prevent read-only filesystem crash, on Render/local use ./uploads
@@ -111,8 +121,24 @@ function sanitizeRelativePath(p) {
 }
 
 function detectCategory(ext, relPath = '', originalName = '') {
-  const e = (ext || '').toLowerCase();
+  const e = (ext || '').toLowerCase().replace('.', '');
   const pathLower = (relPath + ' ' + originalName).toLowerCase();
+
+  // Definitive language extensions must never be overridden by keywords (e.g. StudentDatabase.java -> java, not dbms)
+  if (e === 'java') return 'java';
+  if (e === 'py') return 'python';
+  if (e === 'sql') return 'dbms';
+  if (e === 'c' || e === 'cpp' || e === 'cc' || e === 'cxx') {
+    if (
+      pathLower.includes('adsa') || pathLower.includes('dsa') || pathLower.includes('tree') ||
+      pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('heap') ||
+      pathLower.includes('queens') || pathLower.includes('knapsack') || pathLower.includes('sort') ||
+      pathLower.includes('shortest') || pathLower.includes('job sequencing')
+    ) {
+      return 'adsa';
+    }
+    return e === 'c' ? 'c' : 'cpp';
+  }
 
   if (pathLower.includes('adsa') || pathLower.includes('tree') || pathLower.includes('graph') || pathLower.includes('avl') || pathLower.includes('bst')) return 'adsa';
   if (pathLower.includes('dbms') || pathLower.includes('sql') || pathLower.includes('database') || pathLower.includes('query')) return 'dbms';
@@ -121,14 +147,49 @@ function detectCategory(ext, relPath = '', originalName = '') {
   if (pathLower.includes('linux') || pathLower.includes('bash') || pathLower.includes('shell')) return 'linux';
   if (pathLower.includes('cyber') || pathLower.includes('crypto') || pathLower.includes('cipher') || pathLower.includes('aes')) return 'cyber';
 
-  if (e === 'py') return 'python';
-  if (e === 'java') return 'java';
-  if (e === 'c') return 'c';
-  if (e === 'cpp' || e === 'cc' || e === 'cxx') return 'cpp';
-  if (e === 'sql') return 'dbms';
   if (e === 'pdf') return 'pdf';
   if (['zip', 'rar', '7z', 'tar', 'gz'].includes(e)) return 'zip';
   return 'all';
+}
+
+function matchesStrictCategory(file, catClean) {
+  const fCat = (file.category || '').toLowerCase().trim();
+  const fExt = (file.extension || '').toLowerCase().replace('.', '').trim();
+  const contentLang = detectContentLanguage(file.content);
+
+  if (catClean === 'java') {
+    if (['py', 'c', 'cpp', 'cc', 'cxx', 'sql'].includes(fExt)) return false;
+    if (contentLang && contentLang !== 'java') return false;
+    return fCat === 'java' || fExt === 'java';
+  }
+  if (catClean === 'python' || catClean === 'py') {
+    if (['java', 'c', 'cpp', 'cc', 'cxx', 'sql'].includes(fExt)) return false;
+    if (contentLang && contentLang !== 'python') return false;
+    return fCat === 'python' || fCat === 'py' || fExt === 'py';
+  }
+  if (catClean === 'c' || catClean === 'c language' || catClean === 'clanguage') {
+    if (['java', 'py', 'sql'].includes(fExt)) return false;
+    if (contentLang && contentLang !== 'c') return false;
+    return ['c', 'cpp'].includes(fCat) || ['c', 'cpp', 'cc', 'cxx'].includes(fExt);
+  }
+  if (catClean === 'cpp' || catClean === 'c++') {
+    if (['java', 'py', 'sql', 'c'].includes(fExt)) return false;
+    if (contentLang && contentLang !== 'c') return false;
+    return fCat === 'cpp' || ['cpp', 'cc', 'cxx'].includes(fExt);
+  }
+  if (catClean === 'dbms' || catClean === 'sql') {
+    if (['java', 'py', 'c', 'cpp', 'cc', 'cxx'].includes(fExt)) return false;
+    if (contentLang && contentLang !== 'dbms') return false;
+    return fCat === 'dbms' || fCat === 'sql' || fExt === 'sql';
+  }
+  if (catClean === 'adsa' || catClean === 'dsa') {
+    if (['sql', 'py', 'java'].includes(fExt)) return false;
+    if (contentLang && contentLang !== 'c') return false;
+    return fCat === 'adsa' || fCat === 'dsa';
+  }
+
+  const terms = CATEGORY_ALIASES[catClean] || [catClean];
+  return terms.includes(fCat) || terms.includes(fExt);
 }
 
 // POST /api/files/upload - Upload files or folder (Admin only)
@@ -238,17 +299,19 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         originalName: file.originalname,
         storedName: file.filename,
         relativePath: relPath,
-        folderName: topFolder,
-        batchId: topFolder ? batchId : null,
+        folderName: topFolder || (ext === 'zip' ? path.basename(file.originalname, '.zip') : null),
+        zipFolder: ext === 'zip' ? path.basename(file.originalname, '.zip') : null,
+        zipSource: ext === 'zip' ? file.originalname : null,
+        batchId: topFolder ? batchId : (ext === 'zip' ? crypto.randomUUID() : null),
         extension: ext,
-        category: assignedCategory,
-        course: fileCourse,
-        courseCode: fileCourseCode,
-        experimentNumber: fileExpNumber,
-        experimentName: fileExpName,
-        matchConfidence: fileMatchConfidence,
-        status: fileStatus,
-        reviewReason: fileReviewReason,
+        category: ext === 'zip' ? 'zip' : assignedCategory,
+        course: ext === 'zip' ? null : fileCourse,
+        courseCode: ext === 'zip' ? null : fileCourseCode,
+        experimentNumber: ext === 'zip' ? null : fileExpNumber,
+        experimentName: ext === 'zip' ? null : fileExpName,
+        matchConfidence: ext === 'zip' ? 'high' : fileMatchConfidence,
+        status: ext === 'zip' ? 'available' : fileStatus,
+        reviewReason: ext === 'zip' ? null : fileReviewReason,
         subject: fileCourse || fileSubject,
         exercise: fileExercise,
         question: fileQuestion,
@@ -260,17 +323,90 @@ router.post('/upload', requireAdmin, upload.array('files', 500), async (req, res
         cloudinaryPublicId: cloudPublicId,
         assetId: assetId,
         uploadedBy: 'admin',
-        tags: Array.from(new Set([ext, assignedCategory, fileSubject, topFolder].filter(Boolean))),
+        tags: Array.from(new Set([ext, ext === 'zip' ? 'zip' : assignedCategory, fileSubject, topFolder].filter(Boolean))),
         description: fileExpName ? `${fileExpNumber ? `#${fileExpNumber} ` : ''}${fileExpName}` : fileDesc,
         pinned: false,
         downloads: 0,
         uploadDate: new Date(),
         updatedAt: new Date()
       });
+
+      // Automatically extract and index code programs inside uploaded .zip archives
+      if (ext === 'zip' && fs.existsSync(file.path)) {
+        const zipBase = path.basename(file.originalname, '.zip');
+        const zipBatchId = `zip-${crypto.randomUUID()}`;
+        const tmpExtractDir = path.join(os.tmpdir(), `zipshare_extract_${crypto.randomUUID()}`);
+        try {
+          fs.mkdirSync(tmpExtractDir, { recursive: true });
+          execFileSync('unzip', ['-q', '-o', file.path, '-d', tmpExtractDir], { timeout: 15000 });
+          const walkExtract = (dir) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                if (!entry.name.startsWith('__MACOSX') && !entry.name.startsWith('.')) walkExtract(full);
+              } else if (entry.isFile() && !entry.name.startsWith('.')) {
+                const entryExt = path.extname(entry.name).replace('.', '').toLowerCase();
+                if (!CODE_EXTENSIONS.includes(entryExt)) continue;
+                const relInside = sanitizeRelativePath(path.relative(tmpExtractDir, full));
+                let entryContent = null;
+                const stat = fs.statSync(full);
+                if (stat.size < 300 * 1024) {
+                  try { entryContent = fs.readFileSync(full, 'utf8'); } catch (e) {}
+                }
+                const storedEntry = crypto.randomUUID() + '.' + entryExt;
+                try { fs.copyFileSync(full, path.join(UPLOAD_DIR, storedEntry)); } catch (e) {}
+                const innerCat = detectCategory(entryExt, relInside, entry.name);
+                const innerMatch = matchFileToSyllabus({
+                  originalName: entry.name,
+                  extension: entryExt,
+                  relativePath: relInside,
+                  content: entryContent,
+                  category: bodySubject || innerCat
+                });
+                const innerAssignedCat = innerMatch.category || innerCat;
+                docs.push({
+                  originalName: entry.name,
+                  storedName: storedEntry,
+                  relativePath: relInside,
+                  folderName: zipBase,
+                  zipFolder: zipBase,
+                  zipSource: file.originalname,
+                  batchId: zipBatchId,
+                  extension: entryExt,
+                  category: innerAssignedCat,
+                  course: innerMatch.course || null,
+                  courseCode: innerMatch.courseCode || null,
+                  experimentNumber: innerMatch.experimentNumber || null,
+                  experimentName: innerMatch.experimentName || null,
+                  matchConfidence: innerMatch.matchConfidence || 'low',
+                  status: innerMatch.status || 'available',
+                  reviewReason: innerMatch.reviewReason || null,
+                  subject: innerMatch.course || innerAssignedCat,
+                  size: stat.size,
+                  mimeType: 'text/plain',
+                  content: entryContent,
+                  uploadedBy: 'admin',
+                  tags: Array.from(new Set([entryExt, innerAssignedCat, zipBase, 'zip'])),
+                  description: innerMatch.experimentName ? `#${innerMatch.experimentNumber} ${innerMatch.experimentName}` : `From ${file.originalname}`,
+                  pinned: false,
+                  downloads: 0,
+                  uploadDate: new Date(),
+                  updatedAt: new Date()
+                });
+              }
+            }
+          };
+          walkExtract(tmpExtractDir);
+        } catch (zipErr) {
+          console.warn('Zip extraction skipped:', zipErr.message);
+        } finally {
+          try { fs.rmSync(tmpExtractDir, { recursive: true, force: true }); } catch (e) {}
+        }
+      }
     }
 
     const saved = await filesDB.insertMany(docs);
-    res.status(201).json({ message: 'Upload Successful', files: saved });
+    res.status(201).json({ message: 'Upload Successful', files: saved.map(toSummaryFile) });
   } catch (err) {
     console.error('Upload error:', err.message);
     res.status(500).json({ error: 'Upload failed. Please try again.' });
@@ -295,6 +431,8 @@ router.get('/', async (req, res) => {
         { originalName: regex },
         { relativePath: regex },
         { folderName: regex },
+        { zipFolder: regex },
+        { zipSource: regex },
         { tags: regex },
         { description: regex },
         { extension: regex },
@@ -316,24 +454,36 @@ router.get('/', async (req, res) => {
       const catClean = activeCategory.toLowerCase().trim();
       if (catClean === 'pinned') {
         andConditions.push({ pinned: true });
-      } else if (catClean === 'folders') {
-        andConditions.push({ folderName: { $ne: null } });
+      } else if (catClean === 'folders' || catClean === 'zip') {
+        andConditions.push({
+          $or: [
+            { folderName: { $ne: null } },
+            { zipFolder: { $ne: null } },
+            { extension: 'zip' },
+            { category: 'zip' }
+          ]
+        });
+      } else if (catClean === 'java') {
+        andConditions.push({ $or: [{ category: /^java$/i }, { extension: /^java$/i }] });
+      } else if (catClean === 'python' || catClean === 'py') {
+        andConditions.push({ $or: [{ category: /^(python|py)$/i }, { extension: /^py$/i }] });
+      } else if (catClean === 'c' || catClean === 'c language' || catClean === 'clanguage') {
+        andConditions.push({ $or: [{ category: /^(c|cpp)$/i }, { extension: /^(c|cpp|cc|cxx)$/i }] });
+      } else if (catClean === 'cpp' || catClean === 'c++') {
+        andConditions.push({ $or: [{ category: /^cpp$/i }, { extension: /^(cpp|cc|cxx)$/i }] });
+      } else if (catClean === 'dbms' || catClean === 'sql') {
+        andConditions.push({ $or: [{ category: /^(dbms|sql)$/i }, { extension: /^sql$/i }] });
+      } else if (catClean === 'adsa' || catClean === 'dsa') {
+        andConditions.push({ category: /^(adsa|dsa)$/i });
       } else {
         const terms = CATEGORY_ALIASES[catClean] || [catClean];
         const regexGroup = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
         const exactRegex = new RegExp(`^(${regexGroup})$`, 'i');
-        const matchRegex = new RegExp(`(${regexGroup})`, 'i');
-
         andConditions.push({
           $or: [
             { category: exactRegex },
-            { category: matchRegex },
-            { subject: matchRegex },
-            { course: matchRegex },
             { extension: exactRegex },
-            { tags: matchRegex },
-            { relativePath: matchRegex },
-            { originalName: matchRegex }
+            { subject: exactRegex }
           ]
         });
       }
@@ -361,6 +511,16 @@ router.get('/', async (req, res) => {
     const isAdmin = verifyAdminToken(req);
     const userEmail = (req.query.userEmail || req.headers['x-user-email'] || '').toLowerCase().trim();
 
+    const version = getDataVersion();
+    if (fileListCache.version !== version) {
+      fileListCache.version = version;
+      fileListCache.entries.clear();
+    }
+    const listCacheKey = `${isAdmin ? 1 : 0}|${userEmail}|${q || ''}|${activeCategory || ''}|${subject || ''}|${exercise || ''}|${question || ''}|${sort || ''}`;
+    if (fileListCache.entries.has(listCacheKey)) {
+      return res.json(fileListCache.entries.get(listCacheKey));
+    }
+
     if (!isAdmin) {
       andConditions.push({ status: { $ne: 'draft' } });
     }
@@ -375,8 +535,12 @@ router.get('/', async (req, res) => {
     const files = await filesDB.find(query, sortSpec, 500);
 
     let filteredFiles = files;
+    if (activeCategory && !['all', 'pinned', 'folders', 'zip'].includes(activeCategory.toLowerCase().trim())) {
+      const catClean = activeCategory.toLowerCase().trim();
+      filteredFiles = filteredFiles.filter(f => matchesStrictCategory(f, catClean));
+    }
     if (!isAdmin) {
-      filteredFiles = files.filter(f => {
+      filteredFiles = filteredFiles.filter(f => {
         if (f.status === 'draft') return false;
         if (f.assignmentType === 'individual') {
           if (!userEmail) return false;
@@ -387,7 +551,10 @@ router.get('/', async (req, res) => {
       });
     }
 
-    res.json(filteredFiles);
+    const resultPayload = filteredFiles.map(toSummaryFile);
+    if (fileListCache.entries.size >= 80) fileListCache.entries.clear();
+    fileListCache.entries.set(listCacheKey, resultPayload);
+    res.json(resultPayload);
   } catch (err) {
     console.error('List files error:', err.message);
     res.status(500).json({ error: 'Could not load file list.' });
@@ -397,18 +564,25 @@ router.get('/', async (req, res) => {
 // GET /api/files/stats
 router.get('/stats', async (req, res) => {
   try {
+    const version = getDataVersion();
+    if (fileStatsCache.version === version && fileStatsCache.data) {
+      return res.json(fileStatsCache.data);
+    }
+
     const [totalFiles, pinned, agg] = await Promise.all([
       filesDB.countDocuments(),
       filesDB.countDocuments({ pinned: true }),
       filesDB.aggregate([])
     ]);
-    res.json({
+    const data = {
       totalFiles,
       pinned,
       todayUploads: totalFiles,
       totalDownloads: agg[0]?.totalDownloads || 0,
       storageUsed: agg[0]?.totalSize || 0
-    });
+    };
+    fileStatsCache = { version, data };
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Could not load stats.' });
   }
@@ -417,68 +591,73 @@ router.get('/stats', async (req, res) => {
 // GET /api/files/suggestions
 router.get('/suggestions', async (req, res) => {
   try {
+    const version = getDataVersion();
+    if (fileSuggestionsCache.version === version && fileSuggestionsCache.data) {
+      return res.json(fileSuggestionsCache.data);
+    }
+
     const manual = await suggestionsDB.find();
     const recentCode = await filesDB.find({ extension: { $in: CODE_EXTENSIONS } }, { uploadDate: -1 }, 6);
 
-    res.json({
+    const data = {
       trending: manual.map(s => s.text),
       recent: recentCode.map(f => f.originalName)
-    });
+    };
+    fileSuggestionsCache = { version, data };
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Could not load suggestions.' });
   }
 });
 
-// GET /api/files/folder/:identifier/download - Zips uploaded folder
-router.get('/folder/:identifier/download', async (req, res) => {
+// GET /api/files/previews/batch - Fast bulk preview prefetch for instant code viewing
+router.get('/previews/batch', async (req, res) => {
   try {
-    const rawIdentifier = req.params.identifier;
-    const identifier = decodeURIComponent(rawIdentifier);
+    const rawIds = String(req.query.ids || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 40);
+    const category = (req.query.category || '').toLowerCase().trim();
+    let targets = [];
 
-    let files = await filesDB.find({ batchId: identifier });
-    if (!files || !files.length) {
-      files = await filesDB.find({ folderName: identifier });
+    if (rawIds.length > 0) {
+      const idSet = new Set(rawIds);
+      const all = await filesDB.find({}, {}, 10000);
+      targets = all.filter(f => idSet.has(f._id || f.id));
+    } else if (category) {
+      const all = await filesDB.find({}, { experimentNumber: 1 }, 10000);
+      targets = all
+        .filter(f => f.status === 'available' && (category === 'all' || (f.category || '').toLowerCase() === category))
+        .slice(0, 40);
     }
-    if (!files || !files.length) {
-      files = await filesDB.find({ batchId: rawIdentifier });
-      if (!files || !files.length) {
-        files = await filesDB.find({ folderName: rawIdentifier });
-      }
-    }
-    if (!files || !files.length) return res.status(404).json({ error: 'Folder not found.' });
 
-    const folderName = files[0].folderName || 'folder';
-    res.attachment(`${folderName}.zip`);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.pipe(res);
-
-    for (const f of files) {
-      let appended = false;
-      if (f.cloudinaryUrl) {
-        try {
-          const buf = await fetchRemoteContent(f.cloudinaryUrl);
-          archive.append(buf, { name: f.relativePath || f.originalName });
-          appended = true;
-        } catch (e) {
-          console.error(`Failed to fetch ${f.originalName} from Cloudinary for zip:`, e.message);
-        }
-      }
-      if (!appended) {
-        const fullPath = path.join(UPLOAD_DIR, f.storedName);
+    const isAdmin = verifyAdminToken(req);
+    const previews = {};
+    for (const file of targets) {
+      if (!isAdmin && (file.status === 'draft' || file.assignmentType === 'individual')) continue;
+      const ext = (file.extension || '').toLowerCase();
+      if (!CODE_EXTENSIONS.includes(ext)) continue;
+      let content = file.content;
+      if ((content === null || content === undefined) && file.storedName) {
+        const fullPath = path.join(UPLOAD_DIR, file.storedName);
         if (fs.existsSync(fullPath)) {
-          archive.file(fullPath, { name: f.relativePath || f.originalName });
-          appended = true;
+          try { content = fs.readFileSync(fullPath, 'utf-8').slice(0, 200000); } catch (e) {}
         }
       }
-      if (appended) {
-        await filesDB.findByIdAndUpdate(f._id || f.id, { downloads: (f.downloads || 0) + 1 });
+      if (content !== null && content !== undefined) {
+        const id = file._id || file.id;
+        previews[id] = { type: 'text', extension: file.extension, content, file };
       }
     }
-    archive.finalize();
+
+    res.json({ previews });
   } catch (err) {
-    console.error('Folder download failed:', err.message);
-    res.status(500).json({ error: 'Folder download failed.' });
+    res.status(500).json({ error: 'Batch preview failed.' });
   }
+});
+
+// GET /api/files/folder/:identifier/download - Disabled (Individual file downloads only)
+router.get('/folder/:identifier/download', (req, res) => {
+  return res.status(403).json({
+    error: 'Group, folder, and bulk downloads are disabled. Please download individual files instead.'
+  });
 });
 
 // DELETE /api/files/folder/:identifier - Admin only
@@ -589,11 +768,29 @@ router.post('/folders/delete-batch', requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/files/:id/download
+// GET /api/files/:id/download - Individual file downloads only
 router.get('/:id/download', async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found.' });
+
+    const isAdmin = verifyAdminToken(req);
+    if (!isAdmin && file.status === 'draft') {
+      return res.status(403).json({ error: 'This program is currently in draft status.' });
+    }
+
+    const ext = (file.extension || '').toLowerCase();
+    const isCollectionArchive =
+      ext === 'zip' ||
+      file.category === 'zip' ||
+      file.batchId === 'zip-root-lab-programs' ||
+      /zipshare\.zip$/i.test(file.originalName || '');
+
+    if (isCollectionArchive) {
+      return res.status(403).json({
+        error: 'Collection and bulk archive downloads are disabled. Please download individual program files instead.'
+      });
+    }
 
     file.downloads = (file.downloads || 0) + 1;
     await filesDB.findByIdAndUpdate(file._id || file.id, { downloads: file.downloads });
@@ -632,6 +829,9 @@ router.get('/:id/preview', async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found.' });
+    if (!verifyAdminToken(req) && file.status === 'draft') {
+      return res.status(403).json({ error: 'This program is currently in draft status.' });
+    }
 
     if (CODE_EXTENSIONS.includes((file.extension || '').toLowerCase())) {
       let content = file.content;
@@ -674,6 +874,9 @@ router.get('/:id/raw', async (req, res) => {
   try {
     const file = await filesDB.findById(req.params.id);
     if (!file) return res.status(404).end();
+    if (!verifyAdminToken(req) && file.status === 'draft') {
+      return res.status(403).json({ error: 'This program is currently in draft status.' });
+    }
 
     if (file.cloudinaryUrl) {
       return res.redirect(file.cloudinaryUrl);
