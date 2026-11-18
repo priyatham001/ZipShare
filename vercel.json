@@ -1,8 +1,18 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30,
+      "includeFiles": "{data,public,services,routes,middleware}/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/vendor/(.*)",
       "destination": "/api/index.js"
     },
     {

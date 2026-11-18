@@ -63,20 +63,28 @@ body[data-theme="light"], html[data-theme="light"], [data-theme="light"] {
 [data-theme="light"] .wf-feature { background: #f5f5f7; border-color: rgba(0, 0, 0, 0.08); }
 
 * { box-sizing: border-box; }
-html, body { 
-  margin: 0; 
-  padding: 0; 
+html {
+  margin: 0;
+  padding: 0;
   scroll-behavior: smooth;
+  scroll-padding-top: 96px;
+  overflow-x: clip;
 }
 body {
+  margin: 0;
+  padding: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-apple);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: background 0.35s ease, color 0.35s ease;
+}
+body.sidebar-drawer-open,
+body.modal-open {
+  overflow: hidden;
 }
 
 /* Background Layer & Canvas */
@@ -1642,31 +1650,92 @@ input.input-error {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 120;
+  z-index: 2500;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
+  width: max-content;
+  max-width: min(460px, calc(100vw - 24px));
   pointer-events: none;
 }
 .toast {
   background: var(--bg-alt);
   border: 1px solid var(--card-border);
-  padding: 12px 20px;
+  padding: 12px 14px 12px 16px;
   border-radius: 14px;
   box-shadow: var(--shadow);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  animation: toastUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  animation: toastUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
+}
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.toast-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.toast-action-btn {
+  background: rgba(41, 151, 255, 0.16);
+  border: 1px solid rgba(41, 151, 255, 0.42);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+.toast-action-btn:hover {
+  background: var(--accent);
+  color: #ffffff;
+}
+.toast-close-btn {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-dim);
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+.toast-close-btn:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+.toast.toast-pulse {
+  animation: toastPulse 0.32s ease;
 }
 .toast.success { border-left: 4px solid var(--success); }
 .toast.error { border-left: 4px solid var(--danger); }
 .toast.warning { border-left: 4px solid var(--warning); }
 
 @keyframes toastUp {
-  from { transform: translateY(20px); opacity: 0; }
+  from { transform: translateY(16px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+@keyframes toastPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 @keyframes fadeIn {
@@ -1964,8 +2033,28 @@ input.input-error {
 }
 
 /* =========================================================
-   SRKR LAB EXPLORER - LAYOUT & SIDEBAR STYLES
+   ZIPSHARE LAB EXPLORER - LAYOUT & SIDEBAR STYLES
    ========================================================= */
+
+.breadcrumb-section {
+  max-width: 1280px;
+  margin: 0 auto 14px;
+  padding: 0 20px;
+}
+
+.breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  padding: 9px 14px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
 
 .lab-layout-wrapper {
   display: flex;
@@ -1977,35 +2066,50 @@ input.input-error {
   position: relative;
 }
 
-/* Left Collapsible Sidebar (Width ~260px) */
+/* Left Collapsible Sidebar */
 .lab-sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 296px;
+  min-width: 296px;
   background: var(--bg-alt);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   position: sticky;
-  top: 80px;
-  max-height: calc(100vh - 100px);
+  top: 88px;
+  max-height: calc(100vh - 108px);
+  overflow-x: hidden;
   overflow-y: auto;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease;
   box-shadow: var(--shadow);
   z-index: 20;
 }
 
+.lab-sidebar::-webkit-scrollbar,
+.sidebar-tree::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lab-sidebar::-webkit-scrollbar-thumb,
+.sidebar-tree::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+
 /* Sidebar Collapsed State */
 .lab-sidebar.collapsed {
-  width: 50px;
-  min-width: 50px;
-  padding: 12px 8px;
+  width: 56px;
+  min-width: 56px;
+  padding: 14px 8px;
   overflow: hidden;
 }
 
-.lab-sidebar.collapsed .sidebar-title-group div,
+.lab-sidebar.collapsed .sidebar-subject-icon,
+.lab-sidebar.collapsed .sidebar-heading-text,
 .lab-sidebar.collapsed .sidebar-search,
 .lab-sidebar.collapsed .sidebar-tree,
 .lab-sidebar.collapsed .sidebar-admin-footer {
@@ -2014,6 +2118,8 @@ input.input-error {
 
 .lab-sidebar.collapsed .sidebar-header {
   justify-content: center;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .lab-sidebar.collapsed .sidebar-toggle-btn {
@@ -2024,6 +2130,7 @@ input.input-error {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--card-border);
 }
@@ -2032,26 +2139,42 @@ input.input-error {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-heading-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .sidebar-subject-icon {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .sidebar-title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   font-weight: 700;
   color: var(--text);
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-subtitle {
-  font-size: 0.75rem;
+  display: block;
+  font-size: 0.7rem;
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
 }
 
 .sidebar-toggle-btn {
@@ -2059,18 +2182,20 @@ input.input-error {
   border: 1px solid var(--card-border);
   color: var(--text-dim);
   border-radius: 8px;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .sidebar-toggle-btn:hover {
   background: var(--accent);
+  border-color: var(--accent);
   color: #ffffff;
 }
 
@@ -2084,15 +2209,16 @@ input.input-error {
   position: absolute;
   left: 10px;
   font-size: 0.85rem;
-  opacity: 0.6;
+  opacity: 0.65;
+  pointer-events: none;
 }
 
 .sidebar-search input {
   width: 100%;
-  padding: 8px 10px 8px 32px;
+  padding: 9px 10px 9px 32px;
   background: var(--card);
   border: 1px solid var(--card-border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text);
   font-size: 0.85rem;
   outline: none;
@@ -2110,10 +2236,147 @@ input.input-error {
   gap: 6px;
   max-height: 520px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
 }
 
-/* VS Code Style Tree Node Items */
+.syllabus-subject-node {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+[data-theme="light"] .syllabus-subject-node {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.syllabus-subject-node.active {
+  border-color: rgba(41, 151, 255, 0.35);
+  background: rgba(41, 151, 255, 0.06);
+}
+
+.syllabus-subject-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.syllabus-subject-header:hover {
+  background: var(--card-hover);
+  color: var(--accent);
+}
+
+.syllabus-subject-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.syllabus-subject-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.syllabus-subject-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.syllabus-subject-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.syllabus-subject-count {
+  min-width: 24px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.syllabus-subject-node.active .syllabus-subject-count {
+  background: rgba(41, 151, 255, 0.22);
+  color: var(--accent);
+}
+
+.tree-arrow {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  width: 12px;
+  text-align: center;
+}
+
+.syllabus-subject-body {
+  padding: 2px 6px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.syllabus-question-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 7px 9px;
+  font-size: 0.81rem;
+  line-height: 1.35;
+  color: var(--text-dim);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.syllabus-question-item:hover {
+  background: var(--card-hover);
+  color: var(--text);
+}
+
+.syllabus-question-item.active {
+  background: rgba(41, 151, 255, 0.16);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.syllabus-question-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Legacy VS Code Tree Node Items (retained for compatibility) */
 .tree-exercise-item {
   border-radius: 8px;
   overflow: hidden;
@@ -5337,7 +5600,8 @@ input.input-error {
   top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  width: 600px;
+  width: min(600px, 100%);
+  max-width: 100%;
   height: 240px;
   background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.25) 0%, rgba(56, 189, 248, 0.15) 45%, transparent 75%);
   filter: blur(50px);
@@ -5368,10 +5632,11 @@ input.input-error {
 }
 
 .hero-title {
-  font-size: clamp(2.6rem, 5.5vw, 4.2rem);
+  font-size: clamp(2.4rem, 5.5vw, 4.2rem);
   font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  letter-spacing: -0.02em;
+  line-height: 1.16;
+  padding: 2px 0;
   margin: 0 0 10px 0;
   background: linear-gradient(180deg, #ffffff 40%, rgba(255, 255, 255, 0.72) 100%);
   -webkit-background-clip: text;
@@ -8360,13 +8625,119 @@ textarea:focus-visible {
   display: none;
 }
 
-/* Hero & Bento Card Alignment Polish */
+/* Hero, Upload Area, Main Grid & Responsive Layout Polish */
 .hero {
   position: relative;
   text-align: center;
-  padding: 36px 20px 22px;
+  padding: 44px 20px 26px;
   max-width: 920px;
   margin: 0 auto 12px;
+  scroll-margin-top: 120px;
+}
+
+.hero-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.hero-actions .upload-btn {
+  min-height: 44px;
+  min-width: 172px;
+  padding: 11px 22px;
+  border-radius: 14px;
+  font-size: 0.94rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.dashboard-actions {
+  flex-wrap: wrap;
+}
+
+.dash-btn {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.lab-main-content .file-grid-container {
+  max-width: 100%;
+  padding: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.grid-title-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.grid-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sort-select {
+  min-height: 38px;
+  padding: 7px 12px;
+  border-radius: 10px;
+}
+
+.syllabus-empty-uploads-banner {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px dashed rgba(56, 189, 248, 0.42);
+  background: rgba(56, 189, 248, 0.06);
+  margin-bottom: 4px;
+}
+
+.syllabus-empty-uploads-banner strong {
+  display: block;
+  font-size: 0.96rem;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.syllabus-empty-uploads-banner p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-dim);
+}
+
+.group-dl-disabled {
+  opacity: 0.62;
+  cursor: not-allowed !important;
+  background: rgba(148, 163, 184, 0.12) !important;
+  border-color: var(--card-border) !important;
+  color: var(--text-dim) !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 #statsBar .bento-stat-num {
@@ -8378,7 +8749,11 @@ textarea:focus-visible {
 }
 
 .file-grid {
-  min-height: 280px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+  min-height: 220px;
 }
 
 .card-btn {
@@ -8486,6 +8861,11 @@ textarea:focus-visible {
     gap: 10px;
   }
 
+  .hero {
+    padding: 28px 16px 20px;
+    scroll-margin-top: 140px;
+  }
+
   .nav-desktop-links,
   .nav-admin-cta {
     display: none !important;
@@ -8514,14 +8894,23 @@ textarea:focus-visible {
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(320px, 88vw);
-    min-width: 0;
+    width: min(320px, 88vw) !important;
+    min-width: 0 !important;
     max-height: 100vh;
     border-radius: 0 20px 20px 0;
+    padding: 16px !important;
+    overflow-y: auto !important;
     z-index: 1500;
     display: flex;
     transform: translateX(-105%);
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .lab-sidebar.collapsed .sidebar-subject-icon,
+  .lab-sidebar.collapsed .sidebar-heading-text,
+  .lab-sidebar.collapsed .sidebar-search,
+  .lab-sidebar.collapsed .sidebar-tree {
+    display: flex !important;
   }
 
   .lab-sidebar.mobile-open,
@@ -8550,16 +8939,17 @@ textarea:focus-visible {
 /* Mobile-First Layout Rules across 320px, 360px, 375px, 390px, 414px, 430px */
 @media (max-width: 768px) {
   html, body {
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100vw;
   }
   .hero {
-    padding: 20px 14px 16px;
+    padding: 26px 14px 18px;
     margin-bottom: 10px;
   }
   .hero-title {
-    font-size: clamp(2rem, 8vw, 2.6rem);
+    font-size: clamp(2rem, 8.5vw, 2.6rem);
     letter-spacing: -0.02em;
+    line-height: 1.18;
   }
   .hero-subtitle {
     font-size: 0.95rem;
@@ -8567,6 +8957,18 @@ textarea:focus-visible {
   .hero-desc {
     font-size: 0.84rem;
     padding: 0 4px;
+  }
+  .toast-container {
+    bottom: 76px;
+    max-width: calc(100vw - 20px);
+  }
+  .breadcrumb-section {
+    padding: 0 10px;
+    margin-bottom: 12px;
+  }
+  .breadcrumb-bar {
+    padding: 7px 12px;
+    font-size: 0.8rem;
   }
   .subject-animation-stage {
     margin: 0 12px 16px;
@@ -8614,7 +9016,7 @@ textarea:focus-visible {
     padding: 0 10px;
   }
   .file-grid-container {
-    padding: 0 4px;
+    padding: 0;
   }
   .section-header {
     flex-direction: column;
@@ -8628,11 +9030,12 @@ textarea:focus-visible {
     gap: 8px;
   }
   .file-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
   .file-card {
     padding: 14px;
+    min-width: 0;
   }
   .card-actions {
     gap: 6px;
@@ -8712,6 +9115,19 @@ textarea:focus-visible {
     right: 12px;
     font-size: 0.72rem;
     padding: 4px 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-actions .upload-btn {
+    width: 100%;
   }
 }
 

@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const zlib = require('zlib');
-const { connectDB } = require('./db');
+const { connectDB, isMongoExpectedButDisconnected, getDataVersion } = require('./db');
 
 const filesRouter = require('./routes/files');
 const adminRouter = require('./routes/admin');
@@ -21,8 +21,9 @@ const PORT = 3000;
 
 app.use(cors());
 
-// Built-in fast gzip compression for text/JSON/JS/CSS responses
+// Built-in fast gzip compression for text/JSON/JS/CSS responses (skip on Vercel where edge compresses automatically)
 app.use((req, res, next) => {
+  if (isVercel) return next();
   const acceptEncoding = req.headers['accept-encoding'] || '';
   if (!acceptEncoding.includes('gzip') || req.path.includes('/download')) {
     return next();
@@ -67,13 +68,43 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serverless-safe DB connection middleware for API routes on Vercel (skip for AI and compiler routes)
+// Health check endpoint (safe, no secrets exposed)
+app.get('/api/health', async (req, res) => {
+  try {
+    await connectDB();
+  } catch (e) {
+    // Tracked via isMongoExpectedButDisconnected()
+  }
+  const dbUnavailable = isMongoExpectedButDisconnected();
+  res.status(dbUnavailable ? 503 : 200).json({
+    ok: !dbUnavailable,
+    dbStatus: dbUnavailable ? 'disconnected' : (process.env.MONGODB_URI ? 'mongodb' : 'local_json'),
+    mongoConfigured: Boolean(process.env.MONGODB_URI),
+    dataVersion: getDataVersion()
+  });
+});
+
+// Serverless-safe DB connection middleware for DB-backed API routes
 app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api') && !req.path.startsWith('/api/ai') && !req.path.startsWith('/api/compiler')) {
+  const needsDB =
+    req.path.startsWith('/api') &&
+    !req.path.startsWith('/api/ai') &&
+    !req.path.startsWith('/api/compiler') &&
+    req.path !== '/api/health' &&
+    req.path !== '/api/admin/login' &&
+    req.path !== '/api/admin/settings';
+
+  if (needsDB) {
     try {
       await connectDB();
     } catch (e) {
-      // Local fallback handles it gracefully
+      console.error('Database connection middleware error:', e.message);
+    }
+    if (isMongoExpectedButDisconnected()) {
+      return res.status(503).json({
+        error: 'Could not connect to server file index (database connection unavailable).',
+        code: 'DB_UNAVAILABLE'
+      });
     }
   }
   next();
@@ -90,14 +121,19 @@ app.use('/vendor/three.min.js', express.static(path.join(__dirname, 'node_module
 app.use('/assets', express.static(path.join(__dirname, 'public', 'assets'), { maxAge: '1d', etag: true }));
 app.use(express.static(path.join(__dirname, 'public'), { etag: true }));
 
-// Database offline / Mongoose fallback error middleware
+// Database offline / Mongoose error middleware
 app.use((err, req, res, next) => {
-  if (err.name === 'MongooseError' || err.name === 'MongoNetworkError' || (err.message && err.message.includes('buffering timed out'))) {
-    console.warn('[AI Studio] Database offline — returning fallback response');
-    if (req.method === 'GET') {
-      return res.json(req.path.endsWith('s') || req.path.endsWith('s/') ? [] : {});
-    }
-    return res.status(503).json({ error: 'Service temporarily unavailable (database offline)' });
+  if (
+    err.name === 'MongooseError' ||
+    err.name === 'MongoNetworkError' ||
+    err.name === 'MongoServerSelectionError' ||
+    (err.message && err.message.includes('buffering timed out'))
+  ) {
+    console.warn('Database offline error:', err.message);
+    return res.status(503).json({
+      error: 'Could not connect to server file index (database temporarily offline).',
+      code: 'DB_UNAVAILABLE'
+    });
   }
   next(err);
 });

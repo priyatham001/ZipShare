@@ -329,7 +329,7 @@ router.put('/programs/:id', requireAdmin, async (req, res) => {
     const nextName = (update.originalName || existing.originalName || '').toLowerCase().trim();
     const catPeers = await filesDB.find({ category: nextCategory }, {}, 1000);
     const conflictPeer = catPeers.find(
-      f => (f._id || f.id) !== req.params.id && (f.originalName || '').toLowerCase().trim() === nextName
+      f => String(f._id || f.id) !== String(req.params.id) && (f.originalName || '').toLowerCase().trim() === nextName
     );
     if (conflictPeer) {
       return res.status(409).json({ error: `Another program named "${nextName}" already exists in "${nextCategory}".` });

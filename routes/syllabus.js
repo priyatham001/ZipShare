@@ -5,7 +5,7 @@ const { requireAdmin, verifyAdminToken } = require('../middleware/auth');
 const { SYLLABUS_COURSES, getCourseByKey, getAllOfficialExperiments } = require('../services/syllabusData');
 const { matchFileToSyllabus, isCourseLanguageCompatible } = require('../services/syllabusMatcher');
 
-let indexCache = { version: -1, isAdmin: null, availableMap: null, needsReviewFiles: null, otherFiles: null };
+let indexCache = { version: -1, entries: new Map() };
 const viewCache = { version: -1, entries: new Map() };
 const assignmentLocks = new Map();
 
@@ -27,41 +27,86 @@ async function withAssignmentLock(lockKey, taskFn) {
 
 function toSummaryFile(f) {
   if (!f || typeof f !== 'object') return f;
-  const { content, ...rest } = f;
+  const plain = typeof f.toObject === 'function' ? f.toObject() : f;
+  const { content, ...rest } = plain;
+  if (rest._id != null) {
+    rest._id = String(rest._id);
+  } else if (rest.id != null) {
+    rest._id = String(rest.id);
+  }
   return rest;
 }
 
-async function getIndexedSyllabusState(isAdmin = false) {
+function resolveCourseKey(f) {
+  const cat = String(f?.category || '').toLowerCase().trim();
+  if (cat === 'java') return 'java';
+  if (cat === 'python' || cat === 'py') return 'python';
+  if (cat === 'dbms' || cat === 'sql') return 'dbms';
+  if (cat === 'adsa' || cat === 'dsa') return 'adsa';
+  if (cat === 'c' || cat === 'c language' || cat === 'clanguage') return 'c';
+  if (cat === 'cpp' || cat === 'c++') return 'cpp';
+
+  const ext = String(f?.extension || '').toLowerCase().replace('.', '').trim();
+  if (ext === 'java') return 'java';
+  if (ext === 'py') return 'python';
+  if (ext === 'sql') return 'dbms';
+  return cat;
+}
+
+function isFileVisibleToUser(f, isAdmin, userEmail) {
+  if (isAdmin) return true;
+  if (f.status === 'draft') return false;
+  if (f.assignmentType === 'individual') {
+    if (!userEmail) return false;
+    const assigned = Array.isArray(f.assignedUsers) ? f.assignedUsers : [];
+    return assigned.some(u => String(u).toLowerCase().trim() === userEmail);
+  }
+  return true;
+}
+
+async function getIndexedSyllabusState(isAdmin = false, userEmail = '') {
   const version = getDataVersion();
-  if (indexCache.version === version && indexCache.isAdmin === isAdmin && indexCache.availableMap) {
-    return indexCache;
+  const cleanEmail = String(userEmail || '').toLowerCase().trim();
+  const cacheKey = `${isAdmin ? 1 : 0}|${cleanEmail}`;
+
+  if (indexCache.version !== version) {
+    indexCache = { version, entries: new Map() };
+  }
+  if (indexCache.entries.has(cacheKey)) {
+    return indexCache.entries.get(cacheKey);
   }
 
   const files = await filesDB.find({}, {}, 10000);
   const availableMap = new Map();
+  const additionalFiles = [];
   const needsReviewFiles = [];
   const otherFiles = [];
 
   for (const f of files) {
-    if (!isAdmin && (f.status === 'draft' || f.assignmentType === 'individual')) {
+    if (!isFileVisibleToUser(f, isAdmin, cleanEmail)) {
       continue;
     }
 
-    const cat = (f.category || '').toLowerCase();
-    const courseKey = cat === 'py' ? 'python' : (cat === 'dsa' ? 'adsa' : (cat === 'sql' ? 'dbms' : cat));
+    const courseKey = resolveCourseKey(f);
 
     if (['java', 'python', 'dbms', 'adsa'].includes(courseKey)) {
       const compatible = isCourseLanguageCompatible(courseKey, f.extension, f.content);
-      if (compatible && (f.status === 'available' || f.status === 'published') && f.experimentNumber) {
+      const isPublishedOrAvailable = f.status === 'available' || f.status === 'published' || !f.status;
+
+      if (compatible && isPublishedOrAvailable && f.experimentNumber) {
         const key = `${courseKey}_${f.experimentNumber}`;
         if (!availableMap.has(key)) {
           availableMap.set(key, [f]);
         } else {
           const list = availableMap.get(key);
-          if (!list.some(item => (item._id && item._id === f._id) || (item.relativePath && item.relativePath === f.relativePath))) {
+          const fId = String(f._id || f.id || '');
+          if (!list.some(item => (fId && String(item._id || item.id || '') === fId) || (item.relativePath && item.relativePath === f.relativePath))) {
             list.push(f);
           }
         }
+      } else if (compatible && isPublishedOrAvailable && !f.experimentNumber) {
+        // Admin-created published programs or standalone lab programs without an official experiment slot
+        additionalFiles.push(f);
       } else {
         needsReviewFiles.push(f);
       }
@@ -72,8 +117,10 @@ async function getIndexedSyllabusState(isAdmin = false) {
     }
   }
 
-  indexCache = { version, isAdmin, availableMap, needsReviewFiles, otherFiles };
-  return indexCache;
+  const entry = { availableMap, additionalFiles, needsReviewFiles, otherFiles };
+  if (indexCache.entries.size >= 40) indexCache.entries.clear();
+  indexCache.entries.set(cacheKey, entry);
+  return entry;
 }
 
 // GET /api/syllabus - Course definitions and official experiments
@@ -84,15 +131,19 @@ router.get('/', (req, res) => {
   });
 });
 
-let statsCache = { version: -1, publicData: null, adminData: null };
+let statsCache = { version: -1, entries: new Map() };
 // GET /api/syllabus/stats - Available vs Coming Soon breakdown per course
 router.get('/stats', async (req, res) => {
   try {
     const isAdmin = verifyAdminToken(req);
+    const userEmail = String(req.query.userEmail || req.headers['x-user-email'] || '').toLowerCase().trim();
     const version = getDataVersion();
-    if (statsCache.version === version) {
-      const cached = isAdmin ? statsCache.adminData : statsCache.publicData;
-      if (cached) return res.json(cached);
+    const statsKey = `${isAdmin ? 1 : 0}|${userEmail}`;
+    if (statsCache.version !== version) {
+      statsCache = { version, entries: new Map() };
+    }
+    if (statsCache.entries.has(statsKey)) {
+      return res.json(statsCache.entries.get(statsKey));
     }
 
     const files = await filesDB.find({}, {}, 10000);
@@ -102,11 +153,12 @@ router.get('/stats', async (req, res) => {
       totalAvailable: 0,
       totalComingSoon: 0,
       totalNeedsReview: 0,
+      totalUploadedPrograms: 0,
       courses: {
-        java: { total: 35, available: 0, comingSoon: 35, needsReview: 0, title: 'Java Programming', code: 'B23CS2105' },
-        python: { total: 40, available: 0, comingSoon: 40, needsReview: 0, title: 'Python Programming', code: 'B23CS2106' },
-        dbms: { total: 54, available: 0, comingSoon: 54, needsReview: 0, title: 'Database Management Systems', code: 'B23CS2104' },
-        adsa: { total: 16, available: 0, comingSoon: 16, needsReview: 0, title: 'DSA / ADSA', code: 'B23CI2102' }
+        java: { total: 35, available: 0, additional: 0, uploadedCount: 0, comingSoon: 35, needsReview: 0, title: 'Java Programming', code: 'B23CS2105' },
+        python: { total: 40, available: 0, additional: 0, uploadedCount: 0, comingSoon: 40, needsReview: 0, title: 'Python Programming', code: 'B23CS2106' },
+        dbms: { total: 54, available: 0, additional: 0, uploadedCount: 0, comingSoon: 54, needsReview: 0, title: 'Database Management Systems', code: 'B23CS2104' },
+        adsa: { total: 16, available: 0, additional: 0, uploadedCount: 0, comingSoon: 16, needsReview: 0, title: 'DSA / ADSA', code: 'B23CI2102' }
       }
     };
 
@@ -118,17 +170,21 @@ router.get('/stats', async (req, res) => {
     };
 
     files.forEach(f => {
-      if (!isAdmin && (f.status === 'draft' || f.assignmentType === 'individual')) {
+      if (!isFileVisibleToUser(f, isAdmin, userEmail)) {
         return;
       }
-      const cat = (f.category || '').toLowerCase();
-      const courseKey = cat === 'py' ? 'python' : (cat === 'dsa' ? 'adsa' : (cat === 'sql' ? 'dbms' : cat));
+      stats.totalUploadedPrograms++;
+      const courseKey = resolveCourseKey(f);
 
       if (stats.courses[courseKey]) {
+        stats.courses[courseKey].uploadedCount++;
         const compatible = isCourseLanguageCompatible(courseKey, f.extension, f.content);
-        if (compatible && (f.status === 'available' || f.status === 'published') && f.experimentNumber) {
+        const isPublishedOrAvailable = f.status === 'available' || f.status === 'published' || !f.status;
+        if (compatible && isPublishedOrAvailable && f.experimentNumber) {
           filledExp[courseKey].add(f.experimentNumber);
-        } else if (!compatible || f.status === 'needs_review' || f.status === 'unmapped') {
+        } else if (compatible && isPublishedOrAvailable && !f.experimentNumber) {
+          stats.courses[courseKey].additional++;
+        } else {
           stats.courses[courseKey].needsReview++;
           stats.totalNeedsReview++;
         }
@@ -144,11 +200,8 @@ router.get('/stats', async (req, res) => {
       stats.totalComingSoon += courseStats.comingSoon;
     }
 
-    if (statsCache.version !== version) {
-      statsCache = { version, publicData: null, adminData: null };
-    }
-    if (isAdmin) statsCache.adminData = stats;
-    else statsCache.publicData = stats;
+    if (statsCache.entries.size >= 40) statsCache.entries.clear();
+    statsCache.entries.set(statsKey, stats);
 
     res.json(stats);
   } catch (err) {
@@ -176,6 +229,7 @@ router.get('/view', async (req, res) => {
   try {
     const { category, q, sort } = req.query;
     const isAdmin = verifyAdminToken(req);
+    const userEmail = String(req.query.userEmail || req.headers['x-user-email'] || '').toLowerCase().trim();
     const catClean = (category || 'all').toLowerCase().trim();
     const searchQuery = (q || '').toLowerCase().trim();
     const sortClean = (sort || 'default').toLowerCase().trim();
@@ -186,12 +240,12 @@ router.get('/view', async (req, res) => {
       viewCache.entries.clear();
     }
 
-    const cacheKey = `${isAdmin ? 1 : 0}|${catClean}|${searchQuery}|${sortClean}`;
+    const cacheKey = `${isAdmin ? 1 : 0}|${userEmail}|${catClean}|${searchQuery}|${sortClean}`;
     if (viewCache.entries.has(cacheKey)) {
       return res.json(viewCache.entries.get(cacheKey));
     }
 
-    const { availableMap, needsReviewFiles, otherFiles } = await getIndexedSyllabusState(isAdmin);
+    const { availableMap, additionalFiles, needsReviewFiles, otherFiles } = await getIndexedSyllabusState(isAdmin, userEmail);
 
     // Courses to include
     let coursesToRender = [];
@@ -249,15 +303,19 @@ router.get('/view', async (req, res) => {
     }
 
     // Apply sorting
-    if (sort === 'recent') {
+    if (sortClean === 'recent') {
       items.sort((a, b) => {
-        const da = a.file?.uploadDate ? new Date(a.file.uploadDate) : new Date(0);
-        const db = b.file?.uploadDate ? new Date(b.file.uploadDate) : new Date(0);
-        return db - da;
+        const da = a.file?.uploadDate ? new Date(a.file.uploadDate).getTime() : 0;
+        const db = b.file?.uploadDate ? new Date(b.file.uploadDate).getTime() : 0;
+        if (db !== da) return db - da;
+        return a.experimentNumber - b.experimentNumber;
       });
-    } else if (sort === 'popular') {
-      items.sort((a, b) => (b.file?.downloads || 0) - (a.file?.downloads || 0));
-    } else if (sort === 'name') {
+    } else if (sortClean === 'popular') {
+      items.sort((a, b) => {
+        const diff = (b.file?.downloads || 0) - (a.file?.downloads || 0);
+        return diff !== 0 ? diff : a.experimentNumber - b.experimentNumber;
+      });
+    } else if (sortClean === 'name') {
       items.sort((a, b) => a.experimentName.localeCompare(b.experimentName));
     } else {
       const courseOrder = { java: 1, python: 2, dbms: 3, adsa: 4 };
@@ -269,18 +327,53 @@ router.get('/view', async (req, res) => {
       });
     }
 
-    const filteredReview = (catClean === 'all' || catClean === 'needs_review')
-      ? needsReviewFiles.filter(f => matchesSearchFile(f, searchQuery)).map(toSummaryFile)
+    const activeCourseKey = coursesToRender.length === 1 ? coursesToRender[0] : null;
+
+    const filterByCategoryAndSearch = (list) => {
+      return list
+        .filter(f => {
+          if (catClean === 'all' || catClean === 'needs_review') return matchesSearchFile(f, searchQuery);
+          if (activeCourseKey) return resolveCourseKey(f) === activeCourseKey && matchesSearchFile(f, searchQuery);
+          return false;
+        })
+        .map(toSummaryFile);
+    };
+
+    const sortFileList = (list) => {
+      if (sortClean === 'recent') {
+        return [...list].sort((a, b) => new Date(b.uploadDate || 0) - new Date(a.uploadDate || 0));
+      }
+      if (sortClean === 'popular') {
+        return [...list].sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+      }
+      if (sortClean === 'name') {
+        return [...list].sort((a, b) => String(a.originalName || '').localeCompare(String(b.originalName || '')));
+      }
+      return list;
+    };
+
+    const filteredAdditional = (catClean === 'needs_review')
+      ? []
+      : sortFileList(filterByCategoryAndSearch(additionalFiles));
+
+    const filteredReview = (catClean === 'all' || catClean === 'needs_review' || Boolean(activeCourseKey))
+      ? sortFileList(filterByCategoryAndSearch(needsReviewFiles))
       : [];
+
     const filteredOther = (catClean === 'all')
-      ? otherFiles.filter(f => matchesSearchFile(f, searchQuery)).map(toSummaryFile)
+      ? sortFileList(otherFiles.filter(f => matchesSearchFile(f, searchQuery)).map(toSummaryFile))
       : [];
+
+    const syllabusUploadedCount = items.reduce((acc, it) => acc + (Array.isArray(it.files) ? it.files.length : (it.file ? 1 : 0)), 0);
+    const availableProgramCount = syllabusUploadedCount + filteredAdditional.length + filteredReview.length + filteredOther.length;
 
     const payload = {
       items,
+      additionalFiles: filteredAdditional,
       needsReviewCount: filteredReview.length,
       needsReviewFiles: filteredReview,
-      otherFiles: filteredOther
+      otherFiles: filteredOther,
+      availableProgramCount
     };
 
     if (viewCache.entries.size >= 80) {
@@ -329,10 +422,10 @@ router.post('/assign', requireAdmin, async (req, res) => {
       const existing = await filesDB.find({
         category: course.category,
         experimentNumber: expNum,
-        status: 'available'
+        status: { $in: ['available', 'published'] }
       });
 
-      const otherExisting = existing.filter(f => (f._id || f.id) !== fileId);
+      const otherExisting = existing.filter(f => String(f._id || f.id) !== String(fileId));
       if (otherExisting.length > 0 && !overrideDuplicate && !keepBoth) {
         return {
           status: 409,

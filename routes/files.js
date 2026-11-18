@@ -18,7 +18,13 @@ const fileListCache = { version: -1, entries: new Map() };
 
 function toSummaryFile(f) {
   if (!f || typeof f !== 'object') return f;
-  const { content, ...rest } = f;
+  const plain = typeof f.toObject === 'function' ? f.toObject() : f;
+  const { content, ...rest } = plain;
+  if (rest._id != null) {
+    rest._id = String(rest._id);
+  } else if (rest.id != null) {
+    rest._id = String(rest.id);
+  }
   return rest;
 }
 
@@ -687,11 +693,11 @@ router.get('/previews/batch', async (req, res) => {
     if (rawIds.length > 0) {
       const idSet = new Set(rawIds);
       const all = await filesDB.find({}, {}, 10000);
-      targets = all.filter(f => idSet.has(f._id || f.id));
+      targets = all.filter(f => idSet.has(String(f._id || f.id)));
     } else if (category) {
       const all = await filesDB.find({}, { experimentNumber: 1 }, 10000);
       targets = all
-        .filter(f => f.status === 'available' && (category === 'all' || (f.category || '').toLowerCase() === category))
+        .filter(f => ['available', 'published'].includes(f.status || 'available') && (category === 'all' || (f.category || '').toLowerCase() === category))
         .slice(0, 40);
     }
 
@@ -709,8 +715,8 @@ router.get('/previews/batch', async (req, res) => {
         }
       }
       if (content !== null && content !== undefined) {
-        const id = file._id || file.id;
-        previews[id] = { type: 'text', extension: file.extension, content, file };
+        const id = String(file._id || file.id);
+        previews[id] = { type: 'text', extension: file.extension, content, file: toSummaryFile(file) };
       }
     }
 

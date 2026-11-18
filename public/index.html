@@ -477,12 +477,14 @@
 
     <!-- Upload Controls (Admin only) -->
     <div class="hero-actions admin-only-flex" id="heroActions" style="display:none;">
-      <label class="upload-btn primary-btn" id="uploadBtn">
-        <span>⬆ Upload Files</span>
+      <label class="upload-btn primary-btn" id="uploadBtn" tabindex="0">
+        <span aria-hidden="true">⬆</span>
+        <span>Upload Files</span>
         <input type="file" id="fileInput" multiple hidden />
       </label>
-      <label class="upload-btn ghost-btn" id="uploadFolderBtn">
-        <span>📁 Upload Folder</span>
+      <label class="upload-btn ghost-btn" id="uploadFolderBtn" tabindex="0">
+        <span aria-hidden="true">📁</span>
+        <span>Upload Folder</span>
         <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
       </label>
     </div>
@@ -520,8 +522,8 @@
   </section>
 
   <!-- Dynamic Breadcrumb Navigation Bar -->
-  <section class="breadcrumb-section" style="max-width:1200px; margin:0 auto 16px; padding:0 20px;">
-    <div class="breadcrumb-bar" id="breadcrumbBar" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; background:var(--card); padding:10px 16px; border-radius:12px; border:1px solid var(--card-border); font-size:0.9rem; color:var(--text-dim);">
+  <section class="breadcrumb-section">
+    <div class="breadcrumb-bar" id="breadcrumbBar">
       <!-- Breadcrumb elements dynamically populated in JS -->
     </div>
   </section>
@@ -529,23 +531,23 @@
   <!-- Main Lab Layout with Left Collapsible Sidebar -->
   <div class="lab-layout-wrapper" id="labLayoutWrapper">
     
-    <!-- LEFT SIDEBAR: SRKR Lab Explorer -->
-    <aside class="lab-sidebar" id="labSidebar">
+    <!-- LEFT SIDEBAR: ZipShare Lab Explorer -->
+    <aside class="lab-sidebar" id="labSidebar" aria-label="Lab Explorer Sidebar">
       <div class="sidebar-header">
         <div class="sidebar-title-group">
-          <span class="sidebar-subject-icon" id="sidebarSubjectIcon">📚</span>
-          <div>
+          <span class="sidebar-subject-icon" id="sidebarSubjectIcon" aria-hidden="true">📚</span>
+          <div class="sidebar-heading-text">
             <h3 class="sidebar-title" id="sidebarTitle">Lab Explorer</h3>
-            <span class="sidebar-subtitle" id="sidebarSubtitle">ZipShare Syllabus</span>
+            <span class="sidebar-subtitle" id="sidebarSubtitle">ZIPSHARE SYLLABUS</span>
           </div>
         </div>
-        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar">◀</button>
+        <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Collapse or Expand Sidebar" aria-label="Collapse Sidebar" aria-expanded="true">◀</button>
         <button class="sidebar-mobile-close-btn" id="sidebarMobileCloseBtn" type="button" aria-label="Close Syllabus Explorer">✕</button>
       </div>
 
       <div class="sidebar-search">
-        <span class="sidebar-search-icon">🔍</span>
-        <input type="text" id="syllabusSearchInput" placeholder="Search syllabus..." autocomplete="off" />
+        <span class="sidebar-search-icon" aria-hidden="true">🔍</span>
+        <input type="text" id="syllabusSearchInput" placeholder="Search syllabus..." autocomplete="off" aria-label="Search syllabus topics" />
       </div>
 
       <!-- Syllabus Hierarchy Tree -->

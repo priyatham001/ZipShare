@@ -67,13 +67,80 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-function toast(message, type = 'success') {
+const activeToastHistory = new Map();
+
+function toast(message, type = 'success', options = {}) {
   const container = $('toastContainer') || document.body;
+  const text = String(message || '').trim() || 'Notification';
+  const dedupeKey = `${type}::${text}`;
+  const now = Date.now();
+
+  // Prevent duplicate identical toasts from overlapping or stacking repeatedly
+  const existingEl = Array.from(container.querySelectorAll('.toast:not(.upload-toast)')).find(
+    el => el.dataset.toastKey === dedupeKey
+  );
+  if (existingEl) {
+    existingEl.classList.remove('toast-pulse');
+    void existingEl.offsetWidth;
+    existingEl.classList.add('toast-pulse');
+    return existingEl;
+  }
+
+  const lastShown = activeToastHistory.get(dedupeKey) || 0;
+  if (!options.allowDuplicate && now - lastShown < 2200) {
+    return null;
+  }
+  activeToastHistory.set(dedupeKey, now);
+
+  // Cap concurrent toasts to 3 so notifications never block controls
+  const nonUploadToasts = Array.from(container.querySelectorAll('.toast:not(.upload-toast)'));
+  if (nonUploadToasts.length >= 3) {
+    nonUploadToasts[0].remove();
+  }
+
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.textContent = message;
+  el.dataset.toastKey = dedupeKey;
+  el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
+  const msgSpan = document.createElement('span');
+  msgSpan.className = 'toast-message';
+  msgSpan.textContent = text;
+  el.appendChild(msgSpan);
+
+  const actionsWrap = document.createElement('div');
+  actionsWrap.className = 'toast-actions';
+
+  if (options.actionLabel && typeof options.onAction === 'function') {
+    const actionBtn = document.createElement('button');
+    actionBtn.type = 'button';
+    actionBtn.className = 'toast-action-btn';
+    actionBtn.textContent = options.actionLabel;
+    actionBtn.addEventListener('click', () => {
+      el.remove();
+      options.onAction();
+    });
+    actionsWrap.appendChild(actionBtn);
+  }
+
+  const dismissBtn = document.createElement('button');
+  dismissBtn.type = 'button';
+  dismissBtn.className = 'toast-close-btn';
+  dismissBtn.setAttribute('aria-label', 'Dismiss notification');
+  dismissBtn.textContent = '✕';
+  dismissBtn.addEventListener('click', () => el.remove());
+  actionsWrap.appendChild(dismissBtn);
+
+  el.appendChild(actionsWrap);
   container.appendChild(el);
-  setTimeout(() => el.remove(), 4000);
+
+  const duration = typeof options.duration === 'number' ? options.duration : (type === 'error' ? 7000 : 4000);
+  if (duration > 0) {
+    setTimeout(() => {
+      if (el.parentNode) el.remove();
+    }, duration);
+  }
+  return el;
 }
 
 function syncModalBodyState() {
@@ -416,7 +483,7 @@ function initZipshareWelcome() {
   const forceWelcome = urlParams.has('welcome') || urlParams.has('replay');
   const sessionCompleted = sessionStorage.getItem('zipshare_session_onboarding_shown');
 
-  if (!forceWelcome && sessionCompleted) {
+  if (!container || (!forceWelcome && sessionCompleted)) {
     if (container) {
       container.classList.add('hidden');
       container.style.display = 'none';
@@ -424,11 +491,11 @@ function initZipshareWelcome() {
     if (appEl) {
       appEl.classList.add('show');
     }
-    switchCategory(activeCategory);
+    switchCategory(activeCategory, true);
     return;
   }
 
-  // Otherwise, start the exact 3-screen welcome journey
+  // Otherwise, start the exact 3-screen welcome journey (which calls preloadBackgroundDetails -> loadFiles)
   startWelcomeJourney(false);
 }
 
@@ -2991,19 +3058,33 @@ const CATEGORY_STAGE_INFO = {
   pinned: { icon: '📌', title: 'Pinned Highlights', desc: 'Important administrative releases and starred lab code.' }
 };
 
+function syncDesktopNavLinks(activeCat, sortVal) {
+  const navHomeBtn = $('navHomeBtn');
+  const navRecentBtn = $('navRecentBtn');
+  const navPinnedBtn = $('navPinnedBtn');
+  const isRecent = sortVal === 'recent' && activeCat === 'all';
+  if (navHomeBtn) navHomeBtn.classList.toggle('active', activeCat !== 'pinned' && !isRecent);
+  if (navRecentBtn) navRecentBtn.classList.toggle('active', isRecent);
+  if (navPinnedBtn) navPinnedBtn.classList.toggle('active', activeCat === 'pinned');
+}
+
 function switchCategory(cat, skipAnimation = false) {
   activeCategory = cat;
 
   document.querySelectorAll('.chip, .segment-btn, .filter-btn').forEach(chip => {
-    chip.classList.toggle('active', chip.dataset.category === cat);
+    const isActive = chip.dataset.category === cat;
+    chip.classList.toggle('active', isActive);
+    chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
 
   const s = CATEGORY_STAGE_INFO[cat] || CATEGORY_STAGE_INFO.all;
   if ($('stageIcon')) $('stageIcon').textContent = s.icon;
   if ($('stageTitle')) $('stageTitle').textContent = s.title;
   if ($('stageDesc')) $('stageDesc').textContent = s.desc;
-  if ($('gridSectionTitle')) $('gridSectionTitle').textContent = `${s.title} (${lastFiles.length})`;
+  if ($('gridSectionTitle')) $('gridSectionTitle').textContent = `${s.title} (Loading...)`;
 
+  const sortEl = $('sortSelect');
+  syncDesktopNavLinks(cat, sortEl ? sortEl.value : 'sno');
   renderSubjectAnimation(cat);
   renderBreadcrumbs();
   syncMobileBottomNav(cat === 'pinned' ? 'pinned' : 'home');
@@ -3019,7 +3100,7 @@ function setSyllabusFilter(subject, exercise = null, question = null) {
   activeSyllabusQuestion = question;
 
   const badge = $('activeSyllabusFilterBadge');
-  const textEl = $('syllabusFilterText');
+  const textEl = $('filterBadgeText') || $('syllabusFilterText');
 
   if (subject || exercise || question) {
     if (badge) badge.style.display = 'inline-flex';
@@ -3208,22 +3289,30 @@ function renderSidebar() {
 
     html += `
       <div class="syllabus-subject-node ${isSubActive ? 'active' : ''}">
-        <div class="syllabus-subject-header" onclick="toggleSyllabusSubject('${c.key}')">
-          <span>${c.icon} ${escapeHtml(c.title)} (${questions.length})</span>
-          <span class="tree-arrow" id="arrow_${c.key}">${isSubActive || filterText ? '▼' : '▶'}</span>
-        </div>
+        <button type="button" class="syllabus-subject-header" onclick="toggleSyllabusSubject('${c.key}')" aria-expanded="${isSubActive || filterText ? 'true' : 'false'}">
+          <span class="syllabus-subject-title">
+            <span class="syllabus-subject-icon" aria-hidden="true">${c.icon}</span>
+            <span class="syllabus-subject-name">${escapeHtml(c.title)}</span>
+          </span>
+          <span class="syllabus-subject-meta">
+            <span class="syllabus-subject-count">${questions.length}</span>
+            <span class="tree-arrow" id="arrow_${c.key}">${isSubActive || filterText ? '▼' : '▶'}</span>
+          </span>
+        </button>
         <div class="syllabus-subject-body" id="body_${c.key}" style="display: ${isSubActive || filterText ? 'block' : 'none'};">
     `;
 
     matchingQuestions.forEach(q => {
       const isAvail = availableSet.get(`${c.key}_${q.number}`);
       const isQActive = activeCategory === c.key && (searchSearchQuery === (q.rawTitle || q.title) || searchSearchQuery === String(q.number));
+      const escapedRawTitle = escapeHtml(q.rawTitle || q.title).replace(/'/g, '&#39;');
 
       html += `
-        <div class="syllabus-question-item ${isQActive ? 'active' : ''}" 
-             style="display:flex; justify-content:space-between; align-items:center; gap:6px;"
-             onclick="selectSyllabusExperiment('${c.key}', ${q.number}, '${escapeHtml(q.rawTitle || q.title)}')">
-          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:65%;" title="${escapeHtml(q.title)}">
+        <div class="syllabus-question-item ${isQActive ? 'active' : ''}"
+             role="button"
+             tabindex="0"
+             onclick="selectSyllabusExperiment('${c.key}', ${q.number}, '${escapedRawTitle}')">
+          <span class="syllabus-question-label" title="${escapeHtml(q.title)}">
             ${escapeHtml(q.title)}
           </span>
           ${isAvail ? `<span class="status-tag-available">AVAILABLE</span>` : `<span class="status-tag-coming-soon">COMING SOON</span>`}
@@ -3267,7 +3356,6 @@ function syncMobileBottomNav(activeKey) {
 }
 
 function selectSyllabusExperiment(cat, num, rawTitle) {
-  switchCategory(cat);
   searchSearchQuery = rawTitle || '';
   const searchInput = $('searchInput');
   if (searchInput) searchInput.value = rawTitle || '';
@@ -3276,7 +3364,7 @@ function selectSyllabusExperiment(cat, num, rawTitle) {
   if (window.innerWidth <= 900) {
     setMobileSidebarOpen(false);
   }
-  loadFiles();
+  switchCategory(cat);
 }
 
 function toggleSyllabusSubject(subKey) {
@@ -3287,6 +3375,8 @@ function toggleSyllabusSubject(subKey) {
   const isHidden = body.style.display === 'none';
   body.style.display = isHidden ? 'block' : 'none';
   if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
+  const headerBtn = body.previousElementSibling;
+  if (headerBtn) headerBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
 }
 
 const syllabusSearchInput = $('syllabusSearchInput');
@@ -3304,13 +3394,19 @@ const labSidebar = $('labSidebar');
 
 if (sidebarToggleBtn && labSidebar) {
   sidebarToggleBtn.addEventListener('click', () => {
-    labSidebar.classList.toggle('collapsed');
+    const isCollapsed = labSidebar.classList.toggle('collapsed');
+    sidebarToggleBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    sidebarToggleBtn.setAttribute('aria-label', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
   });
 }
 
 if (sidebarCollapseBtn && labSidebar) {
   sidebarCollapseBtn.addEventListener('click', () => {
     labSidebar.classList.add('collapsed');
+    if (sidebarToggleBtn) {
+      sidebarToggleBtn.setAttribute('aria-expanded', 'false');
+      sidebarToggleBtn.setAttribute('aria-label', 'Expand Sidebar');
+    }
   });
 }
 
@@ -3383,6 +3479,9 @@ let pinnedCache = { data: null, ts: 0 };
 let statsCacheTs = 0;
 let suggestionsCacheTs = 0;
 let activeLoadToken = 0;
+let activeFilesAbortController = null;
+let inFlightFilesKey = null;
+let inFlightFilesPromise = null;
 
 function invalidateClientCaches() {
   filesViewCache.clear();
@@ -3391,10 +3490,86 @@ function invalidateClientCaches() {
   suggestionsCacheTs = 0;
 }
 
-function applyLoadedView(isSyllabusMode, payload) {
+function renderLoadingSkeletons(count = 6) {
+  const grid = $('fileGrid');
+  const empty = $('emptyState');
+  if (empty) empty.style.display = 'none';
+  if (!grid) return;
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    html += `
+      <div class="skeleton-card" aria-hidden="true">
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line med"></div>
+        <div class="skeleton-actions">
+          <div class="skeleton-line skeleton-btn"></div>
+          <div class="skeleton-line skeleton-btn"></div>
+        </div>
+      </div>
+    `;
+  }
+  grid.innerHTML = html;
+}
+
+function renderGridErrorState(message) {
+  const grid = $('fileGrid');
+  const empty = $('emptyState');
+  if (empty) empty.style.display = 'none';
+  if (!grid) return;
+
+  const stageInfo = CATEGORY_STAGE_INFO[activeCategory] || CATEGORY_STAGE_INFO.all;
+  if ($('gridSectionTitle')) {
+    $('gridSectionTitle').textContent = `${stageInfo.title} (Unavailable)`;
+  }
+
+  grid.innerHTML = `
+    <div class="grid-error-state" role="alert">
+      <div style="font-size:2rem; margin-bottom:8px;">⚠️</div>
+      <h3>Could not connect to server file index</h3>
+      <p>${escapeHtml(message || 'Unable to load programs from the server right now. Please verify connectivity and retry.')}</p>
+      <button type="button" class="hero-btn primary" id="retryFileIndexBtn">🔄 Retry Loading</button>
+    </div>
+  `;
+
+  const retryBtn = $('retryFileIndexBtn');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => loadFiles(true));
+  }
+}
+
+function collectSyllabusUploadedFiles(payload) {
+  const seenIds = new Set();
+  const list = [];
+  const pushUnique = (f) => {
+    if (!f || typeof f !== 'object') return;
+    const id = String(f._id || f.id || `${f.originalName || ''}::${f.relativePath || ''}`);
+    if (seenIds.has(id)) return;
+    seenIds.add(id);
+    list.push(f);
+  };
+
+  (payload.items || []).forEach(it => {
+    if (Array.isArray(it.files) && it.files.length > 0) {
+      it.files.forEach(pushUnique);
+    } else if (it.file) {
+      pushUnique(it.file);
+    }
+  });
+  (payload.additionalFiles || []).forEach(pushUnique);
+  (payload.needsReviewFiles || []).forEach(pushUnique);
+  (payload.otherFiles || []).forEach(pushUnique);
+  return list;
+}
+
+function applyLoadedView(isSyllabusMode, payload, requestCategory) {
+  if (requestCategory && requestCategory !== activeCategory) {
+    return;
+  }
+
   if (isSyllabusMode) {
     currentSyllabusViewData = payload;
-    lastFiles = (payload.items || []).map(it => it.file).filter(Boolean);
+    lastFiles = collectSyllabusUploadedFiles(payload);
     renderSyllabusFiles(payload);
   } else {
     lastFiles = Array.isArray(payload) ? payload : [];
@@ -3410,63 +3585,111 @@ function applyLoadedView(isSyllabusMode, payload) {
 }
 
 async function loadFiles(forceRefresh = false) {
+  const requestCategory = activeCategory;
+  const params = new URLSearchParams();
+  if (searchSearchQuery) params.set('q', searchSearchQuery);
+  if (requestCategory !== 'all') params.set('category', requestCategory);
+  if (activeSyllabusSubject) params.set('subject', activeSyllabusSubject);
+  if (activeSyllabusExercise) params.set('exercise', activeSyllabusExercise);
+  if (activeSyllabusQuestion) params.set('question', activeSyllabusQuestion);
+
+  const sortEl = $('sortSelect');
+  if (sortEl) params.set('sort', sortEl.value);
+
+  const isSyllabusCat = ['all', 'java', 'python', 'adsa', 'dbms'].includes(requestCategory);
+  const isSyllabusMode = isSyllabusCat && !activeSyllabusExercise && !activeSyllabusQuestion;
+  const url = isSyllabusMode
+    ? `/api/syllabus/view?${params.toString()}`
+    : `/api/files?${params.toString()}`;
+
+  // Deduplicate identical concurrent requests cleanly
+  if (!forceRefresh && inFlightFilesPromise && inFlightFilesKey === url) {
+    return inFlightFilesPromise;
+  }
+
+  if (activeFilesAbortController) {
+    activeFilesAbortController.abort();
+  }
+  const controller = new AbortController();
+  activeFilesAbortController = controller;
+
   const loadToken = ++activeLoadToken;
-  try {
-    const params = new URLSearchParams();
-    if (searchSearchQuery) params.set('q', searchSearchQuery);
-    if (activeCategory !== 'all') params.set('category', activeCategory);
-    if (activeSyllabusSubject) params.set('subject', activeSyllabusSubject);
-    if (activeSyllabusExercise) params.set('exercise', activeSyllabusExercise);
-    if (activeSyllabusQuestion) params.set('question', activeSyllabusQuestion);
 
-    const sortEl = $('sortSelect');
-    if (sortEl) params.set('sort', sortEl.value);
+  const execPromise = (async () => {
+    try {
+      // Cached pinned fetch for instant category switching
+      if (!forceRefresh && pinnedCache.data && (Date.now() - pinnedCache.ts < FILES_VIEW_CACHE_TTL_MS)) {
+        renderPinnedSection(pinnedCache.data);
+      } else {
+        fetch('/api/files?filter=pinned', { signal: controller.signal, headers: authHeaders() })
+          .then(r => (r.ok ? r.json() : []))
+          .then(pFiles => {
+            pinnedCache = { data: Array.isArray(pFiles) ? pFiles : [], ts: Date.now() };
+            if (loadToken === activeLoadToken) renderPinnedSection(pinnedCache.data);
+          })
+          .catch(() => {});
+      }
 
-    // Cached pinned fetch for instant category switching
-    if (!forceRefresh && pinnedCache.data && (Date.now() - pinnedCache.ts < FILES_VIEW_CACHE_TTL_MS)) {
-      renderPinnedSection(pinnedCache.data);
-    } else {
-      fetch('/api/files?filter=pinned')
-        .then(r => (r.ok ? r.json() : []))
-        .then(pFiles => {
-          pinnedCache = { data: pFiles, ts: Date.now() };
-          if (loadToken === activeLoadToken) renderPinnedSection(pFiles);
-        })
-        .catch(() => {});
-    }
+      const cached = !forceRefresh ? filesViewCache.get(url) : null;
+      if (cached && (Date.now() - cached.ts < FILES_VIEW_CACHE_TTL_MS)) {
+        applyLoadedView(isSyllabusMode, cached.data, requestCategory);
+        loadStats();
+        loadSuggestions();
+        return;
+      }
 
-    const isSyllabusCat = ['all', 'java', 'python', 'adsa', 'dbms'].includes(activeCategory);
-    const isSyllabusMode = isSyllabusCat && !activeSyllabusExercise && !activeSyllabusQuestion;
-    const url = isSyllabusMode
-      ? `/api/syllabus/view?${params.toString()}`
-      : `/api/files?${params.toString()}`;
+      renderLoadingSkeletons(6);
 
-    const cached = !forceRefresh ? filesViewCache.get(url) : null;
-    if (cached && (Date.now() - cached.ts < FILES_VIEW_CACHE_TTL_MS)) {
-      applyLoadedView(isSyllabusMode, cached.data);
+      const res = await fetch(url, { signal: controller.signal, headers: authHeaders() });
+      if (!res.ok) {
+        let serverMsg = '';
+        try {
+          const errBody = await res.json();
+          serverMsg = errBody.error || errBody.message || '';
+        } catch (_) {}
+        throw new Error(serverMsg || `Server responded with status ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (loadToken !== activeLoadToken || controller.signal.aborted) return;
+
+      filesViewCache.set(url, { data, ts: Date.now() });
+      applyLoadedView(isSyllabusMode, data, requestCategory);
       loadStats();
       loadSuggestions();
-      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      if (loadToken !== activeLoadToken) return;
+      console.error('loadFiles error:', err);
+      const errMsg = err?.message || 'Could not connect to server file index.';
+      renderGridErrorState(errMsg);
+      toast('Could not connect to server file index.', 'error', {
+        actionLabel: 'Retry',
+        onAction: () => loadFiles(true)
+      });
+    } finally {
+      if (inFlightFilesKey === url) {
+        inFlightFilesKey = null;
+        inFlightFilesPromise = null;
+      }
+      if (activeFilesAbortController === controller) {
+        activeFilesAbortController = null;
+      }
     }
+  })();
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(isSyllabusMode ? 'Failed to load syllabus view' : 'Failed to load files from server');
-    const data = await res.json();
-    filesViewCache.set(url, { data, ts: Date.now() });
-
-    if (loadToken !== activeLoadToken) return;
-
-    applyLoadedView(isSyllabusMode, data);
-    loadStats();
-    loadSuggestions();
-  } catch (err) {
-    console.error('loadFiles error:', err);
-    toast('Could not connect to server file index.', 'error');
-  }
+  inFlightFilesKey = url;
+  inFlightFilesPromise = execPromise;
+  return execPromise;
 }
 
 const sortSelect = $('sortSelect');
-if (sortSelect) sortSelect.addEventListener('change', () => loadFiles());
+if (sortSelect) {
+  sortSelect.addEventListener('change', () => {
+    syncDesktopNavLinks(activeCategory, sortSelect.value);
+    loadFiles();
+  });
+}
 
 function doesPinnedFileMatchCategory(file, cat) {
   if (!file || !file.pinned) return false;
@@ -3554,7 +3777,7 @@ function renderPinnedSection(files) {
   grid.appendChild(frag);
 }
 
-// Render Official Syllabus Experiments with Available + Coming Soon
+// Render Official Syllabus Experiments with Available + Coming Soon + Additional Programs
 function renderSyllabusFiles(data) {
   const grid = $('fileGrid');
   const empty = $('emptyState');
@@ -3562,26 +3785,58 @@ function renderSyllabusFiles(data) {
   grid.innerHTML = '';
 
   const items = data.items || [];
+  const additionalFiles = data.additionalFiles || [];
   const needsReview = data.needsReviewFiles || [];
   const otherFiles = data.otherFiles || [];
   const isAdmin = Boolean(adminToken);
 
-  if (items.length === 0 && needsReview.length === 0 && otherFiles.length === 0) {
+  if (items.length === 0 && additionalFiles.length === 0 && needsReview.length === 0 && otherFiles.length === 0) {
     if (empty) empty.style.display = 'block';
     return;
   }
   if (empty) empty.style.display = 'none';
 
   const frag = document.createDocumentFragment();
+  const totalUploadedInView = collectSyllabusUploadedFiles(data).length;
 
-  // 1. Needs Review / Unmapped Banner
+  // Informative zero-uploads notice when database genuinely has 0 uploaded files for a syllabus course
+  if (totalUploadedInView === 0 && !searchSearchQuery) {
+    const stageInfo = CATEGORY_STAGE_INFO[activeCategory] || CATEGORY_STAGE_INFO.all;
+    const notice = document.createElement('div');
+    notice.className = 'syllabus-empty-uploads-banner';
+    notice.innerHTML = `
+      <div>
+        <strong>No uploaded programs yet in ${escapeHtml(stageInfo.title)}</strong>
+        <p>0 files have been uploaded to the database for this section. Official curriculum experiments are tracked below.</p>
+      </div>
+    `;
+    frag.appendChild(notice);
+  }
+
+  // 1. Standalone / Admin-created Published Programs (not mapped to a numbered syllabus slot)
+  if (additionalFiles.length > 0) {
+    const stageInfo = CATEGORY_STAGE_INFO[activeCategory] || CATEGORY_STAGE_INFO.all;
+    const addHeader = document.createElement('div');
+    addHeader.className = 'course-section-header';
+    addHeader.innerHTML = `
+      <h3><span>✨</span> Uploaded ${activeCategory === 'all' ? 'Course' : escapeHtml(stageInfo.title)} Programs</h3>
+      <div class="course-section-badge"><span style="color:#10b981; font-weight:700;">${additionalFiles.length}</span> Available</div>
+    `;
+    frag.appendChild(addHeader);
+
+    additionalFiles.forEach(file => {
+      frag.appendChild(createStandaloneFileCard(file, isAdmin));
+    });
+  }
+
+  // 2. Needs Review / Unmapped Banner
   if (needsReview.length > 0) {
     const banner = document.createElement('div');
     banner.className = 'needs-review-banner';
     banner.innerHTML = `
       <div class="needs-review-header">
-        <h4 class="needs-review-title">⚠️ Needs Review / Unmapped Lab Files (${needsReview.length})</h4>
-        <span style="font-size:0.8rem; color:var(--text-dim);">Files requiring official experiment assignment</span>
+        <h4 class="needs-review-title">⚠️ Unmapped / Review Lab Files (${needsReview.length})</h4>
+        <span style="font-size:0.8rem; color:var(--text-dim);">Files awaiting official experiment assignment</span>
       </div>
       <div>
         ${needsReview.map(f => `
@@ -3591,8 +3846,9 @@ function renderSyllabusFiles(data) {
               <span style="font-size:0.75rem; color:var(--text-dim); margin-left:8px;">${escapeHtml((f.category || 'other').toUpperCase())} · ${fmtSize(f.size)}</span>
               ${f.reviewReason ? `<div style="font-size:0.78rem; color:#f59e0b; margin-top:2px;">ℹ️ ${escapeHtml(f.reviewReason)}</div>` : ''}
             </div>
-            <div style="display:flex; gap:6px;">
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <button class="card-btn" onclick="previewFile('${f._id || f.id}')">👁 View</button>
+              <button class="card-btn" onclick="downloadFile('${f._id || f.id}')">⬇ Download</button>
               ${isAdmin ? `<button class="card-btn primary" onclick="openAssignExperimentModal('${f._id || f.id}', '${escapeHtml(f.originalName)}', '${f.category || ''}')">🎯 Assign Experiment</button>` : ''}
             </div>
           </div>
@@ -3602,12 +3858,12 @@ function renderSyllabusFiles(data) {
     frag.appendChild(banner);
   }
 
-  // 2. Syllabus items: if 'all', group by course retaining each course's numbering
+  // 3. Syllabus items: if 'all', group by course retaining each course's numbering
   if (activeCategory === 'all') {
     const courseGroups = [
       { key: 'java', title: 'Java Programming', subtitle: 'Object Oriented Programming through Java Lab · B23CS2105', icon: '☕', total: 35 },
       { key: 'python', title: 'Python Programming', subtitle: 'Python Programming Skill Enhancement Lab · B23CS2106', icon: '🐍', total: 40 },
-      { key: 'dbms', title: 'Database Management Systems', subtitle: 'Database Management Systems Lab ( CSE, AIML, CSIT & CSG) · B23CS2104', icon: '🗄️', total: 54 },
+      { key: 'dbms', title: 'Database Management Systems', subtitle: 'Database Management Systems Lab (CSE, AIML, CSIT & CSG) · B23CS2104', icon: '🗄️', total: 54 },
       { key: 'adsa', title: 'Advanced Data Structures & Algorithms (DSA)', subtitle: 'Advanced Data Structures and Algorithms using C Lab · B23CI2102', icon: '🌳', total: 16 }
     ];
 
@@ -3638,18 +3894,18 @@ function renderSyllabusFiles(data) {
       });
     });
   } else {
-    // Single course view (e.g. Java 1..35, Python 1..40, DSA 1..16)
+    // Single course view (e.g. Java 1..35, Python 1..40, DBMS 1..54, ADSA 1..16)
     items.forEach(item => {
       frag.appendChild(createExperimentCard(item, isAdmin));
     });
   }
 
-  // 3. Render Zip packages & other custom files
+  // 4. Render Zip packages & other custom files
   if ((activeCategory === 'all' || items.length === 0) && otherFiles.length > 0) {
     const otherHeader = document.createElement('div');
     otherHeader.className = 'course-section-header';
     otherHeader.innerHTML = `
-      <h3><span>🗜️</span> Zip Packages &amp; Other Resources</h3>
+      <h3><span>🗜️</span> Folders &amp; Other Resources</h3>
       <div class="course-section-badge">${otherFiles.length} item(s)</div>
     `;
     frag.appendChild(otherHeader);
@@ -3918,8 +4174,8 @@ function renderFiles(files) {
     card.className = `file-card ${isPinned ? 'pinned-card' : ''}`;
 
     let actionBtns = `
-      <button class="card-btn" onclick="downloadFolder('${escapedKey}')">⬇ Download Zip</button>
-      <button class="card-btn" onclick="toggleFolderDetails('${escapedKey}')">📁 View Files (${batchFiles.length})</button>
+      <button type="button" class="card-btn primary" onclick="toggleFolderDetails('${escapedKey}')">📁 View Files (${batchFiles.length})</button>
+      <button type="button" class="card-btn group-dl-disabled" disabled aria-disabled="true" title="Group downloads are disabled. Open View Files to download individual files.">🔒 Group Download Disabled</button>
     `;
 
     if (isAdmin && realBatchId && !String(groupKey).startsWith('zipfolder:')) {
@@ -4058,8 +4314,8 @@ function renderFolderManagementList() {
           </div>
         </div>
         <div style="display:flex; gap:8px; flex-shrink:0;">
-          <button class="card-btn" style="padding:4px 10px; font-size:0.8rem;" onclick="downloadFolder('${escapeHtml(batchId)}')">⬇ Download</button>
-          <button class="card-btn danger" style="padding:4px 10px; font-size:0.8rem;" onclick="deleteFolderBatch('${escapeHtml(batchId)}')">🗑 Delete</button>
+          <button type="button" class="card-btn group-dl-disabled" style="padding:4px 10px; font-size:0.8rem;" disabled aria-disabled="true" title="Group downloads are disabled">🔒 Group Disabled</button>
+          <button type="button" class="card-btn danger" style="padding:4px 10px; font-size:0.8rem;" onclick="deleteFolderBatch('${escapeHtml(batchId)}')">🗑 Delete</button>
         </div>
       </div>
     `;
@@ -4559,13 +4815,7 @@ function downloadFile(id, evt) {
 }
 
 function downloadFolder(batchId, evt) {
-  const target = evt ? (evt.target || evt) : null;
-  triggerMascotAnim('download', target);
-  const file = lastFiles.find(f => f.batchId === batchId || (f.zipFolder && `zipfolder:${f.zipFolder}` === batchId));
-  if (file) {
-    triggerMascotAnim(getMascotType(file), target);
-  }
-  window.open(`/api/files/folder/${encodeURIComponent(batchId)}/download`, '_blank');
+  toast('Group and folder ZIP downloads are disabled. Please open the folder and download individual files.', 'warning');
 }
 
 // Viewer reading state (default Wrap=true on narrow mobile screens for instant readability)
@@ -5692,7 +5942,10 @@ if (navPinnedBtn) navPinnedBtn.addEventListener('click', () => switchCategory('p
     if (!drawer) return;
     drawer.classList.toggle('open', isOpen);
     drawer.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
-    if (backdrop) backdrop.classList.toggle('show', isOpen);
+    if (backdrop) {
+      backdrop.classList.toggle('open', isOpen);
+      backdrop.classList.toggle('show', isOpen);
+    }
     if (menuBtn) menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     document.body.classList.toggle('mob-nav-open', isOpen);
   }
@@ -5746,10 +5999,13 @@ if (navPinnedBtn) navPinnedBtn.addEventListener('click', () => switchCategory('p
   });
 
   window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) setDrawerOpen(false);
+    if (window.innerWidth > 960) setDrawerOpen(false);
   });
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') setDrawerOpen(false);
+    if (e.key === 'Escape') {
+      setDrawerOpen(false);
+      if (typeof setMobileSidebarOpen === 'function') setMobileSidebarOpen(false);
+    }
   });
 
   if (window.visualViewport) {
@@ -6873,6 +7129,13 @@ window.addEventListener('resize', () => {
 });
 
 window.addEventListener('DOMContentLoaded', () => {
+  const brandLogo = $('brandLogo');
+  if (brandLogo) {
+    brandLogo.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
   initCinematicEyes();
   initEasterEggs();
   initIntro();
@@ -6883,8 +7146,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupDashboardBindings();
   updateSessionBadge();
   loadSyllabus();
-  renderSubjectAnimation('all');
-  loadFiles();
+  renderSubjectAnimation(activeCategory || 'all');
   initViewModeToggle();
   setTimeout(() => scrollActiveFilterChipIntoView(activeCategory, true), 150);
 });
